@@ -54,6 +54,16 @@ export class InputHandler {
     if (this.keys.has('KeyA') || this.keys.has('ArrowLeft'))  move.x -= 1;
     if (this.keys.has('KeyD') || this.keys.has('ArrowRight')) move.x += 1;
 
+    // Rotate input to align with screen-perceived directions.
+    // Camera sits at 45° azimuth, so raw game-axis input feels rotated to the user.
+    const ISO_ANGLE = -Math.PI / 4;
+    const cos = Math.cos(ISO_ANGLE); // ≈  0.7071
+    const sin = Math.sin(ISO_ANGLE); // ≈ -0.7071
+    const rx = move.x * cos - move.y * sin;
+    const ry = move.x * sin + move.y * cos;
+    move.x = rx;
+    move.y = ry;
+
     const frame: InputFrame = { move, castSpell: null, aimTarget: this.mouseWorld };
 
     if (this.pendingCast) {
