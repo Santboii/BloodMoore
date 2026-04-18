@@ -34,7 +34,7 @@ export function resolvePlayerPillarCollisions(pos: Vec2): Vec2 {
   return p;
 }
 
-function clampToArena(pos: Vec2): Vec2 {
+export function clampToArena(pos: Vec2): Vec2 {
   return {
     x: Math.max(PLAYER_HALF_SIZE, Math.min(ARENA_SIZE - PLAYER_HALF_SIZE, pos.x)),
     y: Math.max(PLAYER_HALF_SIZE, Math.min(ARENA_SIZE - PLAYER_HALF_SIZE, pos.y)),
