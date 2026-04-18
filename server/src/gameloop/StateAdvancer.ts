@@ -1,5 +1,5 @@
 import {
-  GameState, PlayerState, InputFrame, Vec2,
+  GameState, PlayerState, InputFrame, Vec2, SpellId,
   SPELL_CONFIG, MAX_HP, MAX_MANA, MANA_REGEN_PER_TICK, FIREWALL_DAMAGE_PER_TICK,
 } from '@arena/shared';
 import { movePlayer } from '../physics/Movement.ts';
@@ -37,7 +37,7 @@ export function advanceState(state: GameState, inputs: Record<string, InputFrame
     const newFacing = input.aimTarget
       ? Math.atan2(input.aimTarget.y - p.position.y, input.aimTarget.x - p.position.x)
       : p.facing;
-    const newCooldowns: Record<number, number> = {};
+    const newCooldowns: Partial<Record<SpellId, number>> = {};
     for (const [k, v] of Object.entries(p.cooldowns)) {
       const remaining = (v as number) - 1;
       if (remaining > 0) newCooldowns[Number(k)] = remaining;
