@@ -36,9 +36,8 @@ export function isFireballExpired(p: Projectile): boolean {
 
 export function fireballHitsPlayer(p: Projectile, playerPos: Vec2, playerId: string): boolean {
   if (p.ownerId === playerId) return false;
-  const dx = p.position.x - playerPos.x;
-  const dy = p.position.y - playerPos.y;
-  return dx * dx + dy * dy <= (FIREBALL_RADIUS + PLAYER_HALF_SIZE) ** 2;
+  const playerBox = { x: playerPos.x, y: playerPos.y, halfSize: PLAYER_HALF_SIZE };
+  return circleHitsAABB(p.position, FIREBALL_RADIUS, playerBox);
 }
 
 export function fireballDamage(): number {
