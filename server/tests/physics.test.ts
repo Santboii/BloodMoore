@@ -5,17 +5,17 @@ import { PILLARS, ARENA_SIZE, PLAYER_HALF_SIZE } from '@arena/shared';
 
 describe('movePlayer', () => {
   it('moves in the given direction scaled by speed and delta', () => {
-    const pos = { x: 400, y: 400 };
+    const pos = { x: 400, y: 250 };  // open space, no pillar
     const result = movePlayer(pos, { x: 1, y: 0 });
     expect(result.x).toBeCloseTo(400 + 200 / 60, 1);
-    expect(result.y).toBe(400);
+    expect(result.y).toBe(250);
   });
 
   it('normalizes diagonal input so diagonal speed equals cardinal speed', () => {
-    const pos = { x: 400, y: 400 };
+    const pos = { x: 400, y: 250 };  // open space, no pillar
     const diag = movePlayer(pos, { x: 1, y: 1 });
     const card = movePlayer(pos, { x: 1, y: 0 });
-    const diagDist = Math.sqrt((diag.x - 400) ** 2 + (diag.y - 400) ** 2);
+    const diagDist = Math.sqrt((diag.x - 400) ** 2 + (diag.y - 250) ** 2);
     const cardDist = Math.abs(card.x - 400);
     expect(diagDist).toBeCloseTo(cardDist, 1);
   });
@@ -26,7 +26,7 @@ describe('movePlayer', () => {
   });
 
   it('returns unchanged position for zero input', () => {
-    const pos = { x: 400, y: 400 };
+    const pos = { x: 400, y: 250 };
     expect(movePlayer(pos, { x: 0, y: 0 })).toEqual(pos);
   });
 });
@@ -36,9 +36,10 @@ describe('resolvePlayerPillarCollisions', () => {
     const pillar = PILLARS[0]; // x:160 y:160 halfSize:28
     const inside = { x: pillar.x, y: pillar.y };
     const resolved = resolvePlayerPillarCollisions(inside);
-    const dx = Math.abs(resolved.x - pillar.x);
-    const dy = Math.abs(resolved.y - pillar.y);
-    expect(dx >= pillar.halfSize + PLAYER_HALF_SIZE || dy >= pillar.halfSize + PLAYER_HALF_SIZE).toBe(true);
+    const stillInside =
+      Math.abs(resolved.x - pillar.x) < pillar.halfSize + PLAYER_HALF_SIZE &&
+      Math.abs(resolved.y - pillar.y) < pillar.halfSize + PLAYER_HALF_SIZE;
+    expect(stillInside).toBe(false);
   });
 
   it('leaves player unchanged when not overlapping any pillar', () => {

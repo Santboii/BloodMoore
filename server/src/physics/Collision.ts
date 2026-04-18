@@ -5,9 +5,10 @@ export function circleHitsAABB(center: Vec2, radius: number, pillar: Pillar): bo
   const closestY = Math.max(pillar.y - pillar.halfSize, Math.min(center.y, pillar.y + pillar.halfSize));
   const dx = center.x - closestX;
   const dy = center.y - closestY;
-  return dx * dx + dy * dy < radius * radius;
+  return dx * dx + dy * dy <= radius * radius;
 }
 
+/** Returns true if a circle of FIREBALL_RADIUS centred at point overlaps any pillar. */
 export function pillarContainsPoint(point: Vec2): boolean {
   return PILLARS.some(p => circleHitsAABB(point, FIREBALL_RADIUS, p));
 }

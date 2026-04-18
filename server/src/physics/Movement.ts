@@ -9,7 +9,7 @@ export function movePlayer(position: Vec2, input: Vec2): Vec2 {
     x: position.x + nx * PLAYER_SPEED * DELTA,
     y: position.y + ny * PLAYER_SPEED * DELTA,
   };
-  return clampToArena(moved);
+  return resolvePlayerPillarCollisions(clampToArena(moved));
 }
 
 export function resolvePlayerPillarCollisions(pos: Vec2): Vec2 {
