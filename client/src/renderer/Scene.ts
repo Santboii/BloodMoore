@@ -5,6 +5,9 @@ export class Scene {
   readonly scene: THREE.Scene;
   readonly camera: THREE.OrthographicCamera;
   private animFrameId = 0;
+  private readonly _raycaster = new THREE.Raycaster();
+  private readonly _groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  private readonly _worldTarget = new THREE.Vector3();
 
   constructor(container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -51,6 +54,7 @@ export class Scene {
   };
 
   startRenderLoop(onFrame: () => void): void {
+    if (this.animFrameId !== 0) return;
     const loop = () => {
       this.animFrameId = requestAnimationFrame(loop);
       onFrame();
@@ -61,6 +65,7 @@ export class Scene {
 
   stopRenderLoop(): void {
     cancelAnimationFrame(this.animFrameId);
+    this.animFrameId = 0;
   }
 
   /** Convert screen mouse position to world XZ coordinates */
@@ -70,12 +75,9 @@ export class Scene {
       ((screenX - rect.left) / rect.width) * 2 - 1,
       -((screenY - rect.top) / rect.height) * 2 + 1,
     );
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(ndc, this.camera);
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const target = new THREE.Vector3();
-    raycaster.ray.intersectPlane(plane, target);
-    return { x: target.x, y: target.z };
+    this._raycaster.setFromCamera(ndc, this.camera);
+    this._raycaster.ray.intersectPlane(this._groundPlane, this._worldTarget);
+    return { x: this._worldTarget.x, y: this._worldTarget.z };
   }
 
   dispose(): void {
