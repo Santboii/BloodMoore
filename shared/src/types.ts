@@ -60,7 +60,7 @@ export type Pillar = { x: number; y: number; halfSize: number };
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-export const ARENA_SIZE = 800;
+export const ARENA_SIZE = 2000;
 export const PLAYER_HALF_SIZE = 16;
 export const PLAYER_SPEED = 200;   // units/sec
 export const TICK_RATE = 60;
@@ -70,11 +70,16 @@ export const MAX_MANA = 300;
 export const MANA_REGEN_PER_TICK = 10 / TICK_RATE;
 
 export const PILLARS: Pillar[] = [
-  { x: 160, y: 160, halfSize: 28 },
-  { x: 640, y: 160, halfSize: 28 },
-  { x: 400, y: 400, halfSize: 28 },
-  { x: 160, y: 640, halfSize: 28 },
-  { x: 640, y: 640, halfSize: 28 },
+  { x: 350,  y: 300,  halfSize: 28 },
+  { x: 1000, y: 250,  halfSize: 28 },
+  { x: 1650, y: 300,  halfSize: 28 },
+  { x: 400,  y: 750,  halfSize: 28 },
+  { x: 1600, y: 750,  halfSize: 28 },
+  { x: 1000, y: 1000, halfSize: 28 },
+  { x: 350,  y: 1450, halfSize: 28 },
+  { x: 750,  y: 1700, halfSize: 28 },
+  { x: 1250, y: 1700, halfSize: 28 },
+  { x: 1650, y: 1450, halfSize: 28 },
 ];
 
 export const FIREBALL_SPEED = 400;
@@ -95,6 +100,6 @@ export const SPELL_CONFIG: Record<SpellId, { manaCost: number; cooldownTicks: nu
 
 // Spawn positions (left and right side, centered vertically)
 export const SPAWN_POSITIONS: Vec2[] = [
-  { x: 80,  y: 400 },
-  { x: 720, y: 400 },
+  { x: 200,  y: 1000 },
+  { x: 1800, y: 1000 },
 ];

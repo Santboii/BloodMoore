@@ -5,16 +5,16 @@ import { spawnFireWall } from '../src/spells/FireWall.ts';
 
 function twoPlayerState() {
   return makeInitialState([
-    { id: 'p1', displayName: 'Alice', spawnPos: { x: 80, y: 400 } },
-    { id: 'p2', displayName: 'Bob', spawnPos: { x: 720, y: 400 } },
+    { id: 'p1', displayName: 'Alice', spawnPos: { x: 200, y: 1000 } },
+    { id: 'p2', displayName: 'Bob', spawnPos: { x: 1800, y: 1000 } },
   ]);
 }
 
 describe('makeInitialState', () => {
   it('creates state with two players at spawn positions', () => {
     const state = twoPlayerState();
-    expect(state.players['p1'].position).toEqual({ x: 80, y: 400 });
-    expect(state.players['p2'].position).toEqual({ x: 720, y: 400 });
+    expect(state.players['p1'].position).toEqual({ x: 200, y: 1000 });
+    expect(state.players['p2'].position).toEqual({ x: 1800, y: 1000 });
     expect(state.phase).toBe('dueling');
   });
 
@@ -34,11 +34,11 @@ describe('advanceState — movement', () => {
   it('moves p1 right when move input is {x:1, y:0}', () => {
     const state = twoPlayerState();
     const inputs = {
-      p1: { move: { x: 1, y: 0 }, castSpell: null, aimTarget: { x: 720, y: 400 } },
-      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 80, y: 400 } },
+      p1: { move: { x: 1, y: 0 }, castSpell: null, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
     };
     const next = advanceState(state, inputs);
-    expect(next.players['p1'].position.x).toBeGreaterThan(80);
+    expect(next.players['p1'].position.x).toBeGreaterThan(200);
   });
 });
 
@@ -59,8 +59,8 @@ describe('advanceState — fireball cast', () => {
   it('spawns a fireball and deducts mana when p1 casts spell 1', () => {
     const state = twoPlayerState();
     const inputs = {
-      p1: { move: { x: 0, y: 0 }, castSpell: 1 as const, aimTarget: { x: 720, y: 400 } },
-      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 80, y: 400 } },
+      p1: { move: { x: 0, y: 0 }, castSpell: 1 as const, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
     };
     const next = advanceState(state, inputs);
     expect(next.projectiles.length).toBe(1);
@@ -71,8 +71,8 @@ describe('advanceState — fireball cast', () => {
     const state = twoPlayerState();
     state.players['p1'].mana = 0;
     const inputs = {
-      p1: { move: { x: 0, y: 0 }, castSpell: 1 as const, aimTarget: { x: 720, y: 400 } },
-      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 80, y: 400 } },
+      p1: { move: { x: 0, y: 0 }, castSpell: 1 as const, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
     };
     const next = advanceState(state, inputs);
     expect(next.projectiles.length).toBe(0);
@@ -83,8 +83,8 @@ describe('advanceState — cooldowns', () => {
   it('sets cooldown after casting fireball and blocks immediate re-cast', () => {
     const state = twoPlayerState();
     const inputs = {
-      p1: { move: { x: 0, y: 0 }, castSpell: 1 as const, aimTarget: { x: 720, y: 400 } },
-      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 80, y: 400 } },
+      p1: { move: { x: 0, y: 0 }, castSpell: 1 as const, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
     };
     const next = advanceState(state, inputs);
     expect(next.players['p1'].cooldowns[1]).toBeGreaterThan(0);
@@ -104,12 +104,12 @@ describe('advanceState — win condition', () => {
       id: 'fb_test',
       ownerId: 'p1',
       type: 'fireball',
-      position: { x: 720, y: 400 },
+      position: { x: 1800, y: 1000 },
       velocity: { x: 400, y: 0 },
     });
     const inputs = {
-      p1: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 720, y: 400 } },
-      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 80, y: 400 } },
+      p1: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
     };
     const next = advanceState(state, inputs);
     expect(next.phase).toBe('ended');
@@ -120,13 +120,13 @@ describe('advanceState — win condition', () => {
 describe('advanceState — fire wall damage', () => {
   it('stacks damage from two overlapping fire walls', () => {
     const state = twoPlayerState();
-    const playerPos = state.players['p1'].position; // { x: 80, y: 400 }
-    const fw1 = spawnFireWall('p2', { x: 60, y: 400 }, { x: 100, y: 400 }, 0);
-    const fw2 = spawnFireWall('p2', { x: 60, y: 400 }, { x: 100, y: 400 }, 0);
+    const playerPos = state.players['p1'].position; // { x: 200, y: 1000 }
+    const fw1 = spawnFireWall('p2', { x: 180, y: 1000 }, { x: 220, y: 1000 }, 0);
+    const fw2 = spawnFireWall('p2', { x: 180, y: 1000 }, { x: 220, y: 1000 }, 0);
     state.fireWalls.push(fw1, fw2);
     const inputs = {
-      p1: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 720, y: 400 } },
-      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 80, y: 400 } },
+      p1: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
     };
     const next = advanceState(state, inputs);
     expect(next.players['p1'].hp).toBeCloseTo(MAX_HP - FIREWALL_DAMAGE_PER_TICK * 2, 10);
@@ -140,12 +140,12 @@ describe('advanceState — simultaneous death', () => {
     state.players['p2'].hp = 1;
     // Two fireballs: p2's fireball hits p1, p1's fireball hits p2
     state.projectiles.push(
-      { id: 'fb1', ownerId: 'p2', type: 'fireball', position: { x: 80, y: 400 }, velocity: { x: 400, y: 0 } },
-      { id: 'fb2', ownerId: 'p1', type: 'fireball', position: { x: 720, y: 400 }, velocity: { x: -400, y: 0 } },
+      { id: 'fb1', ownerId: 'p2', type: 'fireball', position: { x: 200, y: 1000 }, velocity: { x: 400, y: 0 } },
+      { id: 'fb2', ownerId: 'p1', type: 'fireball', position: { x: 1800, y: 1000 }, velocity: { x: -400, y: 0 } },
     );
     const inputs = {
-      p1: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 720, y: 400 } },
-      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 80, y: 400 } },
+      p1: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
     };
     const next = advanceState(state, inputs);
     expect(next.phase).toBe('ended');

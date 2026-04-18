@@ -28,7 +28,7 @@ describe('advanceFireball', () => {
 
 describe('isFireballExpired', () => {
   it('returns true when fireball leaves arena', () => {
-    const fb = spawnFireball('p1', { x: 790, y: 400 }, { x: 900, y: 400 });
+    const fb = spawnFireball('p1', { x: 1990, y: 1000 }, { x: 2100, y: 1000 });
     const advanced = advanceFireball(fb);
     expect(isFireballExpired(advanced)).toBe(true);
   });
@@ -39,8 +39,8 @@ describe('isFireballExpired', () => {
   });
 
   it('returns true when fireball hits a pillar', () => {
-    // Fire directly into center pillar at 400,400
-    const fb = spawnFireball('p1', { x: 390, y: 400 }, { x: 800, y: 400 });
+    // Fire directly into center pillar at 1000,1000
+    const fb = spawnFireball('p1', { x: 990, y: 1000 }, { x: 1400, y: 1000 });
     let current = fb;
     let hit = false;
     for (let i = 0; i < 200; i++) {

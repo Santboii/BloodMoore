@@ -34,7 +34,7 @@ describe('movePlayer', () => {
 
 describe('resolvePlayerPillarCollisions', () => {
   it('pushes player out of a pillar', () => {
-    const pillar = PILLARS[0]; // x:160 y:160 halfSize:28
+    const pillar = PILLARS[0]; // x:350 y:300 halfSize:28
     const inside = { x: pillar.x, y: pillar.y };
     const resolved = resolvePlayerPillarCollisions(inside);
     const stillInside =
@@ -63,7 +63,7 @@ describe('circleHitsAABB', () => {
 
 describe('pillarContainsPoint', () => {
   it('returns true for a point inside a pillar', () => {
-    const p = PILLARS[2]; // center pillar at 400,400
+    const p = PILLARS[2]; // pillar at 1650,300
     expect(pillarContainsPoint({ x: p.x, y: p.y })).toBe(true);
   });
 
@@ -74,17 +74,17 @@ describe('pillarContainsPoint', () => {
 
 describe('hasLineOfSight', () => {
   it('returns true between two open points', () => {
-    // Straight shot across open row at y=250 — no pillars at that height
-    expect(hasLineOfSight({ x: 50, y: 250 }, { x: 750, y: 250 })).toBe(true);
+    // Straight shot at y=250, x range 50–950 — no pillar reaches x<950 at this height
+    expect(hasLineOfSight({ x: 50, y: 250 }, { x: 950, y: 250 })).toBe(true);
   });
 
   it('returns false when a pillar blocks the path', () => {
-    // Shot from left to right through center pillar at 400,400
-    expect(hasLineOfSight({ x: 50, y: 400 }, { x: 750, y: 400 })).toBe(false);
+    // Shot from left to right through pillar at 400,750
+    expect(hasLineOfSight({ x: 50, y: 750 }, { x: 750, y: 750 })).toBe(false);
   });
 
   it('returns true for a path that passes above a pillar', () => {
-    // Center pillar at 400,400 halfSize 28 — pass at y=350 which is 22 above top edge (400-28=372)
-    expect(hasLineOfSight({ x: 200, y: 350 }, { x: 600, y: 350 })).toBe(true);
+    // Pillar at 400,750 halfSize 28 — pass at y=700 which is 22 above top edge (750-28=722)
+    expect(hasLineOfSight({ x: 200, y: 700 }, { x: 600, y: 700 })).toBe(true);
   });
 });

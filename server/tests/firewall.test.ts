@@ -12,8 +12,8 @@ describe('buildWallSegments', () => {
   });
 
   it('splits the wall when a pillar is in the path', () => {
-    // 200-unit line through center pillar at 400,400 (pillar halfSize=28, spans x=372–428)
-    const segs = buildWallSegments({ x: 320, y: 400 }, { x: 520, y: 400 });
+    // 200-unit line through pillar at 400,750 (pillar halfSize=28, spans x=372–428)
+    const segs = buildWallSegments({ x: 320, y: 750 }, { x: 520, y: 750 });
     expect(segs.length).toBe(2);
   });
 
