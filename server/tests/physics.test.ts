@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { movePlayer, resolvePlayerPillarCollisions } from '../src/physics/Movement.ts';
 import { circleHitsAABB, pillarContainsPoint } from '../src/physics/Collision.ts';
+import { hasLineOfSight } from '../src/physics/LineOfSight.ts';
 import { PILLARS, ARENA_SIZE, PLAYER_HALF_SIZE } from '@arena/shared';
 
 describe('movePlayer', () => {
@@ -68,5 +69,22 @@ describe('pillarContainsPoint', () => {
 
   it('returns false for a point in open space', () => {
     expect(pillarContainsPoint({ x: 400, y: 100 })).toBe(false);
+  });
+});
+
+describe('hasLineOfSight', () => {
+  it('returns true between two open points', () => {
+    // Straight shot across open row at y=250 — no pillars at that height
+    expect(hasLineOfSight({ x: 50, y: 250 }, { x: 750, y: 250 })).toBe(true);
+  });
+
+  it('returns false when a pillar blocks the path', () => {
+    // Shot from left to right through center pillar at 400,400
+    expect(hasLineOfSight({ x: 50, y: 400 }, { x: 750, y: 400 })).toBe(false);
+  });
+
+  it('returns true for a path that passes above a pillar', () => {
+    // Center pillar at 400,400 halfSize 28 — pass at y=350 which is 22 above top edge (400-28=372)
+    expect(hasLineOfSight({ x: 200, y: 350 }, { x: 600, y: 350 })).toBe(true);
   });
 });
