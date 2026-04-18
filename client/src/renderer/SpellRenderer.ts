@@ -1,24 +1,38 @@
 import * as THREE from 'three';
 import { GameState } from '@arena/shared';
+import { FireballParticles } from './FireballParticles';
 
 export class SpellRenderer {
   private fireballs = new Map<string, THREE.Mesh>();
   private fireWalls = new Map<string, THREE.Group>();
-  private meteors = new Map<string, THREE.Mesh>(); // warning indicators
+  private meteors = new Map<string, THREE.Mesh>();
+  private fireballParticles: FireballParticles;
+  private prevFireballPositions = new Map<string, { x: number; y: number; z: number }>();
+  private clock = new THREE.Clock();
 
-  constructor(private scene: THREE.Scene) {}
+  constructor(private scene: THREE.Scene) {
+    this.fireballParticles = new FireballParticles(scene);
+  }
 
   update(state: GameState): void {
+    const delta = this.clock.getDelta();
     this.syncFireballs(state);
     this.syncFireWalls(state);
     this.syncMeteors(state);
+    this.fireballParticles.update(delta);
   }
 
   private syncFireballs(state: GameState): void {
     const activeIds = new Set(state.projectiles.map(p => p.id));
 
     for (const [id, mesh] of this.fireballs) {
-      if (!activeIds.has(id)) { this.scene.remove(mesh); this.fireballs.delete(id); }
+      if (!activeIds.has(id)) {
+        const last = this.prevFireballPositions.get(id);
+        if (last) this.fireballParticles.emitExplosion(last.x, last.y, last.z);
+        this.scene.remove(mesh);
+        this.fireballs.delete(id);
+        this.prevFireballPositions.delete(id);
+      }
     }
 
     for (const fb of state.projectiles) {
@@ -35,8 +49,23 @@ export class SpellRenderer {
         this.scene.add(mesh);
         this.fireballs.set(fb.id, mesh);
       }
+
       const mesh = this.fireballs.get(fb.id)!;
-      mesh.position.set(fb.position.x, 30, fb.position.y);
+      const wx = fb.position.x;
+      const wy = 30;
+      const wz = fb.position.y;
+      mesh.position.set(wx, wy, wz);
+
+      const prev = this.prevFireballPositions.get(fb.id);
+      let dirX = 0, dirZ = 0;
+      if (prev) {
+        const dx = wx - prev.x;
+        const dz = wz - prev.z;
+        const len = Math.sqrt(dx * dx + dz * dz);
+        if (len > 0) { dirX = dx / len; dirZ = dz / len; }
+      }
+      this.fireballParticles.emitTrail(wx, wy, wz, dirX, dirZ);
+      this.prevFireballPositions.set(fb.id, { x: wx, y: wy, z: wz });
     }
   }
 
@@ -98,5 +127,6 @@ export class SpellRenderer {
     this.fireballs.clear();
     this.fireWalls.clear();
     this.meteors.clear();
+    this.fireballParticles.dispose();
   }
 }
