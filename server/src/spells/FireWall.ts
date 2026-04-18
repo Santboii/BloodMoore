@@ -91,7 +91,7 @@ function getPillarBlockRange(from: Vec2, to: Vec2, pillar: Pillar): [number, num
 }
 
 export function fireWallDamagesPlayer(fw: FireWallState, playerPos: Vec2, playerId: string): boolean {
-  const threshold = PLAYER_HALF_SIZE + 14;  // 30 units — slightly wider than pillar halfSize (28)
+  const threshold = PLAYER_HALF_SIZE + 8;
   return fw.segments.some(seg => pointToSegmentDist(playerPos, seg) < threshold);
 }
 
