@@ -1,6 +1,10 @@
 import { InputFrame } from '@arena/shared';
 import { Scene } from '../renderer/Scene';
 
+const ISO_ANGLE = -Math.PI / 4;
+const ISO_COS   =  Math.cos(ISO_ANGLE); // ≈  0.7071
+const ISO_SIN   =  Math.sin(ISO_ANGLE); // ≈ -0.7071
+
 export class InputHandler {
   private keys = new Set<string>();
   private activeSpell: 1 | 2 | 3 = 1;
@@ -53,6 +57,12 @@ export class InputHandler {
     if (this.keys.has('KeyS') || this.keys.has('ArrowDown'))  move.y += 1;
     if (this.keys.has('KeyA') || this.keys.has('ArrowLeft'))  move.x -= 1;
     if (this.keys.has('KeyD') || this.keys.has('ArrowRight')) move.x += 1;
+
+    // Camera azimuth is 45°, so rotate movement input by -π/4 to align screen directions.
+    const rx = move.x * ISO_COS - move.y * ISO_SIN;
+    const ry = move.x * ISO_SIN + move.y * ISO_COS;
+    move.x = rx;
+    move.y = ry;
 
     const frame: InputFrame = { move, castSpell: null, aimTarget: this.mouseWorld };
 
