@@ -1,18 +1,22 @@
 import { GameState, SpellId, SPELL_CONFIG, MAX_HP, MAX_MANA } from '@arena/shared';
+import { Minimap } from './Minimap';
 
-const SPELL_NAMES: Record<number, string> = { 1: 'FB', 2: 'FW', 3: 'MT' };
+const SPELL_NAMES: Record<number, string> = { 1: 'FB', 2: 'FW', 3: 'MT', 4: 'TP' };
 
 export class HUD {
   private el: HTMLElement;
+  private minimap: Minimap;
   private myId = '';
 
   constructor(container: HTMLElement) {
+    this.minimap = new Minimap(container);
+
     this.el = document.createElement('div');
     this.el.innerHTML = `
       <style>
         .hud-panel{position:fixed;bottom:0;left:0;right:0;height:72px;background:rgba(0,0,0,0.85);border-top:2px solid #4a3000;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
-        .orb{width:52px;height:52px;border-radius:50%;position:relative;border:2px solid}
-        .orb-fill{position:absolute;bottom:0;left:0;right:0;border-radius:50%;transition:height .1s}
+        .orb{width:52px;height:52px;border-radius:50%;position:relative;border:2px solid;overflow:hidden}
+        .orb-fill{position:absolute;inset:0;transition:transform .1s}
         .orb-hp{border-color:#aa1111}.orb-hp .orb-fill{background:radial-gradient(circle at 40% 30%,#ff4444,#880000)}
         .orb-mp{border-color:#1133aa}.orb-mp .orb-fill{background:radial-gradient(circle at 40% 30%,#4488ff,#001888)}
         .spells{display:flex;gap:6px}
@@ -29,9 +33,9 @@ export class HUD {
         <div class="enemy-hp-track"><div class="enemy-hp-fill" id="hud-enemy-hp" style="width:100%"></div></div>
       </div>
       <div class="hud-panel">
-        <div class="orb orb-hp"><div class="orb-fill" id="hud-hp" style="height:100%"></div></div>
+        <div class="orb orb-hp"><div class="orb-fill" id="hud-hp" style="transform:translateY(0%)"></div></div>
         <div class="spells" id="hud-spells"></div>
-        <div class="orb orb-mp"><div class="orb-fill" id="hud-mp" style="height:100%"></div></div>
+        <div class="orb orb-mp"><div class="orb-fill" id="hud-mp" style="transform:translateY(0%)"></div></div>
       </div>
     `;
     container.appendChild(this.el);
@@ -40,7 +44,7 @@ export class HUD {
 
   private buildSpellSlots(): void {
     const spells = this.el.querySelector('#hud-spells')!;
-    for (const key of [1, 2, 3]) {
+    for (const key of [1, 2, 3, 4]) {
       const slot = document.createElement('div');
       slot.className = 'spell-slot';
       slot.id = `spell-slot-${key}`;
@@ -51,21 +55,22 @@ export class HUD {
 
   init(myId: string): void { this.myId = myId; }
 
-  update(state: GameState, activeSpell: 1 | 2 | 3): void {
+  update(state: GameState, activeSpell: SpellId): void {
     const me = state.players[this.myId];
     if (!me) return;
 
     // HP / MP orbs
-    (this.el.querySelector('#hud-hp') as HTMLElement).style.height = `${(me.hp / MAX_HP) * 100}%`;
-    (this.el.querySelector('#hud-mp') as HTMLElement).style.height = `${(me.mana / MAX_MANA) * 100}%`;
+    (this.el.querySelector('#hud-hp') as HTMLElement).style.transform = `translateY(${(1 - me.hp / MAX_HP) * 100}%)`;
+    (this.el.querySelector('#hud-mp') as HTMLElement).style.transform = `translateY(${(1 - me.mana / MAX_MANA) * 100}%)`;
 
-    // Spell slots
-    for (const key of [1, 2, 3] as SpellId[]) {
+    // Spell slots (1–4)
+    for (const key of [1, 2, 3, 4] as SpellId[]) {
       const slot = this.el.querySelector(`#spell-slot-${key}`) as HTMLElement;
       slot.classList.toggle('active', key === activeSpell);
       const cd = me.cooldowns[key] ?? 0;
       const maxCd = SPELL_CONFIG[key].cooldownTicks;
-      (this.el.querySelector(`#cd-${key}`) as HTMLElement).style.height = `${(cd / maxCd) * 100}%`;
+      const pct = maxCd > 0 ? (cd / maxCd) * 100 : 0; // avoid division by zero for spell 4
+      (this.el.querySelector(`#cd-${key}`) as HTMLElement).style.height = `${pct}%`;
     }
 
     // Enemy bar
@@ -74,9 +79,21 @@ export class HUD {
       const enemy = state.players[enemyId];
       (this.el.querySelector('#hud-enemy-name') as HTMLElement).textContent = enemy.displayName;
       (this.el.querySelector('#hud-enemy-hp') as HTMLElement).style.width = `${(enemy.hp / MAX_HP) * 100}%`;
+
+      // Minimap
+      this.minimap.update(me, enemy);
+    } else {
+      this.minimap.update(me, undefined);
     }
   }
 
-  show(): void { this.el.style.display = ''; }
-  hide(): void { this.el.style.display = 'none'; }
+  show(): void {
+    this.el.style.display = '';
+    this.minimap.show();
+  }
+
+  hide(): void {
+    this.el.style.display = 'none';
+    this.minimap.hide();
+  }
 }
