@@ -162,18 +162,30 @@ describe('advanceState — teleport cast (spell 4)', () => {
     };
     const next = advanceState(state, inputs);
     expect(next.players['p1'].position).toEqual({ x: 1000, y: 1000 });
-    expect(next.players['p1'].mana).toBe(MAX_MANA - 40);
+    expect(next.players['p1'].mana).toBe(MAX_MANA - SPELL_CONFIG[4].manaCost);
   });
 
   it('clamps teleport target to arena bounds', () => {
     const state = twoPlayerState();
-    const inputs = {
+
+    // Lower-x and upper-y
+    const inputs1 = {
       p1: { move: { x: 0, y: 0 }, castSpell: 4 as const, aimTarget: { x: -500, y: 9999 } },
       p2: { move: { x: 0, y: 0 }, castSpell: null,       aimTarget: { x: 200,  y: 1000 } },
     };
-    const next = advanceState(state, inputs);
-    expect(next.players['p1'].position.x).toBeGreaterThanOrEqual(16); // PLAYER_HALF_SIZE
-    expect(next.players['p1'].position.y).toBeLessThanOrEqual(2000 - 16);
+    const next1 = advanceState(state, inputs1);
+    expect(next1.players['p1'].position.x).toBeGreaterThanOrEqual(16);
+    expect(next1.players['p1'].position.y).toBeLessThanOrEqual(2000 - 16);
+
+    // Upper-x and lower-y
+    const state2 = twoPlayerState();
+    const inputs2 = {
+      p1: { move: { x: 0, y: 0 }, castSpell: 4 as const, aimTarget: { x: 9999, y: -500 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null,       aimTarget: { x: 200,  y: 1000 } },
+    };
+    const next2 = advanceState(state2, inputs2);
+    expect(next2.players['p1'].position.x).toBeLessThanOrEqual(2000 - 16);
+    expect(next2.players['p1'].position.y).toBeGreaterThanOrEqual(16);
   });
 
   it('does not teleport when mana is insufficient', () => {
@@ -186,5 +198,15 @@ describe('advanceState — teleport cast (spell 4)', () => {
     const next = advanceState(state, inputs);
     expect(next.players['p1'].position).toEqual({ x: 200, y: 1000 }); // unchanged spawn
     expect(next.players['p1'].mana).toBe(10 + MANA_REGEN_PER_TICK);  // regen only, no deduction
+  });
+
+  it('does not set a cooldown after a successful teleport', () => {
+    const state = twoPlayerState();
+    const inputs = {
+      p1: { move: { x: 0, y: 0 }, castSpell: 4 as const, aimTarget: { x: 1000, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null,       aimTarget: { x: 200,  y: 1000 } },
+    };
+    const next = advanceState(state, inputs);
+    expect(next.players['p1'].cooldowns[4] ?? 0).toBe(0);
   });
 });
