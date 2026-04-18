@@ -1,9 +1,15 @@
 import * as THREE from 'three';
+import { CameraController } from './CameraController';
+
+const FRUSTUM = 600;
+const INITIAL_CENTER_X = 1000; // center of 2000×2000 arena
+const INITIAL_CENTER_Z = 1000;
 
 export class Scene {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene: THREE.Scene;
   readonly camera: THREE.OrthographicCamera;
+  private cameraController: CameraController;
   private animFrameId = 0;
   private readonly _raycaster = new THREE.Raycaster();
   private readonly _groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -18,16 +24,20 @@ export class Scene {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0a0a12);
 
-    // Isometric camera: orthographic + 45° yaw + 35.26° pitch
+    // Isometric orthographic camera — owned here, position managed by CameraController
     const aspect = window.innerWidth / window.innerHeight;
-    const frustum = 500;
     this.camera = new THREE.OrthographicCamera(
-      -frustum * aspect, frustum * aspect,
-      frustum, -frustum,
-      0.1, 2000,
+      -FRUSTUM * aspect, FRUSTUM * aspect,
+      FRUSTUM, -FRUSTUM,
+      0.1, 3000, // increased far plane for 2000×2000 arena
     );
-    this.camera.position.set(600, 600, 600);
-    this.camera.lookAt(400, 0, 400); // center of arena
+    this.cameraController = new CameraController(
+      this.camera,
+      INITIAL_CENTER_X,
+      INITIAL_CENTER_Z,
+    );
+    // Position camera at arena center for the lobby/loading state
+    this.cameraController.update(INITIAL_CENTER_X, INITIAL_CENTER_Z, 1);
 
     // Ambient + directional light
     this.scene.add(new THREE.AmbientLight(0x444466, 0.8));
@@ -40,15 +50,19 @@ export class Scene {
     this.onResize();
   }
 
+  /** Call each frame with the local player's world position and elapsed time in seconds. */
+  updateCamera(playerX: number, playerZ: number, delta: number): void {
+    this.cameraController.update(playerX, playerZ, delta);
+  }
+
   private onResize = () => {
     const w = window.innerWidth;
     const h = window.innerHeight;
     const aspect = w / h;
-    const frustum = 500;
-    this.camera.left = -frustum * aspect;
-    this.camera.right = frustum * aspect;
-    this.camera.top = frustum;
-    this.camera.bottom = -frustum;
+    this.camera.left = -FRUSTUM * aspect;
+    this.camera.right = FRUSTUM * aspect;
+    this.camera.top = FRUSTUM;
+    this.camera.bottom = -FRUSTUM;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
   };
