@@ -27,6 +27,7 @@ let playerMeshes = new Map<string, CharacterMesh>();
 let spellRenderer: SpellRenderer | null = null;
 let inputHandler: InputHandler | null = null;
 let opponentName = '';
+let handlersRegistered = false;
 
 const PLAYER_COLORS: Record<number, number> = { 0: 0xc8a000, 1: 0xc00030 };
 let myColorIndex = 0;
@@ -53,6 +54,9 @@ const lobby = new LobbyUI(uiOverlay, {
       myId = yourId;
       myColorIndex = 1;
       hud.init(myId);
+      // Set opponent name from existing players
+      const opponentEntry = Object.entries(players).find(([id]) => id !== yourId);
+      if (opponentEntry) opponentName = opponentEntry[1];
       if (Object.keys(players).length >= 2) lobby.showReady();
     });
     setupSocketHandlers(displayName);
@@ -62,6 +66,9 @@ const lobby = new LobbyUI(uiOverlay, {
 });
 
 function setupSocketHandlers(_myDisplayName: string): void {
+  if (handlersRegistered) return;
+  handlersRegistered = true;
+
   socket.onPlayerJoined(({ displayName }) => {
     opponentName = displayName;
     lobby.showReady();
@@ -70,6 +77,11 @@ function setupSocketHandlers(_myDisplayName: string): void {
   socket.onGameReady(() => lobby.showReady());
 
   socket.onGameState((state: GameState) => {
+    if (!spellRenderer) {
+      stateBuffer.clear();
+      startGame();
+      lobby.hide();
+    }
     stateBuffer.push(state);
   });
 
