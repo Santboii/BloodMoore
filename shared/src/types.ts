@@ -80,7 +80,7 @@ export const PILLARS: Pillar[] = [
 export const FIREBALL_SPEED = 400;
 export const FIREBALL_RADIUS = 10; // world units
 
-export const FIREWALL_MAX_LENGTH = 200;
+export const FIREWALL_MAX_LENGTH = 500;
 export const FIREWALL_DURATION_TICKS = 4 * TICK_RATE;   // 240
 export const FIREWALL_DAMAGE_PER_TICK = 40 / TICK_RATE;
 
