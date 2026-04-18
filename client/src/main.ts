@@ -133,8 +133,14 @@ function stopGame(): void {
   stateBuffer.clear();
 }
 
+let lastFrameTime = performance.now();
+
 // Main render loop — runs always
 scene.startRenderLoop(() => {
+  const now = performance.now();
+  const delta = Math.min((now - lastFrameTime) / 1000, 0.1); // cap at 100ms to avoid jumps
+  lastFrameTime = now;
+
   if (!inputHandler || !spellRenderer) return;
 
   const frame = inputHandler.buildInputFrame();
@@ -153,6 +159,12 @@ scene.startRenderLoop(() => {
     const mesh = playerMeshes.get(id)!;
     mesh.setPosition(player.position.x, player.position.y);
     mesh.updateLabel(scene.camera, scene.renderer);
+  }
+
+  // Follow local player with camera
+  const myPlayer = state.players[myId];
+  if (myPlayer) {
+    scene.updateCamera(myPlayer.position.x, myPlayer.position.y, delta);
   }
 
   spellRenderer.update(state);
