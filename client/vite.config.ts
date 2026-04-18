@@ -5,5 +5,10 @@ export default defineConfig({
   resolve: {
     alias: { '@arena/shared': resolve(__dirname, '../shared/src/types.ts') },
   },
-  server: { proxy: { '/socket.io': { target: 'http://localhost:3000', ws: true } } },
+  server: {
+    proxy: {
+      '/rooms': 'http://localhost:3000',
+      '/socket.io': { target: 'http://localhost:3000', ws: true },
+    },
+  },
 });
