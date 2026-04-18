@@ -1,4 +1,4 @@
-import { InputFrame } from '@arena/shared';
+import { InputFrame, SpellId } from '@arena/shared';
 import { Scene } from '../renderer/Scene';
 
 const ISO_ANGLE = -Math.PI / 4;
@@ -7,10 +7,10 @@ const ISO_SIN   =  Math.sin(ISO_ANGLE); // ≈ -0.7071
 
 export class InputHandler {
   private keys = new Set<string>();
-  private activeSpell: 1 | 2 | 3 = 1;
-  private mouseWorld = { x: 400, y: 400 };
+  private activeSpell: SpellId = 1;
+  private mouseWorld = { x: 1000, y: 1000 }; // center of new arena
   private fireWallDragStart: { x: number; y: number } | null = null;
-  private pendingCast: { spell: 1 | 2 | 3; aimTarget: { x: number; y: number }; aimTarget2?: { x: number; y: number } } | null = null;
+  private pendingCast: { spell: SpellId; aimTarget: { x: number; y: number }; aimTarget2?: { x: number; y: number } } | null = null;
 
   constructor(private scene: Scene, private canvas: HTMLElement) {
     window.addEventListener('keydown', this.onKeyDown);
@@ -25,6 +25,7 @@ export class InputHandler {
     if (e.code === 'Digit1') this.activeSpell = 1;
     if (e.code === 'Digit2') this.activeSpell = 2;
     if (e.code === 'Digit3') this.activeSpell = 3;
+    if (e.code === 'Digit4') this.activeSpell = 4;
   };
 
   private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.code); };
@@ -76,7 +77,7 @@ export class InputHandler {
     return frame;
   }
 
-  getActiveSpell(): 1 | 2 | 3 { return this.activeSpell; }
+  getActiveSpell(): SpellId { return this.activeSpell; }
   getFireWallDragStart(): { x: number; y: number } | null { return this.fireWallDragStart; }
   getCurrentMouseWorld(): { x: number; y: number } { return this.mouseWorld; }
 
