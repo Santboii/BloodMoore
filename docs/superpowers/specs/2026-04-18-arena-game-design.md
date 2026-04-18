@@ -69,7 +69,7 @@ Both players play the same class with identical stats.
 - **Damage:** 40 fire damage / second while inside
 - **Mana cost:** 60
 - **Cooldown:** 3s
-- **Pillar interaction:** Wall segments that overlap a pillar are not placed; wall is split if a pillar is in the path
+- **Pillar interaction:** A pillar in the drag path splits the wall into two separate segments; the pillar cell itself is never filled
 
 #### 3 — Meteor
 - **Input:** Press `3` to select, left-click to target a ground location
