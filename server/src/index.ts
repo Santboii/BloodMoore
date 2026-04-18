@@ -31,7 +31,7 @@ io.on('connection', socket => {
   socket.on('join-room', ({ roomId, displayName }: { roomId: string; displayName: string }) => {
     const room = roomManager.getRoom(roomId);
     if (!room) { socket.emit('room-not-found'); return; }
-    if (room.isFull && !room.players.has(socket.id)) { socket.emit('room-full'); return; }
+    if (room.isFull) { socket.emit('room-full'); return; }
 
     room.addPlayer(socket.id, displayName);
     socket.join(roomId);
@@ -58,11 +58,12 @@ io.on('connection', socket => {
     if (room.allReady) {
       room.startDuel();
       const loop = new GameLoop();
-      loops.set(currentRoomId, loop);
+      const roomId = currentRoomId;
+      loops.set(roomId, loop);
       loop.start(room, state => {
-        io.to(currentRoomId!).emit('game-state', state);
-        if ((state as any).phase === 'ended') {
-          io.to(currentRoomId!).emit('duel-ended', { winnerId: (state as any).winner });
+        io.to(roomId).emit('game-state', state);
+        if (state.phase === 'ended') {
+          io.to(roomId).emit('duel-ended', { winnerId: state.winner });
         }
       });
     }
