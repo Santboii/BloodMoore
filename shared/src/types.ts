@@ -96,7 +96,7 @@ export const SPELL_CONFIG: Record<SpellId, { manaCost: number; cooldownTicks: nu
   1: { manaCost: 25,  cooldownTicks: 30  },  // 0.5s
   2: { manaCost: 60,  cooldownTicks: 180 },  // 3s
   3: { manaCost: 100, cooldownTicks: 300 },  // 5s
-  4: { manaCost: 40,  cooldownTicks: 120 },  // 2s — teleport
+  4: { manaCost: 40,  cooldownTicks: 0   },  // teleport — mana-gated, no cooldown timer
 };
 
 // Spawn positions (left and right side, centered vertically)
