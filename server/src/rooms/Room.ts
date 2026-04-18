@@ -11,10 +11,11 @@ export class Room {
 
   constructor(id: string) { this.id = id; }
 
-  get isFull(): boolean { return this.players.size >= 2; }
+  get isFull(): boolean { return this.players.size === 2; }
   get allReady(): boolean { return this.players.size === 2 && [...this.players.values()].every(p => p.ready); }
 
   addPlayer(socketId: string, displayName: string): void {
+    if (this.isFull) return;
     this.players.set(socketId, { socketId, displayName, ready: false });
   }
 
@@ -39,11 +40,13 @@ export class Room {
   }
 
   queueInput(socketId: string, input: InputFrame): void {
+    // Store the input; the last received input is held until overwritten (not cleared each tick).
     this.pendingInputs.set(socketId, input);
   }
 
   tick(): GameState {
     if (!this.state) throw new Error('Room not started');
+    if (this.state.phase === 'ended') return this.state;
     const inputs: Record<string, InputFrame> = {};
     for (const [id] of this.players) {
       inputs[id] = this.pendingInputs.get(id) ?? { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 400, y: 400 } };
