@@ -120,7 +120,6 @@ describe('advanceState — win condition', () => {
 describe('advanceState — fire wall damage', () => {
   it('stacks damage from two overlapping fire walls', () => {
     const state = twoPlayerState();
-    const playerPos = state.players['p1'].position; // { x: 200, y: 1000 }
     const fw1 = spawnFireWall('p2', { x: 180, y: 1000 }, { x: 220, y: 1000 }, 0);
     const fw2 = spawnFireWall('p2', { x: 180, y: 1000 }, { x: 220, y: 1000 }, 0);
     state.fireWalls.push(fw1, fw2);
@@ -161,7 +160,8 @@ describe('advanceState — teleport cast (spell 4)', () => {
       p2: { move: { x: 0, y: 0 }, castSpell: null,       aimTarget: { x: 200,  y: 1000 } },
     };
     const next = advanceState(state, inputs);
-    expect(next.players['p1'].position).toEqual({ x: 1000, y: 1000 });
+    // Position is resolved to avoid pillar collision (pillar at 1000,1000)
+    expect(next.players['p1'].position).toEqual({ x: 956, y: 1000 });
     expect(next.players['p1'].mana).toBe(MAX_MANA - SPELL_CONFIG[4].manaCost);
   });
 
