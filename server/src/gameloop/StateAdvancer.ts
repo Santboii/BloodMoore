@@ -2,7 +2,7 @@ import {
   GameState, PlayerState, InputFrame, Vec2, SpellId,
   SPELL_CONFIG, MAX_HP, MAX_MANA, MANA_REGEN_PER_TICK, FIREWALL_DAMAGE_PER_TICK,
 } from '@arena/shared';
-import { movePlayer } from '../physics/Movement.ts';
+import { movePlayer, clampToArena } from '../physics/Movement.ts';
 import { spawnFireball, advanceFireball, isFireballExpired, fireballHitsPlayer, fireballDamage } from '../spells/Fireball.ts';
 import { spawnFireWall, fireWallDamagesPlayer } from '../spells/FireWall.ts';
 import { spawnMeteor, meteorDetonates, meteorHitsPlayer, meteorDamage } from '../spells/Meteor.ts';
@@ -77,6 +77,8 @@ export function advanceState(state: GameState, inputs: Record<string, InputFrame
       fireWalls = [...fireWalls, spawnFireWall(id, input.aimTarget, input.aimTarget2, tick)];
     } else if (spell === 3) {
       meteors = [...meteors, spawnMeteor(id, input.aimTarget, tick)];
+    } else if (spell === 4) {
+      players[id] = { ...players[id], position: clampToArena(input.aimTarget) };
     }
   }
 

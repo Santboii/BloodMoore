@@ -152,3 +152,39 @@ describe('advanceState — simultaneous death', () => {
     expect(next.winner).toBeNull();
   });
 });
+
+describe('advanceState — teleport cast (spell 4)', () => {
+  it('sets player position to clamped target and deducts 40 mana', () => {
+    const state = twoPlayerState();
+    const inputs = {
+      p1: { move: { x: 0, y: 0 }, castSpell: 4 as const, aimTarget: { x: 1000, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null,       aimTarget: { x: 200,  y: 1000 } },
+    };
+    const next = advanceState(state, inputs);
+    expect(next.players['p1'].position).toEqual({ x: 1000, y: 1000 });
+    expect(next.players['p1'].mana).toBe(MAX_MANA - 40);
+  });
+
+  it('clamps teleport target to arena bounds', () => {
+    const state = twoPlayerState();
+    const inputs = {
+      p1: { move: { x: 0, y: 0 }, castSpell: 4 as const, aimTarget: { x: -500, y: 9999 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null,       aimTarget: { x: 200,  y: 1000 } },
+    };
+    const next = advanceState(state, inputs);
+    expect(next.players['p1'].position.x).toBeGreaterThanOrEqual(16); // PLAYER_HALF_SIZE
+    expect(next.players['p1'].position.y).toBeLessThanOrEqual(2000 - 16);
+  });
+
+  it('does not teleport when mana is insufficient', () => {
+    const state = twoPlayerState();
+    state.players['p1'].mana = 10; // less than 40
+    const inputs = {
+      p1: { move: { x: 0, y: 0 }, castSpell: 4 as const, aimTarget: { x: 1000, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null,       aimTarget: { x: 200,  y: 1000 } },
+    };
+    const next = advanceState(state, inputs);
+    expect(next.players['p1'].position).toEqual({ x: 200, y: 1000 }); // unchanged spawn
+    expect(next.players['p1'].mana).toBe(10 + MANA_REGEN_PER_TICK);  // regen only, no deduction
+  });
+});
