@@ -99,9 +99,9 @@ export function advanceState(state: GameState, inputs: Record<string, InputFrame
   // 4. Fire wall damage
   fireWalls = fireWalls.filter(fw => tick < fw.expiresAt);
   for (const fw of fireWalls) {
-    for (const [pid, player] of Object.entries(players)) {
-      if (fireWallDamagesPlayer(fw, player.position, pid)) {
-        players[pid] = { ...player, hp: Math.max(0, player.hp - FIREWALL_DAMAGE_PER_TICK) };
+    for (const [pid] of Object.entries(players)) {
+      if (fireWallDamagesPlayer(fw, players[pid].position, pid)) {
+        players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - FIREWALL_DAMAGE_PER_TICK) };
       }
     }
   }
@@ -110,9 +110,9 @@ export function advanceState(state: GameState, inputs: Record<string, InputFrame
   const survivingMeteors = [];
   for (const m of meteors) {
     if (meteorDetonates(m, tick)) {
-      for (const [pid, player] of Object.entries(players)) {
-        if (meteorHitsPlayer(m, player.position, pid)) {
-          players[pid] = { ...player, hp: Math.max(0, player.hp - meteorDamage()) };
+      for (const [pid] of Object.entries(players)) {
+        if (meteorHitsPlayer(m, players[pid].position, pid)) {
+          players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - meteorDamage()) };
         }
       }
     } else {
@@ -124,12 +124,13 @@ export function advanceState(state: GameState, inputs: Record<string, InputFrame
   let phase = state.phase;
   let winner = state.winner;
   if (phase !== 'ended') {
-    for (const [pid, player] of Object.entries(players)) {
-      if (player.hp <= 0) {
-        phase = 'ended';
-        winner = Object.keys(players).find(id => id !== pid) ?? null;
-        break;
-      }
+    const deadIds = Object.keys(players).filter(id => players[id].hp <= 0);
+    if (deadIds.length >= 2) {
+      phase = 'ended';
+      winner = null; // draw
+    } else if (deadIds.length === 1) {
+      phase = 'ended';
+      winner = Object.keys(players).find(id => id !== deadIds[0]) ?? null;
     }
   }
 
