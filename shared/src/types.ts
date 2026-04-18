@@ -1,5 +1,11 @@
 export type Vec2 = { x: number; y: number };
 
+export type SpellId = 1 | 2 | 3;
+
+export type ProjectileType = 'fireball';
+
+export type Segment = { x1: number; y1: number; x2: number; y2: number };
+
 export type PlayerState = {
   id: string;
   displayName: string;
@@ -7,14 +13,14 @@ export type PlayerState = {
   hp: number;
   mana: number;
   facing: number;
-  castingSpell: number | null;
-  cooldowns: Record<number, number>; // spell key -> ticks remaining
+  castingSpell: SpellId | null;
+  cooldowns: Partial<Record<SpellId, number>>; // spell key -> ticks remaining
 };
 
 export type Projectile = {
   id: string;
   ownerId: string;
-  type: 'fireball';
+  type: ProjectileType;
   position: Vec2;
   velocity: Vec2;
 };
@@ -22,7 +28,7 @@ export type Projectile = {
 export type FireWallState = {
   id: string;
   ownerId: string;
-  segments: { x1: number; y1: number; x2: number; y2: number }[];
+  segments: Segment[];
   expiresAt: number; // server tick
 };
 
@@ -45,7 +51,7 @@ export type GameState = {
 
 export type InputFrame = {
   move: Vec2;
-  castSpell: 1 | 2 | 3 | null;
+  castSpell: SpellId | null;
   aimTarget: Vec2;
   aimTarget2?: Vec2; // drag end for Fire Wall
 };
@@ -72,16 +78,16 @@ export const PILLARS: Pillar[] = [
 ];
 
 export const FIREBALL_SPEED = 400;
-export const FIREBALL_RADIUS = 10;
+export const FIREBALL_RADIUS = 10; // world units
 
 export const FIREWALL_MAX_LENGTH = 200;
 export const FIREWALL_DURATION_TICKS = 4 * TICK_RATE;   // 240
 export const FIREWALL_DAMAGE_PER_TICK = 40 / TICK_RATE;
 
 export const METEOR_DELAY_TICKS = Math.round(1.5 * TICK_RATE); // 90
-export const METEOR_AOE_RADIUS = 60;
+export const METEOR_AOE_RADIUS = 60; // world units
 
-export const SPELL_CONFIG: Record<number, { manaCost: number; cooldownTicks: number }> = {
+export const SPELL_CONFIG: Record<SpellId, { manaCost: number; cooldownTicks: number }> = {
   1: { manaCost: 25,  cooldownTicks: 30  },  // 0.5s
   2: { manaCost: 60,  cooldownTicks: 180 },  // 3s
   3: { manaCost: 100, cooldownTicks: 300 },  // 5s
