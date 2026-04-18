@@ -12,7 +12,7 @@ export class StateBuffer {
 
   /** Returns interpolated state for rendering. Returns null if not enough data. */
   getInterpolated(): GameState | null {
-    if (this.snapshots.length < 2) return this.snapshots[0] ?? null;
+    if (this.snapshots.length < 2) return null;
     const targetIndex = Math.max(0, this.snapshots.length - 1 - this.renderDelay);
     const a = this.snapshots[Math.max(0, targetIndex - 1)];
     const b = this.snapshots[targetIndex];

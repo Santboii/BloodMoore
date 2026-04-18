@@ -22,15 +22,18 @@ export class SocketClient {
   rematch(): void { this.socket.emit('rematch'); }
 
   onRoomJoined(cb: (payload: RoomJoinedPayload) => void): void {
-    this.socket.on('room-joined', cb);
+    this.socket.once('room-joined', cb);
   }
   onPlayerJoined(cb: (p: { id: string; displayName: string }) => void): void {
-    this.socket.on('player-joined', cb);
+    this.socket.once('player-joined', cb);
   }
-  onGameReady(cb: () => void): void { this.socket.on('game-ready', cb); }
-  onGameState(cb: (state: GameState) => void): void { this.socket.on('game-state', cb); }
-  onDuelEnded(cb: (payload: { winnerId: string }) => void): void { this.socket.on('duel-ended', cb); }
-  onRematchReady(cb: () => void): void { this.socket.on('rematch-ready', cb); }
-  onOpponentDisconnected(cb: () => void): void { this.socket.on('opponent-disconnected', cb); }
-  onRoomNotFound(cb: () => void): void { this.socket.on('room-not-found', cb); }
+  onGameReady(cb: () => void): void { this.socket.once('game-ready', cb); }
+  onGameState(cb: (state: GameState) => void): void {
+    this.socket.off('game-state');
+    this.socket.on('game-state', cb);
+  }
+  onDuelEnded(cb: (payload: { winnerId: string }) => void): void { this.socket.once('duel-ended', cb); }
+  onRematchReady(cb: () => void): void { this.socket.once('rematch-ready', cb); }
+  onOpponentDisconnected(cb: () => void): void { this.socket.once('opponent-disconnected', cb); }
+  onRoomNotFound(cb: () => void): void { this.socket.once('room-not-found', cb); }
 }

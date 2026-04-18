@@ -5,6 +5,10 @@ export type LobbyCallbacks = {
   onRematch: () => void;
 };
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 export class LobbyUI {
   private el: HTMLElement;
 
@@ -36,7 +40,7 @@ export class LobbyUI {
     this.render(`
       <div style="text-align:center;max-width:320px">
         <h1 style="color:#ffaa00;margin-bottom:8px">JOIN DUEL</h1>
-        <p style="color:#888;margin-bottom:24px">Room: <code style="color:#aaa">${roomId}</code></p>
+        <p style="color:#888;margin-bottom:24px">Room: <code style="color:#aaa">${escapeHtml(roomId)}</code></p>
         <input id="name-input" placeholder="Your name" style="width:100%;padding:10px;background:#1a1a2e;border:1px solid #555;color:#fff;border-radius:4px;margin-bottom:12px;font-size:14px">
         <button id="join-btn" style="width:100%;padding:12px;background:#005080;border:none;color:#fff;border-radius:4px;cursor:pointer;font-size:15px;font-weight:bold">Join Room</button>
       </div>
@@ -52,7 +56,7 @@ export class LobbyUI {
       <div style="text-align:center;max-width:360px">
         <h2 style="color:#ffaa00;margin-bottom:12px">Waiting for opponent...</h2>
         <p style="color:#888;margin-bottom:8px">Share this link:</p>
-        <div style="background:#1a1a2e;padding:10px;border-radius:4px;word-break:break-all;color:#adf;font-size:12px;margin-bottom:16px">${shareUrl}</div>
+        <div style="background:#1a1a2e;padding:10px;border-radius:4px;word-break:break-all;color:#adf;font-size:12px;margin-bottom:16px">${escapeHtml(shareUrl)}</div>
         <button id="copy-btn" style="padding:8px 20px;background:#333;border:1px solid #555;color:#fff;border-radius:4px;cursor:pointer">Copy Link</button>
       </div>
     `);
@@ -70,10 +74,11 @@ export class LobbyUI {
   }
 
   showResult(won: boolean, opponentName: string): void {
+    const escapedName = escapeHtml(opponentName);
     this.render(`
       <div style="text-align:center">
         <h1 style="color:${won ? '#ffaa00' : '#cc2222'};margin-bottom:8px">${won ? 'VICTORY' : 'DEFEAT'}</h1>
-        <p style="color:#888;margin-bottom:24px">${won ? `You defeated ${opponentName}` : `${opponentName} defeated you`}</p>
+        <p style="color:#888;margin-bottom:24px">${won ? `You defeated ${escapedName}` : `${escapedName} defeated you`}</p>
         <button id="rematch-btn" style="padding:12px 32px;background:#c85000;border:none;color:#fff;border-radius:4px;cursor:pointer;font-size:15px;font-weight:bold">Rematch</button>
       </div>
     `);
