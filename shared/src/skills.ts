@@ -18,9 +18,9 @@ export type SkillNode = {
   description: string;
 };
 
-type Gate = { requiresAll?: NodeId[]; requiresAny?: NodeId[] };
+export type Gate = { requiresAll?: NodeId[]; requiresAny?: NodeId[] };
 
-const GATES: Partial<Record<NodeId, Gate>> = {
+export const GATES: Partial<Record<NodeId, Gate>> = {
   'fire.volatile_ember':  { requiresAll: ['fire.fireball'] },
   'fire.seeking_flame':   { requiresAll: ['fire.fireball'] },
   'fire.hellfire':        { requiresAll: ['fire.fireball'] },
