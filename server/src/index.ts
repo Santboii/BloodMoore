@@ -29,6 +29,15 @@ app.get('/rooms/:id', (req, res) => {
   res.json({ exists: !!room, full: room?.isFull ?? false });
 });
 
+app.post('/paused-match', async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer /, '');
+  if (!token) { res.status(401).json({ roomId: null }); return; }
+  const result = await loadSkillsForToken(token);
+  if (!result.ok) { res.status(401).json({ roomId: null }); return; }
+  const room = roomManager.findPausedMatchForUser(result.userId);
+  res.json({ roomId: room?.id ?? null });
+});
+
 io.on('connection', socket => {
   let currentRoomId: string | null = null;
 
@@ -239,7 +248,15 @@ io.on('connection', socket => {
     }
 
     // Send current state to reconnecting client
-    socket.emit('rejoin-accepted');
+    const remappedPlayer = room.players.get(socket.id);
+    const playersMap = Object.fromEntries(
+      [...room.players.entries()].map(([id, p]) => [id, p.displayName])
+    );
+    socket.emit('rejoin-accepted', {
+      yourId: socket.id,
+      colorIndex: remappedPlayer?.colorIndex ?? 0,
+      players: playersMap,
+    });
     if (room.state) {
       socket.emit('game-state', room.state);
     }

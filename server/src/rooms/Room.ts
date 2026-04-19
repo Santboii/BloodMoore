@@ -1,7 +1,7 @@
 import { GameState, InputFrame, SPAWN_POSITIONS, NodeId } from '@arena/shared';
 import { makeInitialState, advanceState, PlayerInit } from '../gameloop/StateAdvancer.ts';
 
-export type RoomPlayer = { socketId: string; displayName: string; ready: boolean };
+export type RoomPlayer = { socketId: string; displayName: string; ready: boolean; colorIndex: number };
 
 export type PauseState = {
   disconnectedUserIds: Set<string>;
@@ -26,7 +26,8 @@ export class Room {
   addPlayer(socketId: string, displayName: string): void {
     if (this.isFull) return;
     if (this.players.size === 0) this.creatorName = displayName;
-    this.players.set(socketId, { socketId, displayName, ready: false });
+    const colorIndex = this.players.size;
+    this.players.set(socketId, { socketId, displayName, ready: false, colorIndex });
   }
 
   removePlayer(socketId: string): void {

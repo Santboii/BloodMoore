@@ -69,10 +69,61 @@ const auth = new AuthUI(uiOverlay, {
       ownedSpells = spellsFromNodes(nodeSet);
       hud.buildSpellSlots(ownedSpells);
     }
+
+    const pausedRoomId = await checkPausedMatch(token);
+    if (pausedRoomId) {
+      await attemptAutoRejoin(pausedRoomId, username, profile?.skill_points_available);
+      return;
+    }
+
     lobby.show();
     lobby.showHome(username, profile?.skill_points_available);
   },
 });
+
+async function checkPausedMatch(token: string): Promise<string | null> {
+  try {
+    const res = await fetch('/paused-match', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const { roomId } = await res.json();
+    return roomId;
+  } catch {
+    return null;
+  }
+}
+
+async function attemptAutoRejoin(
+  roomId: string,
+  username: string,
+  skillPoints: number | undefined
+): Promise<void> {
+  try { await assetsReady; } catch { return; }
+
+  myDisplayName = username;
+  currentRoomId = roomId;
+  setupSocketHandlers(username);
+  socket.connect();
+
+  socket.onRejoinAccepted(payload => {
+    myId = payload.yourId;
+    myColorIndex = payload.colorIndex;
+    currentPlayers = payload.players;
+    const opponentEntry = Object.entries(payload.players).find(([id]) => id !== payload.yourId);
+    if (opponentEntry) opponentName = opponentEntry[1];
+    hud.init(myId);
+    lobby.hide();
+  });
+  socket.onRejoinFailed(() => {
+    currentRoomId = '';
+    myId = '';
+    lobby.show();
+    lobby.showHome(username, skillPoints);
+  });
+  socket.rejoinRoom(roomId, accessToken);
+}
 
 const lobby = new LobbyUI(uiOverlay, {
   onCreateRoom: async (displayName) => {
@@ -298,14 +349,12 @@ scene.startRenderLoop(() => {
 });
 
 // Async init — load assets then build scene
-(async () => {
-  try {
-    assets = await AssetLoader.load();
-  } catch (err) {
-    console.error('Asset load failed:', err);
-    return;
-  }
+const assetsReady: Promise<void> = (async () => {
+  assets = await AssetLoader.load();
   const arena = new Arena(assets.textures);
   arena.addToScene(scene.scene);
   scene.initPostProcessing();
-})();
+})().catch(err => {
+  console.error('Asset load failed:', err);
+  throw err;
+});

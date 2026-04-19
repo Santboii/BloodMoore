@@ -70,7 +70,9 @@ export class SocketClient {
     this.socket.off('game-resumed');
     this.socket.on('game-resumed', cb);
   }
-  onRejoinAccepted(cb: () => void): void {
+  onRejoinAccepted(
+    cb: (payload: { yourId: string; colorIndex: number; players: Record<string, string> }) => void
+  ): void {
     this.socket.once('rejoin-accepted', cb);
   }
   onRejoinFailed(cb: (payload: { reason: string }) => void): void {
