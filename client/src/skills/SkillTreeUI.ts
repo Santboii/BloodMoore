@@ -47,6 +47,7 @@ const UTIL_POSITIONS: Partial<Record<NodeId, NodePos>> = {
 };
 
 const STYLES = `
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 .st-overlay{position:fixed;inset:0;background:#0a0704;overflow-y:auto;z-index:150;display:none;}
 .st-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 80% 80% at 50% 50%,transparent 40%,rgba(0,0,0,0.85) 100%);pointer-events:none;z-index:151;}
 .st-ui{position:relative;z-index:152;display:flex;flex-direction:column;align-items:center;padding:32px 24px;font-family:'Crimson Text',Georgia,serif;color:#c8a870;}
@@ -56,11 +57,14 @@ const STYLES = `
 .st-points b{color:#90a870;}
 .st-btn{padding:7px 14px;background:#1a1208;border:1px solid #3a2710;color:#c8a870;border-radius:2px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.1em;transition:all 0.15s;}
 .st-btn:hover{border-color:#c8860a;color:#ddb84a;}
+.st-header-buttons{display:flex;gap:10px;}
 .st-tree-label{font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;color:#d86030;text-align:center;margin-bottom:8px;}
 .st-tree-container{position:relative;width:100%;max-width:600px;height:600px;}
 .st-tree-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
 .st-node{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transform:translateX(-50%);}
 .st-node-circle{border-radius:50%;display:flex;align-items:center;justify-content:center;transition:filter 0.14s,transform 0.14s;}
+.st-node-circle:hover{transform:scale(1.08);}
+.st-node[data-state="locked"] .st-node-circle:hover{transform:none;}
 .st-node-spell{width:58px;height:58px;}
 .st-node-mod{width:44px;height:44px;}
 .st-node-owned .st-node-circle{border:2.5px solid #e86020;background:radial-gradient(circle at 38% 38%,#2a0c00,#0e0400);}
@@ -74,13 +78,16 @@ const STYLES = `
 .st-node-locked .st-node-icon{color:#555;}
 .st-node-locked .st-node-name{color:#555;}
 .st-node-name{font-size:0.56rem;text-align:center;max-width:72px;margin-top:4px;line-height:1.2;font-family:'Cinzel',serif;}
-.st-node-cost{font-size:0.48rem;color:#4a3620;margin-top:2px;letter-spacing:0.08em;}
+.st-node-cost{font-size:0.48rem;margin-top:2px;letter-spacing:0.08em;}
+.st-node-owned .st-node-cost{color:#d86040;}
+.st-node-purchasable .st-node-cost{color:#c8860a;}
+.st-node-locked .st-node-cost{color:#444;}
 .st-divider{display:flex;align-items:center;gap:12px;width:100%;max-width:600px;margin:24px 0;}
 .st-divider-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,#5a3a10,transparent);}
 .st-divider-gem{width:10px;height:10px;background:#c8860a;transform:rotate(45deg);box-shadow:0 0 8px rgba(200,130,10,0.6);}
 .st-util-label{font-size:0.58rem;letter-spacing:0.22em;color:#5a4420;text-transform:uppercase;text-align:center;margin-bottom:12px;}
 .st-util-container{position:relative;width:100%;max-width:600px;height:80px;}
-.st-util-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+.st-util-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
 .st-tooltip{display:none;position:fixed;background:#1a1208;border:1px solid #3a2710;padding:10px 14px;border-radius:2px;max-width:220px;font-size:0.68rem;line-height:1.5;color:#c8a870;z-index:300;pointer-events:none;}
 `;
 
@@ -129,7 +136,7 @@ export class SkillTreeUI {
             <div class="st-title">Sorceress Skills</div>
             <div class="st-points">Points Available: <b>${pts}</b></div>
           </div>
-          <div style="display:flex;gap:10px">
+          <div class="st-header-buttons">
             <button id="st-respec" class="st-btn">Reset Skills</button>
             <button id="st-close" class="st-btn">Back to Lobby</button>
           </div>
@@ -138,15 +145,15 @@ export class SkillTreeUI {
         <div class="st-tree-label">Fire</div>
         <div class="st-tree-container">
           <svg id="st-fire-svg" class="st-tree-svg"></svg>
-          ${fireNodes.map(n => this.renderNode(n, pts, FIRE_POSITIONS[n.id]!)).join('')}
+          ${fireNodes.map(n => this.renderNode(n, pts, FIRE_POSITIONS[n.id])).join('')}
         </div>
 
         <div class="st-divider"><div class="st-divider-line"></div><div class="st-divider-gem"></div><div class="st-divider-line"></div></div>
 
         <div class="st-util-label">Shared Utility</div>
         <div class="st-util-container">
-          <svg id="st-util-svg" class="st-util-svg"></svg>
-          ${utilNodes.map(n => this.renderNode(n, pts, UTIL_POSITIONS[n.id]!)).join('')}
+          <svg id="st-util-svg" class="st-util-svg" overflow="visible"></svg>
+          ${utilNodes.map(n => this.renderNode(n, pts, UTIL_POSITIONS[n.id])).join('')}
         </div>
 
         <div id="st-tooltip" class="st-tooltip"></div>
@@ -161,7 +168,8 @@ export class SkillTreeUI {
     this.attachNodeListeners(pts);
   }
 
-  private renderNode(node: SkillNode, pts: number, pos: NodePos): string {
+  private renderNode(node: SkillNode, pts: number, pos: NodePos | undefined): string {
+    if (!pos) return '';
     const isOwned = this.owned.has(node.id);
     const canBuy = !isOwned && canUnlock(node.id, this.owned) && pts >= node.cost;
     const stateClass = isOwned ? 'st-node-owned' : (canBuy ? 'st-node-purchasable' : 'st-node-locked');
