@@ -43,7 +43,7 @@ Primary key: `(user_id, node_id)`.
 - **Starting points:** 5 (granted on account creation)
 - **Per match played:** +1
 - **Per match won:** +2 (in addition to the +1 above, total +3 per win)
-- **No refunds:** Points spent are permanent for now
+- **Respec:** Free and unlimited. Players can reset all unlocks at any time, returning all spent points to `skill_points_available`. A "Reset Skills" button lives on the skill tree panel.
 - Points are credited by the server at match end, written directly to Supabase
 
 ---
@@ -166,7 +166,7 @@ if (skills.has('fire.seeking_flame'))   fireballConfig.homing = true;
 if (skills.has('fire.pyroclasm'))       fireballConfig.splitOnImpact = 3;
 ```
 
-Modifiers stack in tier order (earlier tiers applied first). Hellfire and Pyroclasm are mutually exclusive in effect — both can be unlocked but Hellfire's speed reduction applies before the split check.
+Modifiers stack in tier order (earlier tiers applied first). Hellfire and Pyroclasm can both be unlocked — combined effect is a massive slow fireball that splits into 3 on impact. Hellfire's size/speed changes apply first, then the split check fires on impact.
 
 ### Spell Availability
 
@@ -220,7 +220,7 @@ Since most new spells (Lightning Bolt, Chain Lightning, Nova, Frost Bolt, Ice Sp
 
 ---
 
-## Open Questions
+## Resolved Decisions
 
-- Should Hellfire and Pyroclasm be mutually exclusive at the unlock level (only one can be purchased), or both purchasable with combined behavior?
-- Should there be a "respec" feature eventually, even if not in v1?
+- **Hellfire + Pyroclasm:** Both purchasable; combined effect is a massive slow splitting fireball.
+- **Respec:** Free and unlimited via a "Reset Skills" button on the skill tree panel.
