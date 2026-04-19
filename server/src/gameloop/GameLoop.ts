@@ -37,8 +37,9 @@ export class GameLoop {
   private startInterval(): void {
     this.intervalId = setInterval(() => {
       const state = this.room!.tick();
+      const broadcast = this.broadcast!;
       if (state.phase === 'ended') this.stop();
-      this.broadcast!(state);
+      broadcast(state);
     }, 1000 / 60);
   }
 }
