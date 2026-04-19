@@ -36,7 +36,7 @@ const GATES: Partial<Record<NodeId, Gate>> = {
   'utility.phantom_step':  { requiresAll: ['utility.teleport'], requiresAny: ['utility.phase_shift', 'utility.ethereal_form'] },
 };
 
-export function canUnlock(id: NodeId, owned: Set<string>): boolean {
+export function canUnlock(id: NodeId, owned: Set<NodeId>): boolean {
   const gate = GATES[id];
   if (!gate) return true;
   if (gate.requiresAll && !gate.requiresAll.every(r => owned.has(r))) return false;
@@ -60,8 +60,4 @@ export const SKILL_NODES: SkillNode[] = [
   { id: 'utility.phase_shift',  name: 'Phase Shift',     tree: 'utility', tier: 2, cost: 2, isSpell: false, description: '+40% teleport range.' },
   { id: 'utility.ethereal_form',name: 'Ethereal Form',   tree: 'utility', tier: 2, cost: 2, isSpell: false, description: '0.5s invulnerability after teleporting.' },
   { id: 'utility.phantom_step', name: 'Phantom Step',    tree: 'utility', tier: 3, cost: 3, isSpell: false, description: 'Next cast is instant within 2s of teleporting.' },
-];
-
-export const SPELL_NODES: NodeId[] = [
-  'fire.fireball', 'fire.fire_wall', 'fire.meteor', 'utility.teleport',
 ];
