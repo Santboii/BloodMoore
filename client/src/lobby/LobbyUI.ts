@@ -120,6 +120,12 @@ const STYLES = `
 .bm-disc-sub{font-family:'Cinzel',serif;font-size:12px;color:#5a3010;letter-spacing:2px;}
 .bm-btn-logout{background:transparent;border:1px solid rgba(80,40,10,0.6);color:#5a3a10;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;padding:6px 12px;cursor:pointer;border-radius:1px;text-transform:uppercase;transition:all 0.15s;}
 .bm-btn-logout:hover{border-color:#cc2222;color:#cc6644;}
+.bm-pause-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Cinzel',serif;}
+.bm-pause-title{font-size:32px;color:#cc2222;letter-spacing:6px;text-transform:uppercase;margin-bottom:12px;text-shadow:0 0 20px rgba(200,30,30,0.6);}
+.bm-pause-countdown{font-size:72px;color:#e8c060;letter-spacing:4px;margin-bottom:24px;text-shadow:0 0 30px rgba(200,160,60,0.4);}
+.bm-pause-sub{font-size:13px;color:#5a4010;letter-spacing:2px;margin-bottom:32px;}
+.bm-btn-leave{padding:12px 32px;background:linear-gradient(180deg,#3a0800 0%,#1a0400 100%);color:#cc6644;border:1px solid rgba(140,40,0,0.7);font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:1px;transition:all 0.15s;}
+.bm-btn-leave:hover{background:linear-gradient(180deg,#5a0c00 0%,#2a0600 100%);border-color:#cc2222;}
 `;
 
 const BG_HTML = `
@@ -187,6 +193,8 @@ export class LobbyUI {
   private el: HTMLElement;
   private ui: HTMLElement;
   private pollTimer: number | null = null;
+  private pauseOverlay: HTMLElement | null = null;
+  private pauseCountdownTimer: number | null = null;
 
   constructor(container: HTMLElement, private cb: LobbyCallbacks) {
     const style = document.createElement('style');
@@ -339,6 +347,45 @@ export class LobbyUI {
 
   hide(): void { this.stopPolling(); this.el.style.display = 'none'; }
   show(): void { this.el.style.display = ''; }
+
+  showPauseOverlay(countdown: number, onLeave: () => void): void {
+    this.hidePauseOverlay();
+
+    this.pauseOverlay = document.createElement('div');
+    this.pauseOverlay.className = 'bm-pause-overlay';
+    this.pauseOverlay.innerHTML = `
+      <div class="bm-pause-title">Opponent Disconnected</div>
+      <div class="bm-pause-countdown" id="bm-pause-timer">${countdown}</div>
+      <div class="bm-pause-sub">Waiting for opponent to rejoin...</div>
+      <button class="bm-btn-leave" id="bm-pause-leave">Leave Match</button>`;
+
+    this.el.parentElement!.appendChild(this.pauseOverlay);
+
+    this.pauseOverlay.querySelector('#bm-pause-leave')!
+      .addEventListener('click', onLeave);
+
+    let remaining = countdown;
+    const timerEl = this.pauseOverlay.querySelector('#bm-pause-timer')!;
+    this.pauseCountdownTimer = window.setInterval(() => {
+      remaining--;
+      timerEl.textContent = String(Math.max(0, remaining));
+      if (remaining <= 0 && this.pauseCountdownTimer !== null) {
+        clearInterval(this.pauseCountdownTimer);
+        this.pauseCountdownTimer = null;
+      }
+    }, 1000);
+  }
+
+  hidePauseOverlay(): void {
+    if (this.pauseCountdownTimer !== null) {
+      clearInterval(this.pauseCountdownTimer);
+      this.pauseCountdownTimer = null;
+    }
+    if (this.pauseOverlay) {
+      this.pauseOverlay.remove();
+      this.pauseOverlay = null;
+    }
+  }
 
   private stopPolling(): void {
     if (this.pollTimer !== null) { clearInterval(this.pollTimer); this.pollTimer = null; }
