@@ -90,7 +90,7 @@ export function advanceState(state: GameState, inputs: Record<string, InputFrame
     let hit = false;
     for (const [pid, player] of Object.entries(players)) {
       if (fireballHitsPlayer(moved, player.position, pid)) {
-        players[pid] = { ...player, hp: Math.max(0, player.hp - fireballDamage()) };
+        players[pid] = { ...player, hp: Math.max(0, player.hp - fireballDamage(moved)) };
         hit = true;
         break;
       }

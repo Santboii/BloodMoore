@@ -14,7 +14,9 @@ export type PlayerState = {
   mana: number;
   facing: number;
   castingSpell: SpellId | null;
-  cooldowns: Partial<Record<SpellId, number>>; // spell key -> ticks remaining
+  cooldowns: Partial<Record<SpellId, number>>;
+  invulnUntil?: number;
+  phantomStepUntil?: number;
 };
 
 export type Projectile = {
@@ -23,6 +25,11 @@ export type Projectile = {
   type: ProjectileType;
   position: Vec2;
   velocity: Vec2;
+  radius?: number;
+  damageMin?: number;
+  damageMax?: number;
+  homing?: boolean;
+  split?: number;
 };
 
 export type FireWallState = {
@@ -36,7 +43,9 @@ export type MeteorState = {
   id: string;
   ownerId: string;
   target: Vec2;
-  strikeAt: number; // server tick
+  strikeAt: number;
+  hidden?: boolean;
+  moltenImpact?: boolean;
 };
 
 export type GameState = {
@@ -98,6 +107,8 @@ export const SPELL_CONFIG: Record<SpellId, { manaCost: number; cooldownTicks: nu
   3: { manaCost: 100, cooldownTicks: 300 },  // 5s
   4: { manaCost: 40,  cooldownTicks: 0   },  // teleport — mana-gated, no cooldown timer
 };
+
+export const TELEPORT_MAX_RANGE = 600;
 
 // Spawn positions (left and right side, centered vertically)
 export const SPAWN_POSITIONS: Vec2[] = [

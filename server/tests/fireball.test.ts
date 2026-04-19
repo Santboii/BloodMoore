@@ -73,3 +73,18 @@ describe('fireballDamage', () => {
     }
   });
 });
+
+import { spawnFireball } from '../src/spells/Fireball.ts';
+
+describe('spawnFireball with config overrides', () => {
+  it('uses overridden speed when provided', () => {
+    const fb = spawnFireball('p1', { x: 100, y: 400 }, { x: 700, y: 400 }, { speed: 200 });
+    const spd = Math.sqrt(fb.velocity.x ** 2 + fb.velocity.y ** 2);
+    expect(spd).toBeCloseTo(200, 0);
+  });
+
+  it('stores radius override on the projectile', () => {
+    const fb = spawnFireball('p1', { x: 100, y: 400 }, { x: 700, y: 400 }, { radius: 30 });
+    expect(fb.radius).toBe(30);
+  });
+});
