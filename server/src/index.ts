@@ -57,6 +57,7 @@ io.on('connection', socket => {
     if (!room) return;
     const player = room.players.get(socket.id);
     if (!player) return;
+    if (room.state !== null) return;
     const sanitized = String(text).trim().slice(0, 80);
     if (!sanitized) return;
     io.to(currentRoomId).emit('chat-message', {
@@ -70,6 +71,8 @@ io.on('connection', socket => {
     if (!currentRoomId) return;
     const room = roomManager.getRoom(currentRoomId);
     if (!room) return;
+    const readyPlayer = room.players.get(socket.id);
+    if (!readyPlayer || readyPlayer.ready) return;
     room.setReady(socket.id);
 
     io.to(currentRoomId).emit('player-ready-ack', { playerId: socket.id });
