@@ -190,7 +190,6 @@ function startGame(): void {
   inputHandler?.dispose();
 
   spellRenderer = new SpellRenderer(scene.scene);
-  spellRenderer.setMyId(myId);
   inputHandler = new InputHandler(scene, scene.renderer.domElement);
 
   hud.buildSpellSlots(ownedSpells);
