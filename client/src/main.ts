@@ -33,7 +33,7 @@ let spellRenderer: SpellRenderer | null = null;
 let inputHandler: InputHandler | null = null;
 let opponentName = '';
 let handlersRegistered = false;
-let pendingRejoin: { roomId: string; userId: string } | null = null;
+let pendingRejoin: { roomId: string } | null = null;
 
 let accessToken = '';
 let ownedSpells = new Set<SpellId>();
@@ -207,21 +207,14 @@ function setupSocketHandlers(_myDisplayName: string): void {
 
   socket.onDisconnect(() => {
     if (spellRenderer && currentRoomId) {
-      pendingRejoin = { roomId: currentRoomId, userId: myId };
+      pendingRejoin = { roomId: currentRoomId };
     }
   });
 
-  socket.onRoomNotFound(() => {
-    lobby.showHome();
-  });
-}
-
-socket.onReconnect(() => {
-  if (pendingRejoin) {
-    socket.rejoinRoom(pendingRejoin.roomId, accessToken);
+  socket.onReconnect(() => {
+    if (!pendingRejoin) return;
     socket.onRejoinAccepted(() => {
       pendingRejoin = null;
-      // Game state will arrive via the existing onGameState handler
     });
     socket.onRejoinFailed(() => {
       pendingRejoin = null;
@@ -229,8 +222,13 @@ socket.onReconnect(() => {
       lobby.showDisconnected();
       lobby.show();
     });
-  }
-});
+    socket.rejoinRoom(pendingRejoin.roomId, accessToken);
+  });
+
+  socket.onRoomNotFound(() => {
+    lobby.showHome();
+  });
+}
 
 function startGame(): void {
   for (const mesh of playerMeshes.values()) mesh.dispose(uiOverlay);
