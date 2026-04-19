@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import { RoomManager } from './rooms/RoomManager.ts';
 import { GameLoop } from './gameloop/GameLoop.ts';
 import { InputFrame } from '@arena/shared';
+import { loadSkillsForToken, creditMatchResult } from './skills/loadSkills.ts';
 
 const app = express();
 const httpServer = createServer(app);
@@ -13,13 +14,11 @@ const loops: Map<string, GameLoop> = new Map();
 
 app.use(express.json());
 
-// Create room endpoint
 app.post('/rooms', (_req, res) => {
   const room = roomManager.createRoom();
   res.json({ roomId: room.id });
 });
 
-// Room exists check
 app.get('/rooms/:id', (req, res) => {
   const room = roomManager.getRoom(req.params.id);
   res.json({ exists: !!room, full: room?.isFull ?? false });
@@ -28,12 +27,25 @@ app.get('/rooms/:id', (req, res) => {
 io.on('connection', socket => {
   let currentRoomId: string | null = null;
 
-  socket.on('join-room', ({ roomId, displayName }: { roomId: string; displayName: string }) => {
+  socket.on('join-room', async ({ roomId, displayName, accessToken }: {
+    roomId: string;
+    displayName: string;
+    accessToken?: string;
+  }) => {
     const room = roomManager.getRoom(roomId);
     if (!room) { socket.emit('room-not-found'); return; }
     if (room.isFull) { socket.emit('room-full'); return; }
 
     room.addPlayer(socket.id, displayName);
+
+    if (accessToken) {
+      const result = await loadSkillsForToken(accessToken);
+      if (result.ok) {
+        room.skillSets.set(socket.id, result.skills);
+        room.userIds.set(socket.id, result.userId);
+      }
+    }
+
     socket.join(roomId);
     currentRoomId = roomId;
 
@@ -43,10 +55,7 @@ io.on('connection', socket => {
       players: Object.fromEntries([...room.players.entries()].map(([id, p]) => [id, p.displayName])),
     });
     socket.to(roomId).emit('player-joined', { id: socket.id, displayName });
-
-    if (room.isFull) {
-      io.to(roomId).emit('game-ready');
-    }
+    if (room.isFull) io.to(roomId).emit('game-ready');
   });
 
   socket.on('player-ready', () => {
@@ -54,16 +63,19 @@ io.on('connection', socket => {
     const room = roomManager.getRoom(currentRoomId);
     if (!room) return;
     room.setReady(socket.id);
-
     if (room.allReady) {
       room.startDuel();
       const loop = new GameLoop();
       const roomId = currentRoomId;
       loops.set(roomId, loop);
-      loop.start(room, state => {
+      loop.start(room, async state => {
         io.to(roomId).emit('game-state', state);
         if (state.phase === 'ended') {
           io.to(roomId).emit('duel-ended', { winnerId: state.winner });
+          for (const [socketId, userId] of room.userIds.entries()) {
+            const won = state.winner === socketId;
+            creditMatchResult(userId, won).catch(console.error);
+          }
         }
       });
     }
