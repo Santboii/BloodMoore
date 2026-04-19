@@ -13,13 +13,15 @@ const loops: Map<string, GameLoop> = new Map();
 
 app.use(express.json());
 
-// Create room endpoint
 app.post('/rooms', (_req, res) => {
   const room = roomManager.createRoom();
   res.json({ roomId: room.id });
 });
 
-// Room exists check
+app.get('/rooms', (_req, res) => {
+  res.json({ rooms: roomManager.listOpenRooms() });
+});
+
 app.get('/rooms/:id', (req, res) => {
   const room = roomManager.getRoom(req.params.id);
   res.json({ exists: !!room, full: room?.isFull ?? false });
@@ -49,11 +51,31 @@ io.on('connection', socket => {
     }
   });
 
+  socket.on('chat-message', ({ text }: { text: string }) => {
+    if (!currentRoomId) return;
+    const room = roomManager.getRoom(currentRoomId);
+    if (!room) return;
+    const player = room.players.get(socket.id);
+    if (!player) return;
+    if (room.state !== null) return;
+    const sanitized = String(text).trim().slice(0, 80);
+    if (!sanitized) return;
+    io.to(currentRoomId).emit('chat-message', {
+      senderId: socket.id,
+      displayName: player.displayName,
+      text: sanitized,
+    });
+  });
+
   socket.on('player-ready', () => {
     if (!currentRoomId) return;
     const room = roomManager.getRoom(currentRoomId);
     if (!room) return;
+    const readyPlayer = room.players.get(socket.id);
+    if (!readyPlayer || readyPlayer.ready) return;
     room.setReady(socket.id);
+
+    io.to(currentRoomId).emit('player-ready-ack', { playerId: socket.id });
 
     if (room.allReady) {
       room.startDuel();

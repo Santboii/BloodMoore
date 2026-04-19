@@ -5,6 +5,7 @@ export type RoomPlayer = { socketId: string; displayName: string; ready: boolean
 
 export class Room {
   readonly id: string;
+  creatorName: string = '';
   players: Map<string, RoomPlayer> = new Map(); // socketId -> RoomPlayer
   state: GameState | null = null;
   private pendingInputs: Map<string, InputFrame> = new Map();
@@ -16,6 +17,7 @@ export class Room {
 
   addPlayer(socketId: string, displayName: string): void {
     if (this.isFull) return;
+    if (this.players.size === 0) this.creatorName = displayName;
     this.players.set(socketId, { socketId, displayName, ready: false });
   }
 
