@@ -3,6 +3,7 @@ export type LobbyCallbacks = {
   onJoinRoom: (roomId: string, displayName: string) => void;
   onReady: () => void;
   onRematch: () => void;
+  onOpenSkills: () => void;
 };
 
 function escapeHtml(s: string): string {
@@ -19,17 +20,26 @@ export class LobbyUI {
     this.showHome();
   }
 
-  showHome(): void {
+  showHome(username?: string, points?: number): void {
     const roomId = new URLSearchParams(window.location.search).get('room');
     if (roomId) { this.showJoin(roomId); return; }
+    const pointsHtml = points !== undefined
+      ? `<p style="color:#ffcc44;margin-bottom:8px;font-size:13px">Skill Points: ${points}</p>`
+      : '';
+    const greetingHtml = username
+      ? `<p style="color:#aaa;margin-bottom:4px;font-size:13px">Welcome, ${escapeHtml(username)}</p>`
+      : '';
     this.render(`
       <div style="text-align:center;max-width:320px">
         <h1 style="color:#ffaa00;margin-bottom:8px">ARENA</h1>
-        <p style="color:#888;margin-bottom:24px">Fire Sorceress Duels</p>
-        <input id="name-input" placeholder="Your name" style="width:100%;padding:10px;background:#1a1a2e;border:1px solid #555;color:#fff;border-radius:4px;margin-bottom:12px;font-size:14px">
+        <p style="color:#888;margin-bottom:8px">Fire Sorceress Duels</p>
+        ${greetingHtml}${pointsHtml}
+        <button id="skills-btn" style="width:100%;padding:10px;background:#1a1a2e;border:1px solid #555;color:#adf;border-radius:4px;cursor:pointer;font-size:14px;margin-bottom:16px">Skills</button>
+        <input id="name-input" placeholder="Your name" value="${username ? escapeHtml(username) : ''}" style="width:100%;padding:10px;background:#1a1a2e;border:1px solid #555;color:#fff;border-radius:4px;margin-bottom:12px;font-size:14px">
         <button id="create-btn" style="width:100%;padding:12px;background:#c85000;border:none;color:#fff;border-radius:4px;cursor:pointer;font-size:15px;font-weight:bold">Create Room</button>
       </div>
     `);
+    this.el.querySelector('#skills-btn')!.addEventListener('click', () => this.cb.onOpenSkills());
     this.el.querySelector('#create-btn')!.addEventListener('click', () => {
       const name = (this.el.querySelector('#name-input') as HTMLInputElement).value.trim();
       if (name) this.cb.onCreateRoom(name);
