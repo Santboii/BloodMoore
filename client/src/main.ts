@@ -50,6 +50,7 @@ const lobby = new LobbyUI(uiOverlay, {
       myColorIndex = 0;
       hud.init(myId);
       lobby.showWaiting(roomId, displayName);
+      lobby.appendSystemMessage('You have entered the lobby');
     });
     setupSocketHandlers(displayName);
   },
@@ -66,7 +67,12 @@ const lobby = new LobbyUI(uiOverlay, {
       // Set opponent name from existing players
       const opponentEntry = Object.entries(players).find(([id]) => id !== yourId);
       if (opponentEntry) opponentName = opponentEntry[1];
-      if (Object.keys(players).length >= 2) lobby.showReady(roomId, players, yourId);
+      if (Object.keys(players).length >= 2) {
+        lobby.showReady(roomId, players, yourId);
+      } else {
+        lobby.showWaiting(roomId, displayName);
+      }
+      lobby.appendSystemMessage('You have entered the lobby');
     });
     setupSocketHandlers(displayName);
   },
@@ -79,10 +85,15 @@ function setupSocketHandlers(_myDisplayName: string): void {
   if (handlersRegistered) return;
   handlersRegistered = true;
 
+  socket.onChatMessage(({ senderId, displayName, text }) =>
+    lobby.appendChatMessage(senderId, displayName, text)
+  );
+
   socket.onPlayerJoined(({ id, displayName }) => {
     opponentName = displayName;
     currentPlayers[id] = displayName;
     lobby.showReady(currentRoomId, currentPlayers, myId);
+    lobby.appendSystemMessage(`${displayName} has entered the lobby`);
   });
 
   socket.onGameReady(() => lobby.showReady(currentRoomId, currentPlayers, myId));
