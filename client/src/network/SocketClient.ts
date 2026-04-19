@@ -77,7 +77,7 @@ export class SocketClient {
     this.socket.once('rejoin-failed', cb);
   }
   onReconnect(cb: () => void): void {
-    this.socket.io.on('reconnect', cb);
+    this.socket.on('connect', cb);
   }
   onDisconnect(cb: () => void): void {
     this.socket.on('disconnect', cb);
