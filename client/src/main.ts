@@ -116,6 +116,20 @@ const lobby = new LobbyUI(uiOverlay, {
   onReady: () => socket.ready(),
   onRematch: () => socket.rematch(),
   onSendChatMessage: (text) => socket.sendChatMessage(text),
+  onLogout: async () => {
+    try { await supabase.auth.signOut(); } catch { /* proceed anyway */ }
+    stopGame();
+    accessToken = '';
+    handlersRegistered = false;
+    myId = '';
+    currentRoomId = '';
+    currentPlayers = {};
+    opponentName = '';
+    ownedSpells = new Set();
+    socket.disconnect();
+    lobby.hide();
+    auth.show();
+  },
   onOpenSkills: async () => {
     lobby.hide();
     await skillTreeUI.show();

@@ -9,6 +9,7 @@ export type LobbyCallbacks = {
   onRematch: () => void;
   onSendChatMessage: (text: string) => void;
   onOpenSkills: () => void;
+  onLogout: () => void;
 };
 
 interface OpenRoom {
@@ -117,6 +118,8 @@ const STYLES = `
 .bm-disc-panel{text-align:center;max-width:360px;}
 .bm-disc-title{font-family:'Cinzel',serif;font-size:28px;color:#cc2222;letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;}
 .bm-disc-sub{font-family:'Cinzel',serif;font-size:12px;color:#5a3010;letter-spacing:2px;}
+.bm-btn-logout{background:transparent;border:1px solid rgba(80,40,10,0.6);color:#5a3a10;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;padding:6px 12px;cursor:pointer;border-radius:1px;text-transform:uppercase;transition:all 0.15s;}
+.bm-btn-logout:hover{border-color:#cc2222;color:#cc6644;}
 `;
 
 const BG_HTML = `
@@ -211,6 +214,7 @@ export class LobbyUI {
            ${username ? `<span style="color:#8a7040">Welcome, <b style="color:#d4a840">${escapeHtml(username)}</b></span>` : ''}
            ${points !== undefined ? `<span style="color:#7a5a20">Skill Points: <b style="color:#ffcc66">${points}</b></span>` : ''}
            <button id="bm-skills" class="bm-btn-blue" style="padding:6px 14px">✦ Skills</button>
+           <button id="bm-logout" class="bm-btn-logout">Sign Out</button>
          </div>`
       : '';
     const nameValue = username ? escapeHtml(username) : '';
@@ -250,6 +254,9 @@ export class LobbyUI {
 
     const skillsBtn = this.ui.querySelector('#bm-skills');
     if (skillsBtn) skillsBtn.addEventListener('click', () => this.cb.onOpenSkills());
+
+    const logoutBtn = this.ui.querySelector('#bm-logout');
+    if (logoutBtn) logoutBtn.addEventListener('click', () => this.cb.onLogout());
 
     this.ui.querySelector('#bm-create')!.addEventListener('click', () => {
       const name = (this.ui.querySelector('#bm-name') as HTMLInputElement).value.trim();
@@ -330,7 +337,7 @@ export class LobbyUI {
     msgs.scrollTop = msgs.scrollHeight;
   }
 
-  hide(): void { this.el.style.display = 'none'; }
+  hide(): void { this.stopPolling(); this.el.style.display = 'none'; }
   show(): void { this.el.style.display = ''; }
 
   private stopPolling(): void {
