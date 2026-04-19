@@ -203,8 +203,7 @@ function startGame(): void {
   spellRenderer?.dispose();
   inputHandler?.dispose();
 
-  spellRenderer = new SpellRenderer(scene.scene);
-  spellRenderer.setMyId(myId);
+  spellRenderer = new SpellRenderer(scene.scene, myId);
   inputHandler = new InputHandler(scene, scene.renderer.domElement);
 
   hud.buildSpellSlots(ownedSpells);
