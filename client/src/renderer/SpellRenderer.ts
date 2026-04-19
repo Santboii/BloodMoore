@@ -13,7 +13,7 @@ export class SpellRenderer {
   private clock = new THREE.Clock();
   private elapsedTime = 0;
 
-  constructor(private scene: THREE.Scene) {
+  constructor(private scene: THREE.Scene, private myId: string) {
     this.fireParticles = new FireParticles(scene);
   }
 
@@ -134,6 +134,9 @@ export class SpellRenderer {
       }
 
       const entry = this.meteors.get(meteor.id)!;
+      const visible = !meteor.hidden || meteor.ownerId === this.myId;
+      entry.ring.visible = visible;
+      entry.rock.visible = visible;
       const t = Math.max(0, Math.min(1, 1 - (meteor.strikeAt - state.tick) / METEOR_DELAY_TICKS));
 
       // Animate ring: shrink + pulse faster as strike approaches
