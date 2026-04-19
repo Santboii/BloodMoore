@@ -7,7 +7,10 @@ import { SocketClient } from './network/SocketClient';
 import { InputHandler } from './input/InputHandler';
 import { HUD } from './hud/HUD';
 import { LobbyUI } from './lobby/LobbyUI';
-import { GameState } from '@arena/shared';
+import { AuthUI } from './auth/AuthUI';
+import { SkillTreeUI } from './skills/SkillTreeUI';
+import { supabase, fetchProfile } from './supabase';
+import { GameState, NodeId, SpellId } from '@arena/shared';
 import { AssetLoader } from './renderer/AssetLoader';
 import type { LoadedAssets } from './renderer/AssetLoader';
 
@@ -31,11 +34,44 @@ let inputHandler: InputHandler | null = null;
 let opponentName = '';
 let handlersRegistered = false;
 
+let accessToken = '';
+let ownedSpells = new Set<SpellId>();
+
+function spellsFromNodes(nodes: Set<NodeId>): Set<SpellId> {
+  const map: [NodeId, SpellId][] = [
+    ['fire.fireball', 1], ['fire.fire_wall', 2], ['fire.meteor', 3], ['utility.teleport', 4],
+  ];
+  const result = new Set<SpellId>();
+  for (const [nodeId, spellId] of map) {
+    if (nodes.has(nodeId)) result.add(spellId);
+  }
+  return result;
+}
+
 const PLAYER_COLORS: Record<number, number> = { 0: 0xc8a000, 1: 0xc00030 };
 let myColorIndex = 0;
 let assets: LoadedAssets;
 
 let myDisplayName = '';
+
+const skillTreeUI = new SkillTreeUI(uiOverlay);
+
+const auth = new AuthUI(uiOverlay, {
+  onAuthed: async (username, token) => {
+    accessToken = token;
+    auth.hide();
+    const profile = await fetchProfile();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.from('skill_unlocks').select('node_id').eq('user_id', user.id);
+      const nodeSet = new Set<NodeId>((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
+      ownedSpells = spellsFromNodes(nodeSet);
+      hud.buildSpellSlots(ownedSpells);
+    }
+    lobby.show();
+    lobby.showHome(username, profile?.skill_points_available);
+  },
+});
 
 const lobby = new LobbyUI(uiOverlay, {
   onCreateRoom: async (displayName) => {
@@ -43,7 +79,7 @@ const lobby = new LobbyUI(uiOverlay, {
     const res = await fetch('/rooms', { method: 'POST' });
     const { roomId } = await res.json();
     socket.connect();
-    socket.joinRoom(roomId, displayName);
+    socket.joinRoom(roomId, displayName, accessToken);
     socket.onRoomJoined(({ yourId }) => {
       myId = yourId;
       currentRoomId = roomId;
@@ -58,7 +94,7 @@ const lobby = new LobbyUI(uiOverlay, {
   onJoinRoom: (roomId, displayName) => {
     myDisplayName = displayName;
     socket.connect();
-    socket.joinRoom(roomId, displayName);
+    socket.joinRoom(roomId, displayName, accessToken);
     socket.onRoomJoined(({ yourId, players }) => {
       myId = yourId;
       currentRoomId = roomId;
@@ -80,7 +116,22 @@ const lobby = new LobbyUI(uiOverlay, {
   onReady: () => socket.ready(),
   onRematch: () => socket.rematch(),
   onSendChatMessage: (text) => socket.sendChatMessage(text),
+  onOpenSkills: async () => {
+    lobby.hide();
+    await skillTreeUI.show();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.from('skill_unlocks').select('node_id').eq('user_id', user.id);
+      const nodeSet = new Set<NodeId>((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
+      ownedSpells = spellsFromNodes(nodeSet);
+      hud.buildSpellSlots(ownedSpells);
+    }
+    const profile = await fetchProfile();
+    lobby.show();
+    lobby.showHome(undefined, profile?.skill_points_available);
+  },
 });
+lobby.hide();
 
 function setupSocketHandlers(_myDisplayName: string): void {
   if (handlersRegistered) return;
@@ -139,8 +190,10 @@ function startGame(): void {
   inputHandler?.dispose();
 
   spellRenderer = new SpellRenderer(scene.scene);
+  spellRenderer.setMyId(myId);
   inputHandler = new InputHandler(scene, scene.renderer.domElement);
 
+  hud.buildSpellSlots(ownedSpells);
   hud.show();
   lobby.hide();
 }

@@ -1,5 +1,3 @@
-// client/src/lobby/LobbyUI.ts  — full file
-
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -10,6 +8,7 @@ export type LobbyCallbacks = {
   onReady: () => void;
   onRematch: () => void;
   onSendChatMessage: (text: string) => void;
+  onOpenSkills: () => void;
 };
 
 interface OpenRoom {
@@ -203,18 +202,28 @@ export class LobbyUI {
     this.showHome();
   }
 
-  showHome(): void {
+  showHome(username?: string, points?: number): void {
     this.stopPolling();
     const prefilledCode = new URLSearchParams(window.location.search).get('room') ?? '';
+    const hasProfile = username !== undefined || points !== undefined;
+    const profileBarHtml = hasProfile
+      ? `<div style="display:flex;justify-content:center;align-items:center;gap:20px;margin:-14px 0 18px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase">
+           ${username ? `<span style="color:#8a7040">Welcome, <b style="color:#d4a840">${escapeHtml(username)}</b></span>` : ''}
+           ${points !== undefined ? `<span style="color:#7a5a20">Skill Points: <b style="color:#ffcc66">${points}</b></span>` : ''}
+           <button id="bm-skills" class="bm-btn-blue" style="padding:6px 14px">✦ Skills</button>
+         </div>`
+      : '';
+    const nameValue = username ? escapeHtml(username) : '';
     this.ui.innerHTML = `
       <div class="bm-title">Blood Moor</div>
       <div class="bm-subtitle">Enter the Arena · Choose Your Fate</div>
+      ${profileBarHtml}
       <div class="bm-divider"><div class="bm-divider-line"></div><div class="bm-divider-gem"></div><div class="bm-divider-line"></div></div>
       <div class="bm-layout">
         <div class="bm-panel bm-panel-left">
           <div class="bm-ptitle">Challenger</div>
           <div class="bm-label">Display Name</div>
-          <input id="bm-name" class="bm-input" type="text" placeholder="Enter your name..." maxlength="20">
+          <input id="bm-name" class="bm-input" type="text" placeholder="Enter your name..." maxlength="20" value="${nameValue}">
           <div class="bm-label">Game Mode</div>
           <div class="bm-mode-grid">
             <div class="bm-mode active"><span class="bm-mode-label">1v1</span><span class="bm-mode-desc">Duel · 2 players</span></div>
@@ -238,6 +247,9 @@ export class LobbyUI {
           <div id="bm-rooms"></div>
         </div>
       </div>`;
+
+    const skillsBtn = this.ui.querySelector('#bm-skills');
+    if (skillsBtn) skillsBtn.addEventListener('click', () => this.cb.onOpenSkills());
 
     this.ui.querySelector('#bm-create')!.addEventListener('click', () => {
       const name = (this.ui.querySelector('#bm-name') as HTMLInputElement).value.trim();

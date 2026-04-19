@@ -15,8 +15,8 @@ export class SocketClient {
   connect(): void { this.socket.connect(); }
   disconnect(): void { this.socket.disconnect(); }
 
-  joinRoom(roomId: string, displayName: string): void {
-    this.socket.emit('join-room', { roomId, displayName });
+  joinRoom(roomId: string, displayName: string, accessToken?: string): void {
+    this.socket.emit('join-room', { roomId, displayName, accessToken });
   }
 
   ready(): void { this.socket.emit('player-ready'); }

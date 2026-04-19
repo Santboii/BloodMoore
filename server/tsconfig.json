@@ -4,9 +4,10 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
-    "outDir": "dist",
-    "rootDir": "src",
-    "paths": { "@arena/shared": ["../shared/src/types.ts"] }
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "paths": { "@arena/shared": ["../shared/src/index.ts"] }
   },
-  "include": ["src", "tests"]
+  "include": ["src"]
 }

@@ -10,7 +10,6 @@ export class HUD {
 
   constructor(container: HTMLElement) {
     this.minimap = new Minimap(container);
-
     this.el = document.createElement('div');
     this.el.innerHTML = `
       <style>
@@ -39,12 +38,15 @@ export class HUD {
       </div>
     `;
     container.appendChild(this.el);
-    this.buildSpellSlots();
   }
 
-  private buildSpellSlots(): void {
+  init(myId: string): void { this.myId = myId; }
+
+  buildSpellSlots(ownedSpells: Set<SpellId>): void {
     const spells = this.el.querySelector('#hud-spells')!;
-    for (const key of [1, 2, 3, 4]) {
+    spells.innerHTML = '';
+    for (const key of [1, 2, 3, 4] as SpellId[]) {
+      if (!ownedSpells.has(key)) continue;
       const slot = document.createElement('div');
       slot.className = 'spell-slot';
       slot.id = `spell-slot-${key}`;
@@ -53,47 +55,34 @@ export class HUD {
     }
   }
 
-  init(myId: string): void { this.myId = myId; }
-
   update(state: GameState, activeSpell: SpellId): void {
     const me = state.players[this.myId];
     if (!me) return;
 
-    // HP / MP orbs
     (this.el.querySelector('#hud-hp') as HTMLElement).style.transform = `translateY(${(1 - me.hp / MAX_HP) * 100}%)`;
     (this.el.querySelector('#hud-mp') as HTMLElement).style.transform = `translateY(${(1 - me.mana / MAX_MANA) * 100}%)`;
 
-    // Spell slots (1–4)
     for (const key of [1, 2, 3, 4] as SpellId[]) {
-      const slot = this.el.querySelector(`#spell-slot-${key}`) as HTMLElement;
+      const slot = this.el.querySelector(`#spell-slot-${key}`) as HTMLElement | null;
+      if (!slot) continue;
       slot.classList.toggle('active', key === activeSpell);
       const cd = me.cooldowns[key] ?? 0;
       const maxCd = SPELL_CONFIG[key].cooldownTicks;
-      const pct = maxCd > 0 ? (cd / maxCd) * 100 : 0; // avoid division by zero for spell 4
+      const pct = maxCd > 0 ? (cd / maxCd) * 100 : 0;
       (this.el.querySelector(`#cd-${key}`) as HTMLElement).style.height = `${pct}%`;
     }
 
-    // Enemy bar
     const enemyId = Object.keys(state.players).find(id => id !== this.myId);
     if (enemyId) {
       const enemy = state.players[enemyId];
       (this.el.querySelector('#hud-enemy-name') as HTMLElement).textContent = enemy.displayName;
       (this.el.querySelector('#hud-enemy-hp') as HTMLElement).style.width = `${(enemy.hp / MAX_HP) * 100}%`;
-
-      // Minimap
       this.minimap.update(me, enemy);
     } else {
       this.minimap.update(me, undefined);
     }
   }
 
-  show(): void {
-    this.el.style.display = '';
-    this.minimap.show();
-  }
-
-  hide(): void {
-    this.el.style.display = 'none';
-    this.minimap.hide();
-  }
+  show(): void { this.el.style.display = ''; this.minimap.show(); }
+  hide(): void { this.el.style.display = 'none'; this.minimap.hide(); }
 }

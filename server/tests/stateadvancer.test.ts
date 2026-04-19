@@ -210,3 +210,65 @@ describe('advanceState — teleport cast (spell 4)', () => {
     expect(next.players['p1'].cooldowns[4] ?? 0).toBe(0);
   });
 });
+
+import type { NodeId } from '@arena/shared';
+
+describe('advanceState — skill modifiers', () => {
+  it('fireball with Volatile Ember has larger radius (hits from further away)', () => {
+    const state = twoPlayerState();
+    const skills: Record<string, Set<NodeId>> = {
+      p1: new Set(['fire.fireball', 'fire.volatile_ember']),
+      p2: new Set(['fire.fireball']),
+    };
+    // Normal radius is 10, Volatile Ember makes it 13 — place fireball 11 units from p2
+    state.projectiles.push({
+      id: 'fb_test',
+      ownerId: 'p1',
+      type: 'fireball',
+      position: { x: 1811, y: 1000 },
+      velocity: { x: 400, y: 0 },
+      radius: 13,
+    });
+    const inputs = {
+      p1: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200,  y: 1000 } },
+    };
+    const next = advanceState(state, inputs, skills);
+    expect(next.players['p2'].hp).toBeLessThan(500);
+  });
+
+  it('casting fireball when fire.fireball not in skills does nothing', () => {
+    const state = twoPlayerState();
+    const skills: Record<string, Set<NodeId>> = {
+      p1: new Set(['utility.teleport']),
+      p2: new Set(['fire.fireball']),
+    };
+    const inputs = {
+      p1: { move: { x: 0, y: 0 }, castSpell: 1 as const, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
+    };
+    const next = advanceState(state, inputs, skills);
+    expect(next.projectiles).toHaveLength(0);
+  });
+
+  it('Ethereal Form: player is invuln for 30 ticks after teleporting', () => {
+    const state = twoPlayerState();
+    const skills: Record<string, Set<NodeId>> = {
+      p1: new Set(['utility.teleport', 'utility.ethereal_form']),
+      p2: new Set(['fire.fireball']),
+    };
+    state.projectiles.push({
+      id: 'fb_test',
+      ownerId: 'p2',
+      type: 'fireball',
+      position: { x: 1001, y: 1000 },
+      velocity: { x: 400, y: 0 },
+    });
+    const inputs = {
+      p1: { move: { x: 0, y: 0 }, castSpell: 4 as const, aimTarget: { x: 1000, y: 400 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
+    };
+    const next = advanceState(state, inputs, skills);
+    expect(next.players['p1'].hp).toBe(500);
+  });
+});

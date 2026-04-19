@@ -42,13 +42,13 @@
 - Create: `server/.env.example`
 - Create: `client/.env.example`
 
-- [ ] **Step 1: Create a Supabase project**
+- [x] **Step 1: Create a Supabase project**
 
 Go to https://supabase.com → New project. Save the **Project URL** and two keys:
 - `anon` (public) key
 - `service_role` (secret) key
 
-- [ ] **Step 2: Run this SQL in the Supabase SQL editor**
+- [x] **Step 2: Run this SQL in the Supabase SQL editor**
 
 ```sql
 -- profiles: one row per auth user
@@ -105,7 +105,7 @@ create policy "Users can delete own unlocks" on public.skill_unlocks
 -- Service role bypasses RLS (used by server)
 ```
 
-- [ ] **Step 3: Create env files**
+- [x] **Step 3: Create env files**
 
 `server/.env`:
 ```
@@ -119,18 +119,18 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-- [ ] **Step 4: Install Supabase SDK**
+- [x] **Step 4: Install Supabase SDK**
 
 ```bash
 cd server && npm install @supabase/supabase-js
 cd ../client && npm install @supabase/supabase-js
 ```
 
-- [ ] **Step 5: Add .env to .gitignore**
+- [x] **Step 5: Add .env to .gitignore**
 
 Check `/Users/danielgalvez/coding/arena-game/.gitignore` — add `*.env` if not already present (`.env.example` files are safe to commit).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add server/.env.example client/.env.example server/package.json client/package.json server/package-lock.json client/package-lock.json
@@ -145,7 +145,7 @@ git commit -m "feat: add Supabase SDK and env templates for skill tree auth"
 - Create: `shared/src/skills.ts`
 - Modify: `shared/src/index.ts` (re-export)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `server/tests/skills.test.ts`:
 
@@ -198,14 +198,14 @@ describe('canUnlock', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 ```bash
 cd server && npm test -- tests/skills.test.ts
 ```
 Expected: FAIL — `Cannot find module '@arena/shared'` exports for `canUnlock`/`SKILL_NODES`.
 
-- [ ] **Step 3: Create `shared/src/skills.ts`**
+- [x] **Step 3: Create `shared/src/skills.ts`**
 
 ```ts
 export type NodeId =
@@ -279,21 +279,21 @@ export const SPELL_NODES: NodeId[] = [
 ];
 ```
 
-- [ ] **Step 4: Re-export from `shared/src/index.ts`**
+- [x] **Step 4: Re-export from `shared/src/index.ts`**
 
 Open `shared/src/index.ts` and add:
 ```ts
 export * from './skills.ts';
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd server && npm test -- tests/skills.test.ts
 ```
 Expected: All 8 tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add shared/src/skills.ts shared/src/index.ts server/tests/skills.test.ts
@@ -307,7 +307,7 @@ git commit -m "feat: add NodeId types, SKILL_NODES, canUnlock gate logic to shar
 **Files:**
 - Modify: `shared/src/types.ts`
 
-- [ ] **Step 1: Write failing tests for extended types**
+- [x] **Step 1: Write failing tests for extended types**
 
 Add to `server/tests/fireball.test.ts`:
 
@@ -328,14 +328,14 @@ describe('spawnFireball with config overrides', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 ```bash
 cd server && npm test -- tests/fireball.test.ts
 ```
 Expected: FAIL — `spawnFireball` doesn't accept 4th arg.
 
-- [ ] **Step 3: Extend `Projectile` type in `shared/src/types.ts`**
+- [x] **Step 3: Extend `Projectile` type in `shared/src/types.ts`**
 
 Replace the `Projectile` type (lines 20–27) with:
 
@@ -388,7 +388,7 @@ Add constant at bottom of file:
 export const TELEPORT_MAX_RANGE = 600; // Phase Shift increases this by 40%
 ```
 
-- [ ] **Step 4: Update `server/src/spells/Fireball.ts`**
+- [x] **Step 4: Update `server/src/spells/Fireball.ts`**
 
 ```ts
 import { Projectile, Vec2, FIREBALL_SPEED, FIREBALL_RADIUS, PLAYER_HALF_SIZE, ARENA_SIZE, DELTA } from '@arena/shared';
@@ -477,14 +477,14 @@ export function fireballDamage(p: Projectile): number {
 }
 ```
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 ```bash
 cd server && npm test
 ```
 Expected: All existing tests pass + new config override tests pass. Note: `fireballDamage()` now requires a `Projectile` argument — the stateadvancer test that calls it indirectly via `advanceState` will still pass since we update `StateAdvancer` in Task 5.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add shared/src/types.ts server/src/spells/Fireball.ts server/tests/fireball.test.ts
@@ -499,7 +499,7 @@ git commit -m "feat: extend Projectile/PlayerState/MeteorState with skill modifi
 - Create: `server/src/skills/SpellModifiers.ts`
 - Add tests to: `server/tests/skills.test.ts`
 
-- [ ] **Step 1: Add failing tests**
+- [x] **Step 1: Add failing tests**
 
 Append to `server/tests/skills.test.ts`:
 
@@ -555,14 +555,14 @@ describe('buildSpellModifiers', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 ```bash
 cd server && npm test -- tests/skills.test.ts
 ```
 Expected: FAIL — `buildSpellModifiers` not found.
 
-- [ ] **Step 3: Create `server/src/skills/SpellModifiers.ts`**
+- [x] **Step 3: Create `server/src/skills/SpellModifiers.ts`**
 
 ```ts
 import {
@@ -644,14 +644,14 @@ export function buildSpellModifiers(skills: Set<string>): SpellModifiers {
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```bash
 cd server && npm test -- tests/skills.test.ts
 ```
 Expected: All tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add server/src/skills/SpellModifiers.ts server/tests/skills.test.ts
@@ -667,7 +667,7 @@ git commit -m "feat: add buildSpellModifiers — derives per-player spell config
 - Modify: `server/src/spells/FireWall.ts`
 - Modify: `server/src/spells/Meteor.ts`
 
-- [ ] **Step 1: Add failing tests**
+- [x] **Step 1: Add failing tests**
 
 Append to `server/tests/stateadvancer.test.ts`:
 
@@ -737,14 +737,14 @@ describe('advanceState — skill modifiers', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 ```bash
 cd server && npm test -- tests/stateadvancer.test.ts
 ```
 Expected: FAIL — `advanceState` doesn't accept 3rd arg.
 
-- [ ] **Step 3: Update `server/src/spells/FireWall.ts`**
+- [x] **Step 3: Update `server/src/spells/FireWall.ts`**
 
 Read the current FireWall.ts first, then update `spawnFireWall` to accept multipliers:
 
@@ -793,7 +793,7 @@ export function fireWallDamagesPlayer(fw: FireWallState, playerPos: Vec2, player
 }
 ```
 
-- [ ] **Step 4: Update `server/src/spells/Meteor.ts`**
+- [x] **Step 4: Update `server/src/spells/Meteor.ts`**
 
 Read current Meteor.ts, then update to accept `hidden`/`moltenImpact` flags:
 
@@ -835,7 +835,7 @@ export function meteorDamage(): number {
 }
 ```
 
-- [ ] **Step 5: Rewrite `server/src/gameloop/StateAdvancer.ts`**
+- [x] **Step 5: Rewrite `server/src/gameloop/StateAdvancer.ts`**
 
 ```ts
 import {
@@ -1076,14 +1076,14 @@ function deepCopyPlayers(players: Record<string, PlayerState>): Record<string, P
 }
 ```
 
-- [ ] **Step 6: Run all server tests**
+- [x] **Step 6: Run all server tests**
 
 ```bash
 cd server && npm test
 ```
 Expected: All tests pass. Note: existing `stateadvancer.test.ts` tests call `advanceState(state, inputs)` — the new optional 3rd param defaults to `{}` so they continue working.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add server/src/gameloop/StateAdvancer.ts server/src/spells/FireWall.ts server/src/spells/Meteor.ts
@@ -1098,7 +1098,7 @@ git commit -m "feat: wire skill modifiers into StateAdvancer — fireball, firew
 - Create: `server/src/supabase.ts`
 - Create: `server/src/skills/loadSkills.ts`
 
-- [ ] **Step 1: Create `server/src/supabase.ts`**
+- [x] **Step 1: Create `server/src/supabase.ts`**
 
 ```ts
 import { createClient } from '@supabase/supabase-js';
@@ -1113,7 +1113,7 @@ export const supabase = createClient(url, key, {
 });
 ```
 
-- [ ] **Step 2: Create `server/src/skills/loadSkills.ts`**
+- [x] **Step 2: Create `server/src/skills/loadSkills.ts`**
 
 ```ts
 import { supabase } from '../supabase.ts';
@@ -1148,7 +1148,7 @@ export async function creditMatchResult(
 }
 ```
 
-- [ ] **Step 3: Add the RPC function to Supabase**
+- [x] **Step 3: Add the RPC function to Supabase**
 
 Run this SQL in the Supabase SQL editor:
 
@@ -1169,7 +1169,7 @@ end;
 $$;
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add server/src/supabase.ts server/src/skills/loadSkills.ts
@@ -1184,7 +1184,7 @@ git commit -m "feat: server Supabase client + loadSkillsForToken + creditMatchRe
 - Modify: `server/src/rooms/Room.ts`
 - Modify: `server/src/index.ts`
 
-- [ ] **Step 1: Update `server/src/rooms/Room.ts`**
+- [x] **Step 1: Update `server/src/rooms/Room.ts`**
 
 Add `skillSets` map and `userIds` map; pass skill sets into `advanceState`:
 
@@ -1258,7 +1258,7 @@ export class Room {
 }
 ```
 
-- [ ] **Step 2: Update `server/src/index.ts`**
+- [x] **Step 2: Update `server/src/index.ts`**
 
 Replace the `join-room` handler and add match-end point crediting:
 
@@ -1380,14 +1380,14 @@ const PORT = process.env.PORT ?? 3000;
 httpServer.listen(PORT, () => console.log(`Arena server running on :${PORT}`));
 ```
 
-- [ ] **Step 3: Run all server tests**
+- [x] **Step 3: Run all server tests**
 
 ```bash
 cd server && npm test
 ```
 Expected: All tests pass (Supabase calls are not invoked in tests since `accessToken` is not provided in test helpers).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add server/src/rooms/Room.ts server/src/index.ts
@@ -1402,7 +1402,7 @@ git commit -m "feat: load player skills from Supabase on join, credit points at 
 - Create: `client/src/supabase.ts`
 - Create: `client/src/auth/AuthUI.ts`
 
-- [ ] **Step 1: Create `client/src/supabase.ts`**
+- [x] **Step 1: Create `client/src/supabase.ts`**
 
 ```ts
 import { createClient } from '@supabase/supabase-js';
@@ -1432,7 +1432,7 @@ export async function fetchProfile(): Promise<UserProfile | null> {
 }
 ```
 
-- [ ] **Step 2: Create `client/src/auth/AuthUI.ts`**
+- [x] **Step 2: Create `client/src/auth/AuthUI.ts`**
 
 ```ts
 import { supabase } from '../supabase.ts';
@@ -1523,7 +1523,7 @@ export class AuthUI {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add client/src/supabase.ts client/src/auth/AuthUI.ts
@@ -1537,7 +1537,7 @@ git commit -m "feat: client Supabase client + AuthUI login/register overlay"
 **Files:**
 - Create: `client/src/skills/SkillTreeUI.ts`
 
-- [ ] **Step 1: Create `client/src/skills/SkillTreeUI.ts`**
+- [x] **Step 1: Create `client/src/skills/SkillTreeUI.ts`**
 
 ```ts
 import { supabase, fetchProfile, UserProfile } from '../supabase.ts';
@@ -1769,7 +1769,7 @@ export class SkillTreeUI {
 }
 ```
 
-- [ ] **Step 2: Add the two RPC functions to Supabase**
+- [x] **Step 2: Add the two RPC functions to Supabase**
 
 Run in the Supabase SQL editor:
 
@@ -1827,7 +1827,7 @@ end;
 $$;
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add client/src/skills/SkillTreeUI.ts
@@ -1841,7 +1841,7 @@ git commit -m "feat: SkillTreeUI — D2-style skill tree panel with unlock + res
 **Files:**
 - Modify: `client/src/hud/HUD.ts`
 
-- [ ] **Step 1: Update `client/src/hud/HUD.ts`**
+- [x] **Step 1: Update `client/src/hud/HUD.ts`**
 
 Replace `buildSpellSlots` and `update` to accept an `ownedSpells` set:
 
@@ -1936,7 +1936,7 @@ export class HUD {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add client/src/hud/HUD.ts
@@ -1951,7 +1951,7 @@ git commit -m "feat: HUD buildSpellSlots accepts owned spell set, hides unowned 
 - Modify: `client/src/main.ts`
 - Modify: `client/src/lobby/LobbyUI.ts`
 
-- [ ] **Step 1: Add Skills button + points display to `client/src/lobby/LobbyUI.ts`**
+- [x] **Step 1: Add Skills button + points display to `client/src/lobby/LobbyUI.ts`**
 
 Update `showHome` to accept optional auth context and render points + Skills button. Add `onOpenSkills` callback:
 
@@ -1987,7 +1987,7 @@ showHome(username?: string, points?: number): void {
 }
 ```
 
-- [ ] **Step 2: Update `client/src/main.ts`**
+- [x] **Step 2: Update `client/src/main.ts`**
 
 Replace top of file through the lobby instantiation:
 
@@ -2127,14 +2127,14 @@ joinRoom(roomId: string, displayName: string, accessToken?: string): void {
 }
 ```
 
-- [ ] **Step 3: Run server tests to confirm nothing broke**
+- [x] **Step 3: Run server tests to confirm nothing broke**
 
 ```bash
 cd server && npm test
 ```
 Expected: All pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add client/src/main.ts client/src/lobby/LobbyUI.ts client/src/network/SocketClient.ts
@@ -2148,11 +2148,11 @@ git commit -m "feat: wire AuthUI + SkillTreeUI into lobby flow, send accessToken
 **Files:**
 - Modify: `client/src/renderer/SpellRenderer.ts`
 
-- [ ] **Step 1: Read current SpellRenderer meteor rendering**
+- [x] **Step 1: Read current SpellRenderer meteor rendering**
 
 Open `client/src/renderer/SpellRenderer.ts` and find where `MeteorState` indicators are rendered. The indicator is the targeting circle shown before impact. Find the code that creates/updates it.
 
-- [ ] **Step 2: Update meteor indicator rendering**
+- [x] **Step 2: Update meteor indicator rendering**
 
 Find the loop that creates meteor indicators (look for `m.strikeAt`, `MeteorState`). Add a check for `m.hidden`:
 
@@ -2177,7 +2177,7 @@ Call it from `main.ts` after `startGame()`:
 spellRenderer!.setMyId(myId);
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add client/src/renderer/SpellRenderer.ts client/src/main.ts

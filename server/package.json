@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@arena/shared": "*",
+    "@supabase/supabase-js": "^2.103.3",
     "express": "^4.18.2",
     "nanoid": "^5.0.7",
     "socket.io": "^4.7.4"

@@ -7,24 +7,28 @@ import { segmentIntersectsAABB } from '../physics/LineOfSight.ts';
 let _id = 0;
 const nextId = () => `fw_${++_id}`;
 
-export function spawnFireWall(ownerId: string, from: Vec2, to: Vec2, currentTick: number): FireWallState {
+export function spawnFireWall(
+  ownerId: string,
+  from: Vec2,
+  to: Vec2,
+  currentTick: number,
+  durationMultiplier = 1,
+): FireWallState {
   return {
     id: nextId(),
     ownerId,
     segments: buildWallSegments(from, to),
-    expiresAt: currentTick + FIREWALL_DURATION_TICKS,
+    expiresAt: currentTick + Math.round(FIREWALL_DURATION_TICKS * durationMultiplier),
   };
 }
 
 export function buildWallSegments(from: Vec2, to: Vec2): Segment[] {
-  // Clamp to max length
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const len = Math.sqrt(dx * dx + dy * dy) || 1;
   const clampedLen = Math.min(len, FIREWALL_MAX_LENGTH);
   const end: Vec2 = { x: from.x + (dx / len) * clampedLen, y: from.y + (dy / len) * clampedLen };
 
-  // Find all t-ranges where the segment is blocked by a pillar
   const blocked: [number, number][] = [];
   for (const pillar of PILLARS) {
     const range = getPillarBlockRange(from, end, pillar);
@@ -33,7 +37,6 @@ export function buildWallSegments(from: Vec2, to: Vec2): Segment[] {
 
   if (blocked.length === 0) return [{ x1: from.x, y1: from.y, x2: end.x, y2: end.y }];
 
-  // Merge overlapping ranges
   blocked.sort((a, b) => a[0] - b[0]);
   const merged: [number, number][] = [];
   for (const r of blocked) {
@@ -91,6 +94,7 @@ function getPillarBlockRange(from: Vec2, to: Vec2, pillar: Pillar): [number, num
 }
 
 export function fireWallDamagesPlayer(fw: FireWallState, playerPos: Vec2, playerId: string): boolean {
+  if (fw.ownerId === playerId) return false;
   const threshold = PLAYER_HALF_SIZE + 8;
   return fw.segments.some(seg => pointToSegmentDist(playerPos, seg) < threshold);
 }
@@ -99,9 +103,7 @@ function pointToSegmentDist(p: Vec2, seg: Segment): number {
   const dx = seg.x2 - seg.x1;
   const dy = seg.y2 - seg.y1;
   const lenSq = dx * dx + dy * dy;
-  if (lenSq === 0) {
-    return Math.sqrt((p.x - seg.x1) ** 2 + (p.y - seg.y1) ** 2);
-  }
+  if (lenSq === 0) return Math.sqrt((p.x - seg.x1) ** 2 + (p.y - seg.y1) ** 2);
   const t = Math.max(0, Math.min(1, ((p.x - seg.x1) * dx + (p.y - seg.y1) * dy) / lenSq));
   const cx = seg.x1 + t * dx;
   const cy = seg.y1 + t * dy;

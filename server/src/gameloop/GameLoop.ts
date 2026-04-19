@@ -1,6 +1,7 @@
+import { GameState } from '@arena/shared';
 import { Room } from '../rooms/Room.ts';
 
-type BroadcastFn = (state: object) => void;
+type BroadcastFn = (state: GameState) => void;
 
 export class GameLoop {
   private intervalId: ReturnType<typeof setInterval> | null = null;

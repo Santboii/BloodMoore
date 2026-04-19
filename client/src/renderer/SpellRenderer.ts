@@ -9,10 +9,13 @@ export class SpellRenderer {
   private fireballParticles: FireballParticles;
   private prevFireballPositions = new Map<string, { x: number; y: number; z: number }>();
   private clock = new THREE.Clock();
+  private myId = '';
 
   constructor(private scene: THREE.Scene) {
     this.fireballParticles = new FireballParticles(scene);
   }
+
+  setMyId(id: string): void { this.myId = id; }
 
   update(state: GameState): void {
     const delta = this.clock.getDelta();
@@ -117,6 +120,9 @@ export class SpellRenderer {
         this.scene.add(ring);
         this.meteors.set(meteor.id, ring);
       }
+      // Hide the impact indicator for enemy meteors when Blind Strike is active
+      const ring = this.meteors.get(meteor.id)!;
+      ring.visible = !meteor.hidden || meteor.ownerId === this.myId;
     }
   }
 

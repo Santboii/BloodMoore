@@ -1,4 +1,4 @@
-import { GameState, InputFrame, SPAWN_POSITIONS } from '@arena/shared';
+import { GameState, InputFrame, SPAWN_POSITIONS, NodeId } from '@arena/shared';
 import { makeInitialState, advanceState, PlayerInit } from '../gameloop/StateAdvancer.ts';
 
 export type RoomPlayer = { socketId: string; displayName: string; ready: boolean };
@@ -7,6 +7,8 @@ export class Room {
   readonly id: string;
   creatorName: string = '';
   players: Map<string, RoomPlayer> = new Map(); // socketId -> RoomPlayer
+  skillSets: Map<string, Set<NodeId>> = new Map();
+  userIds: Map<string, string> = new Map();
   state: GameState | null = null;
   private pendingInputs: Map<string, InputFrame> = new Map();
 
@@ -23,6 +25,8 @@ export class Room {
 
   removePlayer(socketId: string): void {
     this.players.delete(socketId);
+    this.skillSets.delete(socketId);
+    this.userIds.delete(socketId);
   }
 
   setReady(socketId: string): void {
@@ -42,7 +46,6 @@ export class Room {
   }
 
   queueInput(socketId: string, input: InputFrame): void {
-    // Store the input; the last received input is held until overwritten (not cleared each tick).
     this.pendingInputs.set(socketId, input);
   }
 
@@ -53,7 +56,8 @@ export class Room {
     for (const [id] of this.players) {
       inputs[id] = this.pendingInputs.get(id) ?? { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 400, y: 400 } };
     }
-    this.state = advanceState(this.state, inputs);
+    const skillSetsObj: Record<string, Set<NodeId>> = Object.fromEntries(this.skillSets.entries());
+    this.state = advanceState(this.state, inputs, skillSetsObj);
     return this.state;
   }
 
