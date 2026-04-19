@@ -13,7 +13,7 @@ export class SocketClient {
   }
 
   connect(): void { this.socket.connect(); }
-  disconnect(): void { this.socket.disconnect(); }
+  disconnect(): void { this.socket.removeAllListeners(); this.socket.disconnect(); }
 
   joinRoom(roomId: string, displayName: string, accessToken?: string): void {
     this.socket.emit('join-room', { roomId, displayName, accessToken });
