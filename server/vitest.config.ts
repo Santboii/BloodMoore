@@ -7,7 +7,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@arena/shared': new URL('../shared/src/types.ts', import.meta.url).pathname,
+      '@arena/shared': new URL('../shared/src/index.ts', import.meta.url).pathname,
     },
   },
 });
