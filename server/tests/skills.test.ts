@@ -44,3 +44,53 @@ describe('canUnlock', () => {
     expect(util).toHaveLength(4);
   });
 });
+
+import { buildSpellModifiers } from '../src/skills/SpellModifiers.ts';
+import { FIREBALL_SPEED, FIREBALL_RADIUS } from '@arena/shared';
+
+describe('buildSpellModifiers', () => {
+  it('returns base values when no skills are owned', () => {
+    const m = buildSpellModifiers(new Set());
+    expect(m.fireball.speed).toBe(FIREBALL_SPEED);
+    expect(m.fireball.radius).toBe(FIREBALL_RADIUS);
+    expect(m.fireball.damageMin).toBe(80);
+    expect(m.fireball.damageMax).toBe(120);
+    expect(m.fireball.homing).toBe(false);
+    expect(m.fireball.split).toBe(0);
+    expect(m.firewall.durationMultiplier).toBe(1);
+    expect(m.firewall.damageMultiplier).toBe(1);
+    expect(m.meteor.hidden).toBe(false);
+    expect(m.meteor.moltenImpact).toBe(false);
+    expect(m.teleport.maxRange).toBe(600);
+    expect(m.teleport.etherealForm).toBe(false);
+    expect(m.teleport.phantomStep).toBe(false);
+  });
+
+  it('applies Volatile Ember: +30% radius', () => {
+    const m = buildSpellModifiers(new Set(['fire.fireball', 'fire.volatile_ember']));
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * 1.3, 5);
+  });
+
+  it('applies Hellfire: 3× radius, 2× damage, 0.5× speed', () => {
+    const m = buildSpellModifiers(new Set(['fire.fireball', 'fire.hellfire']));
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * 3, 5);
+    expect(m.fireball.damageMin).toBe(160);
+    expect(m.fireball.damageMax).toBe(240);
+    expect(m.fireball.speed).toBeCloseTo(FIREBALL_SPEED * 0.5, 5);
+  });
+
+  it('stacks Volatile Ember + Hellfire: radius is base * 1.3 * 3', () => {
+    const m = buildSpellModifiers(new Set(['fire.fireball', 'fire.volatile_ember', 'fire.hellfire']));
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * 1.3 * 3, 5);
+  });
+
+  it('applies Enduring Flames: +50% firewall duration', () => {
+    const m = buildSpellModifiers(new Set(['fire.fireball', 'fire.volatile_ember', 'fire.fire_wall', 'fire.enduring_flames']));
+    expect(m.firewall.durationMultiplier).toBe(1.5);
+  });
+
+  it('applies Phase Shift: +40% teleport range', () => {
+    const m = buildSpellModifiers(new Set(['utility.teleport', 'utility.phase_shift']));
+    expect(m.teleport.maxRange).toBeCloseTo(600 * 1.4, 5);
+  });
+});
