@@ -1,7 +1,9 @@
+// client/src/network/SocketClient.ts  — full file
 import { io, Socket } from 'socket.io-client';
 import { GameState, InputFrame } from '@arena/shared';
 
 export type RoomJoinedPayload = { roomId: string; yourId: string; players: Record<string, string> };
+export type ChatMessagePayload = { senderId: string; displayName: string; text: string };
 
 export class SocketClient {
   private socket: Socket;
@@ -20,6 +22,7 @@ export class SocketClient {
   ready(): void { this.socket.emit('player-ready'); }
   sendInput(input: InputFrame): void { this.socket.emit('input', input); }
   rematch(): void { this.socket.emit('rematch'); }
+  sendChatMessage(text: string): void { this.socket.emit('chat-message', { text }); }
 
   onRoomJoined(cb: (payload: RoomJoinedPayload) => void): void {
     this.socket.once('room-joined', cb);
@@ -36,4 +39,12 @@ export class SocketClient {
   onRematchReady(cb: () => void): void { this.socket.once('rematch-ready', cb); }
   onOpponentDisconnected(cb: () => void): void { this.socket.once('opponent-disconnected', cb); }
   onRoomNotFound(cb: () => void): void { this.socket.once('room-not-found', cb); }
+  onChatMessage(cb: (payload: ChatMessagePayload) => void): void {
+    this.socket.off('chat-message');
+    this.socket.on('chat-message', cb);
+  }
+  onPlayerReadyAck(cb: (payload: { playerId: string }) => void): void {
+    this.socket.off('player-ready-ack');
+    this.socket.on('player-ready-ack', cb);
+  }
 }
