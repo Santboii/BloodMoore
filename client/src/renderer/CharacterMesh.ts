@@ -1,19 +1,41 @@
+// client/src/renderer/CharacterMesh.ts
 import * as THREE from 'three';
+import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
+import { CharacterAnimator } from './CharacterAnimator';
+
+const TARGET_HEIGHT = 50; // world units tall
 
 export class CharacterMesh {
   readonly group = new THREE.Group();
-  private body: THREE.Mesh;
+  private animator: CharacterAnimator;
   private nameLabel: HTMLDivElement;
+  private prevX = 0;
+  private prevZ = 0;
+  private velocityMag = 0;
 
-  constructor(color: number, displayName: string, labelContainer: HTMLElement) {
-    // Body
-    this.body = new THREE.Mesh(
-      new THREE.CapsuleGeometry(12, 20, 4, 8),
-      new THREE.MeshLambertMaterial({ color }),
-    );
-    this.body.position.y = 26;
-    this.body.castShadow = true;
-    this.group.add(this.body);
+  constructor(gltf: GLTF, color: number, displayName: string, labelContainer: HTMLElement) {
+    const model = gltf.scene.clone(true);
+
+    // Auto-scale to TARGET_HEIGHT
+    const box = new THREE.Box3().setFromObject(model);
+    const height = box.max.y - box.min.y;
+    const scale = TARGET_HEIGHT / Math.max(height, 0.001);
+    model.scale.setScalar(scale);
+    // Shift so feet sit at y=0
+    model.position.y = -box.min.y * scale;
+
+    // Blend a tint color over the model's existing materials
+    model.traverse((child) => {
+      if (!(child as THREE.Mesh).isMesh) return;
+      const mesh = child as THREE.Mesh;
+      const src = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+      const mat = (src as THREE.MeshStandardMaterial).clone();
+      mat.color.lerp(new THREE.Color(color), 0.4);
+      mesh.material = mat;
+      mesh.castShadow = true;
+    });
+
+    this.group.add(model);
 
     // Glow ring on ground
     const ring = new THREE.Mesh(
@@ -24,7 +46,7 @@ export class CharacterMesh {
     ring.position.y = 1;
     this.group.add(ring);
 
-    // Name label (DOM overlay)
+    // DOM name label
     this.nameLabel = document.createElement('div');
     this.nameLabel.style.cssText = `
       position:absolute; pointer-events:none; font-size:12px; color:#fff;
@@ -32,14 +54,24 @@ export class CharacterMesh {
     `;
     this.nameLabel.textContent = displayName;
     labelContainer.appendChild(this.nameLabel);
+
+    this.animator = new CharacterAnimator(model, gltf.animations);
   }
 
-  /** Set world position (XY in game space → XZ in Three.js) */
   setPosition(x: number, y: number): void {
+    const dx = x - this.prevX;
+    const dz = y - this.prevZ;
+    // Velocity in approx world units/sec (assumes ~60fps; capped to avoid spike on first frame)
+    this.velocityMag = Math.min(Math.sqrt(dx * dx + dz * dz) * 60, 1000);
+    this.prevX = x;
+    this.prevZ = y;
     this.group.position.set(x, 0, y);
   }
 
-  /** Update label screen position. Call after render. */
+  update(delta: number, isCasting: boolean): void {
+    this.animator.update(delta, this.velocityMag, isCasting);
+  }
+
   updateLabel(camera: THREE.Camera, renderer: THREE.WebGLRenderer): void {
     const pos = new THREE.Vector3();
     this.group.getWorldPosition(pos);
