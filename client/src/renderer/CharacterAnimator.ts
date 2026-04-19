@@ -10,14 +10,21 @@ export class CharacterAnimator {
   constructor(root: THREE.Object3D, clips: THREE.AnimationClip[]) {
     this.mixer = new THREE.AnimationMixer(root);
 
+    if (clips.length === 0) {
+      console.warn('CharacterAnimator: no animation clips — animator inert');
+      // actions map stays empty; update() calls mixer.update() but transitions no-op
+      this.actions.get('idle')?.play();
+      return;
+    }
+
     const find = (...names: string[]) => {
       const lower = names.map(n => n.toLowerCase());
       return clips.find(c => lower.includes(c.name.toLowerCase())) ?? clips[0];
     };
 
-    const idleClip  = find('idle', 'Idle', 'IDLE');
-    const walkClip  = find('walk', 'Walk', 'WALK', 'run', 'Run') ?? idleClip;
-    const castClip  = find('attack', 'Attack', 'cast', 'Cast', 'spell', 'Spell') ?? idleClip;
+    const idleClip  = find('idle');
+    const walkClip  = find('walk', 'run');
+    const castClip  = find('attack', 'cast', 'spell');
 
     this.actions.set('idle', this.mixer.clipAction(idleClip));
     this.actions.set('walk', this.mixer.clipAction(walkClip));
@@ -31,7 +38,6 @@ export class CharacterAnimator {
 
     this.mixer.addEventListener('finished', (e) => {
       if (e.action === this.actions.get('cast') && this.current === 'cast') {
-        this.current = 'idle'; // reset so transitionTo can run
         this.transitionTo('idle');
       }
     });
@@ -51,7 +57,7 @@ export class CharacterAnimator {
     if (target !== this.current) this.transitionTo(target);
   }
 
-  transitionTo(state: AnimState): void {
+  private transitionTo(state: AnimState): void {
     if (state === this.current) return;
     const from = this.actions.get(this.current)!;
     const to = this.actions.get(state)!;
