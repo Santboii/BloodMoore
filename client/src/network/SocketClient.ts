@@ -23,6 +23,12 @@ export class SocketClient {
   sendInput(input: InputFrame): void { this.socket.emit('input', input); }
   rematch(): void { this.socket.emit('rematch'); }
   sendChatMessage(text: string): void { this.socket.emit('chat-message', { text }); }
+  rejoinRoom(roomId: string, accessToken: string): void {
+    this.socket.emit('rejoin-room', { roomId, accessToken });
+  }
+  leavePausedMatch(): void {
+    this.socket.emit('leave-paused-match');
+  }
 
   onRoomJoined(cb: (payload: RoomJoinedPayload) => void): void {
     this.socket.once('room-joined', cb);
@@ -55,5 +61,28 @@ export class SocketClient {
   onPlayerReadyAck(cb: (payload: { playerId: string }) => void): void {
     this.socket.off('player-ready-ack');
     this.socket.on('player-ready-ack', cb);
+  }
+  onMatchPaused(cb: (payload: { reason: string; countdown: number }) => void): void {
+    this.socket.off('match-paused');
+    this.socket.on('match-paused', cb);
+  }
+  onGameResumed(cb: () => void): void {
+    this.socket.off('game-resumed');
+    this.socket.on('game-resumed', cb);
+  }
+  onRejoinAccepted(cb: () => void): void {
+    this.socket.once('rejoin-accepted', cb);
+  }
+  onRejoinFailed(cb: (payload: { reason: string }) => void): void {
+    this.socket.once('rejoin-failed', cb);
+  }
+  onReconnect(cb: () => void): void {
+    this.socket.io.on('reconnect', cb);
+  }
+  onDisconnect(cb: () => void): void {
+    this.socket.on('disconnect', cb);
+  }
+  get id(): string {
+    return this.socket.id ?? '';
   }
 }
