@@ -21,7 +21,7 @@ export class AssetLoader {
     const loadGLTF = (url: string): Promise<GLTF> =>
       new Promise((res, rej) => gltfLoader.load(url, res, undefined, rej));
 
-    const loadTex = (url: string, colorSpace: string): Promise<THREE.Texture> =>
+    const loadTex = (url: string, colorSpace: THREE.ColorSpace): Promise<THREE.Texture> =>
       new Promise((res, rej) =>
         texLoader.load(url, (t) => { t.colorSpace = colorSpace; res(t); }, undefined, rej),
       );
