@@ -369,7 +369,7 @@ export class LobbyUI {
     const slotHtml = (slot: { name: string; index: number; ready: boolean } | undefined, fallback: string) =>
       slot
         ? `<div class="bm-slot">
-             <div class="bm-avatar bm-avatar-${slot.index}">${escapeHtml(slot.name[0].toUpperCase())}</div>
+             <div class="bm-avatar bm-avatar-${slot.index}">${escapeHtml((slot.name[0] ?? '?').toUpperCase())}</div>
              <div class="bm-slot-info">
                <div class="bm-slot-name">${escapeHtml(slot.name)}</div>
                <div class="bm-slot-status ${slot.ready ? 'bm-status-ready' : 'bm-status-waiting'}">${slot.ready ? '✓ Ready' : 'Waiting...'}</div>

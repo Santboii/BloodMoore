@@ -35,9 +35,18 @@ export class SocketClient {
     this.socket.off('game-state');
     this.socket.on('game-state', cb);
   }
-  onDuelEnded(cb: (payload: { winnerId: string }) => void): void { this.socket.once('duel-ended', cb); }
-  onRematchReady(cb: () => void): void { this.socket.once('rematch-ready', cb); }
-  onOpponentDisconnected(cb: () => void): void { this.socket.once('opponent-disconnected', cb); }
+  onDuelEnded(cb: (payload: { winnerId: string }) => void): void {
+    this.socket.off('duel-ended');
+    this.socket.on('duel-ended', cb);
+  }
+  onRematchReady(cb: () => void): void {
+    this.socket.off('rematch-ready');
+    this.socket.on('rematch-ready', cb);
+  }
+  onOpponentDisconnected(cb: () => void): void {
+    this.socket.off('opponent-disconnected');
+    this.socket.on('opponent-disconnected', cb);
+  }
   onRoomNotFound(cb: () => void): void { this.socket.once('room-not-found', cb); }
   onChatMessage(cb: (payload: ChatMessagePayload) => void): void {
     this.socket.off('chat-message');
