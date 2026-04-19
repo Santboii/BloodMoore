@@ -8,13 +8,13 @@ import { InputHandler } from './input/InputHandler';
 import { HUD } from './hud/HUD';
 import { LobbyUI } from './lobby/LobbyUI';
 import { GameState } from '@arena/shared';
+import { AssetLoader } from './renderer/AssetLoader';
+import type { LoadedAssets } from './renderer/AssetLoader';
 
 const container = document.getElementById('canvas-container')!;
 const uiOverlay = document.getElementById('ui-overlay')!;
 
 const scene = new Scene(container);
-const arena = new Arena();
-arena.addToScene(scene.scene);
 
 const hud = new HUD(uiOverlay);
 hud.hide();
@@ -33,6 +33,7 @@ let handlersRegistered = false;
 
 const PLAYER_COLORS: Record<number, number> = { 0: 0xc8a000, 1: 0xc00030 };
 let myColorIndex = 0;
+let assets: LoadedAssets;
 
 let myDisplayName = '';
 
@@ -174,12 +175,15 @@ scene.startRenderLoop(() => {
   for (const [id, player] of Object.entries(state.players)) {
     if (!playerMeshes.has(id)) {
       const colorIndex = id === myId ? myColorIndex : 1 - myColorIndex;
-      const mesh = new CharacterMesh(PLAYER_COLORS[colorIndex], player.displayName, uiOverlay);
+      const gltf = colorIndex === 0 ? assets.characters.warrior : assets.characters.mage;
+      const mesh = new CharacterMesh(gltf, PLAYER_COLORS[colorIndex], player.displayName, uiOverlay);
       scene.scene.add(mesh.group);
       playerMeshes.set(id, mesh);
     }
     const mesh = playerMeshes.get(id)!;
-    mesh.setPosition(player.position.x, player.position.y);
+    mesh.setPosition(player.position.x, player.position.y, player.facing);
+    mesh.update(delta, player.castingSpell !== null);
+    if (player.hp <= 0) mesh.die();
     mesh.updateLabel(scene.camera, scene.renderer);
   }
 
@@ -192,3 +196,16 @@ scene.startRenderLoop(() => {
   spellRenderer.update(state);
   hud.update(state, inputHandler.getActiveSpell());
 });
+
+// Async init — load assets then build scene
+(async () => {
+  try {
+    assets = await AssetLoader.load();
+  } catch (err) {
+    console.error('Asset load failed:', err);
+    return;
+  }
+  const arena = new Arena(assets.textures);
+  arena.addToScene(scene.scene);
+  scene.initPostProcessing();
+})();

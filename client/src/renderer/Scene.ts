@@ -1,15 +1,48 @@
+// client/src/renderer/Scene.ts
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CameraController } from './CameraController';
 
-const FRUSTUM = 600;
-const INITIAL_CENTER_X = 1000; // center of 2000×2000 arena
+const FRUSTUM = 480;
+const INITIAL_CENTER_X = 1000;
 const INITIAL_CENTER_Z = 1000;
+
+const VignetteShader = {
+  uniforms: {
+    tDiffuse: { value: null as THREE.Texture | null },
+    intensity: { value: 0.35 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float intensity;
+    varying vec2 vUv;
+    void main() {
+      vec4 color = texture2D(tDiffuse, vUv);
+      vec2 uv = (vUv - 0.5) * 2.0;
+      float v = 1.0 - dot(uv * 0.4, uv * 0.4);
+      v = clamp(mix(1.0 - intensity, 1.0, v), 0.0, 1.0);
+      gl_FragColor = vec4(color.rgb * v, color.a);
+    }
+  `,
+};
 
 export class Scene {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene: THREE.Scene;
   readonly camera: THREE.OrthographicCamera;
   private cameraController: CameraController;
+  private composer!: EffectComposer;
   private animFrameId = 0;
   private readonly _raycaster = new THREE.Raycaster();
   private readonly _groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -19,38 +52,65 @@ export class Scene {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(this.renderer.domElement);
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0a0a12);
+    this.scene.background = new THREE.Color(0x050508);
 
-    // Isometric orthographic camera — owned here, position managed by CameraController
     const aspect = window.innerWidth / window.innerHeight;
     this.camera = new THREE.OrthographicCamera(
       -FRUSTUM * aspect, FRUSTUM * aspect,
       FRUSTUM, -FRUSTUM,
-      0.1, 3000, // increased far plane for 2000×2000 arena
+      0.1, 3000,
     );
-    this.cameraController = new CameraController(
-      this.camera,
-      INITIAL_CENTER_X,
-      INITIAL_CENTER_Z,
-    );
-    // Position camera at arena center for the lobby/loading state
+    this.cameraController = new CameraController(this.camera, INITIAL_CENTER_X, INITIAL_CENTER_Z);
     this.cameraController.update(INITIAL_CENTER_X, INITIAL_CENTER_Z, 1);
 
-    // Ambient + directional light
-    this.scene.add(new THREE.AmbientLight(0x444466, 0.8));
-    const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
-    dirLight.position.set(200, 400, 100);
-    dirLight.castShadow = true;
-    this.scene.add(dirLight);
+    this.buildLighting();
 
     window.addEventListener('resize', this.onResize);
     this.onResize();
   }
 
-  /** Call each frame with the local player's world position and elapsed time in seconds. */
+  private buildLighting(): void {
+    // Warm ambient — base illumination so characters are always visible
+    this.scene.add(new THREE.AmbientLight(0x554433, 1.5));
+
+    // Cool blue sky / blood-red ground gradient
+    this.scene.add(new THREE.HemisphereLight(0x223355, 0x331100, 0.8));
+
+    // Moonlight — casts shadows, cool blue-white
+    const moon = new THREE.DirectionalLight(0x7788cc, 1.0);
+    moon.position.set(500, 800, 200);
+    moon.castShadow = true;
+    moon.shadow.mapSize.set(2048, 2048);
+    moon.shadow.camera.near = 0.5;
+    moon.shadow.camera.far = 4000;
+    moon.shadow.camera.left = -1200;
+    moon.shadow.camera.right = 1200;
+    moon.shadow.camera.top = 1200;
+    moon.shadow.camera.bottom = -1200;
+    this.scene.add(moon);
+  }
+
+  /** Call after scene objects are added. Creates EffectComposer pipeline. */
+  initPostProcessing(): void {
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.composer.addPass(
+      new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        0.5,  // strength
+        0.4,  // radius
+        0.3,  // threshold
+      ),
+    );
+    this.composer.addPass(new ShaderPass(VignetteShader));
+    this.composer.addPass(new OutputPass());
+  }
+
   updateCamera(playerX: number, playerZ: number, delta: number): void {
     this.cameraController.update(playerX, playerZ, delta);
   }
@@ -65,6 +125,7 @@ export class Scene {
     this.camera.bottom = -FRUSTUM;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
+    this.composer?.setSize(w, h);
   };
 
   startRenderLoop(onFrame: () => void): void {
@@ -72,7 +133,12 @@ export class Scene {
     const loop = () => {
       this.animFrameId = requestAnimationFrame(loop);
       onFrame();
-      this.renderer.render(this.scene, this.camera);
+      // Fall back to bare render before initPostProcessing() is called
+      if (this.composer) {
+        this.composer.render();
+      } else {
+        this.renderer.render(this.scene, this.camera);
+      }
     };
     loop();
   }
@@ -82,7 +148,6 @@ export class Scene {
     this.animFrameId = 0;
   }
 
-  /** Convert screen mouse position to world XZ coordinates */
   screenToWorld(screenX: number, screenY: number): { x: number; y: number } {
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(
@@ -98,5 +163,6 @@ export class Scene {
     this.stopRenderLoop();
     window.removeEventListener('resize', this.onResize);
     this.renderer.dispose();
+    this.composer?.dispose();
   }
 }

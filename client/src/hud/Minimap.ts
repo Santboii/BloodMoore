@@ -1,7 +1,14 @@
 import { ARENA_SIZE, PILLARS, PlayerState } from '@arena/shared';
 
 const SIZE = 120;
-const SCALE = SIZE / ARENA_SIZE;
+
+// Camera sits at (+X, +Z) offset from player → isometric "up" = world (-X,-Z).
+// Project to minimap using isometric axes so the minimap matches what players see.
+function toMini(wx: number, wz: number): [number, number] {
+  const mx = SIZE / 2 + (wx - wz) * SIZE / (2 * ARENA_SIZE);
+  const my = (wx + wz) * SIZE / (2 * ARENA_SIZE);
+  return [mx, my];
+}
 
 export class Minimap {
   private canvas: HTMLCanvasElement;
@@ -41,22 +48,24 @@ export class Minimap {
     // Pillars
     ctx.fillStyle = '#6c63ff';
     for (const p of PILLARS) {
-      const pw = Math.max(2, p.halfSize * 2 * SCALE);
-      ctx.fillRect(p.x * SCALE - pw / 2, p.y * SCALE - pw / 2, pw, pw);
+      const [px, py] = toMini(p.x, p.y);
+      ctx.fillRect(px - 2, py - 2, 4, 4);
     }
 
-    // Opponent (drawn first so local player renders on top if they overlap)
+    // Opponent
     if (opponent) {
+      const [ox, oy] = toMini(opponent.position.x, opponent.position.y);
       ctx.fillStyle = '#ff5252';
       ctx.beginPath();
-      ctx.arc(opponent.position.x * SCALE, opponent.position.y * SCALE, 3, 0, Math.PI * 2);
+      ctx.arc(ox, oy, 3, 0, Math.PI * 2);
       ctx.fill();
     }
 
     // Local player
+    const [lx, ly] = toMini(localPlayer.position.x, localPlayer.position.y);
     ctx.fillStyle = '#00e676';
     ctx.beginPath();
-    ctx.arc(localPlayer.position.x * SCALE, localPlayer.position.y * SCALE, 3, 0, Math.PI * 2);
+    ctx.arc(lx, ly, 3, 0, Math.PI * 2);
     ctx.fill();
   }
 
