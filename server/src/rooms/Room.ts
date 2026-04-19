@@ -3,6 +3,11 @@ import { makeInitialState, advanceState, PlayerInit } from '../gameloop/StateAdv
 
 export type RoomPlayer = { socketId: string; displayName: string; ready: boolean };
 
+export type PauseState = {
+  disconnectedUserIds: Set<string>;
+  pausedAt: number; // Date.now() timestamp
+};
+
 export class Room {
   readonly id: string;
   creatorName: string = '';
@@ -10,6 +15,7 @@ export class Room {
   skillSets: Map<string, Set<NodeId>> = new Map();
   userIds: Map<string, string> = new Map();
   state: GameState | null = null;
+  pauseState: PauseState | null = null;
   private pendingInputs: Map<string, InputFrame> = new Map();
 
   constructor(id: string) { this.id = id; }
@@ -65,5 +71,24 @@ export class Room {
     for (const p of this.players.values()) p.ready = false;
     this.state = null;
     this.pendingInputs.clear();
+  }
+
+  pause(userId: string): void {
+    if (!this.pauseState) {
+      this.pauseState = {
+        disconnectedUserIds: new Set([userId]),
+        pausedAt: Date.now(),
+      };
+    } else {
+      this.pauseState.disconnectedUserIds.add(userId);
+    }
+  }
+
+  resume(userId: string): void {
+    if (!this.pauseState) return;
+    this.pauseState.disconnectedUserIds.delete(userId);
+    if (this.pauseState.disconnectedUserIds.size === 0) {
+      this.pauseState = null;
+    }
   }
 }
