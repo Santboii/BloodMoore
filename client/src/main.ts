@@ -159,8 +159,9 @@ scene.startRenderLoop(() => {
       playerMeshes.set(id, mesh);
     }
     const mesh = playerMeshes.get(id)!;
-    mesh.setPosition(player.position.x, player.position.y);
+    mesh.setPosition(player.position.x, player.position.y, player.facing);
     mesh.update(delta, player.castingSpell !== null);
+    if (player.hp <= 0) mesh.die();
     mesh.updateLabel(scene.camera, scene.renderer);
   }
 

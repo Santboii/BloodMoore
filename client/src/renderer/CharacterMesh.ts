@@ -12,26 +12,34 @@ export class CharacterMesh {
   private prevX = 0;
   private prevZ = 0;
   private velocityMag = 0;
+  private smoothVel = 0;
+  private smoothVelX = 0;
+  private smoothVelZ = 0;
 
   constructor(gltf: GLTF, color: number, displayName: string, labelContainer: HTMLElement) {
-    const model = gltf.scene.clone(true);
+    // warrior.glb and mage.glb are loaded as separate instances — no clone needed.
+    const model = gltf.scene;
 
     // Auto-scale to TARGET_HEIGHT
     const box = new THREE.Box3().setFromObject(model);
     const height = box.max.y - box.min.y;
     const scale = TARGET_HEIGHT / Math.max(height, 0.001);
     model.scale.setScalar(scale);
-    // Shift so feet sit at y=0
     model.position.y = -box.min.y * scale;
 
-    // Blend a tint color over the model's existing materials
     model.traverse((child) => {
       if (!(child as THREE.Mesh).isMesh) return;
       const mesh = child as THREE.Mesh;
-      const src = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-      const mat = (src as THREE.MeshStandardMaterial).clone();
-      mat.color.lerp(new THREE.Color(color), 0.4);
-      mesh.material = mat;
+      // SkinnedMesh deforms beyond its rest-pose bounding sphere at runtime.
+      mesh.frustumCulled = false;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const src of mats) {
+        const mat = src as THREE.MeshStandardMaterial;
+        mat.color.lerp(new THREE.Color(color), 0.3);
+        mat.emissive.setHex(color);
+        mat.emissiveIntensity = 0.12;
+        mat.needsUpdate = true;
+      }
       mesh.castShadow = true;
     });
 
@@ -40,7 +48,7 @@ export class CharacterMesh {
     // Glow ring on ground
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(14, 18, 32),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4, side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide }),
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 1;
@@ -58,11 +66,24 @@ export class CharacterMesh {
     this.animator = new CharacterAnimator(model, gltf.animations);
   }
 
-  setPosition(x: number, y: number): void {
+  setPosition(x: number, y: number, facing?: number): void {
     const dx = x - this.prevX;
     const dz = y - this.prevZ;
-    // Velocity in approx world units/sec (assumes ~60fps; capped to avoid spike on first frame)
-    this.velocityMag = Math.min(Math.sqrt(dx * dx + dz * dz) * 60, 1000);
+    // Exponential smoothing of velocity vector — filters jitter from interpolated positions.
+    this.smoothVelX = this.smoothVelX * 0.8 + dx * 0.2;
+    this.smoothVelZ = this.smoothVelZ * 0.8 + dz * 0.2;
+    const smoothMag = Math.sqrt(this.smoothVelX * this.smoothVelX + this.smoothVelZ * this.smoothVelZ);
+    const raw = Math.min(Math.sqrt(dx * dx + dz * dz) * 60, 1000);
+    this.smoothVel = this.smoothVel * 0.85 + raw * 0.15;
+    this.velocityMag = this.smoothVel;
+    // Rotation: use smoothed velocity direction when moving (stable & responsive),
+    // fall back to server facing (aim direction) when stationary.
+    // Model's forward is +Z in world space, so atan2(dx, dz) directly gives rotation.y.
+    if (smoothMag > 0.05) {
+      this.group.rotation.y = Math.atan2(this.smoothVelX, this.smoothVelZ);
+    } else if (facing !== undefined) {
+      this.group.rotation.y = Math.atan2(Math.cos(facing), Math.sin(facing));
+    }
     this.prevX = x;
     this.prevZ = y;
     this.group.position.set(x, 0, y);
@@ -72,10 +93,14 @@ export class CharacterMesh {
     this.animator.update(delta, this.velocityMag, isCasting);
   }
 
+  die(): void {
+    this.animator.die();
+  }
+
   updateLabel(camera: THREE.Camera, renderer: THREE.WebGLRenderer): void {
     const pos = new THREE.Vector3();
     this.group.getWorldPosition(pos);
-    pos.y += 70;
+    pos.y += TARGET_HEIGHT + 10;
     pos.project(camera);
     const rect = renderer.domElement.getBoundingClientRect();
     const sx = (pos.x * 0.5 + 0.5) * rect.width + rect.left;

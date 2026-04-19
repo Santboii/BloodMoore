@@ -1,38 +1,41 @@
 import * as THREE from 'three';
 
-type AnimState = 'idle' | 'walk' | 'cast';
+type AnimState = 'idle' | 'walk' | 'cast' | 'death';
 
 export class CharacterAnimator {
   private mixer: THREE.AnimationMixer;
   private actions = new Map<AnimState, THREE.AnimationAction>();
   private current: AnimState = 'idle';
+  private dead = false;
 
   constructor(root: THREE.Object3D, clips: THREE.AnimationClip[]) {
     this.mixer = new THREE.AnimationMixer(root);
 
     if (clips.length === 0) {
-      console.warn('CharacterAnimator: no animation clips — animator inert');
-      // actions map stays empty; update() calls mixer.update() but transitions no-op
-      this.actions.get('idle')?.play();
+      console.warn('CharacterAnimator: no clips');
       return;
     }
 
     const find = (...names: string[]) => {
       const lower = names.map(n => n.toLowerCase());
-      return clips.find(c => lower.includes(c.name.toLowerCase())) ?? clips[0];
+      return clips.find(c => lower.some(n => c.name.toLowerCase().includes(n))) ?? clips[0];
     };
 
     const idleClip  = find('idle');
-    const walkClip  = find('walk', 'run');
-    const castClip  = find('attack', 'cast', 'spell');
+    const walkClip  = find('run', 'walk');
+    const castClip  = find('shoot', 'attack', 'cast', 'punch', 'slash');
+    const deathClip = find('death', 'defeat', 'die');
 
     this.actions.set('idle', this.mixer.clipAction(idleClip));
     this.actions.set('walk', this.mixer.clipAction(walkClip));
 
-    const castAction = this.mixer.clipAction(castClip);
-    castAction.setLoop(THREE.LoopOnce, 1);
-    castAction.clampWhenFinished = true;
-    this.actions.set('cast', castAction);
+    for (const state of ['cast', 'death'] as const) {
+      const clip = state === 'cast' ? castClip : deathClip;
+      const action = this.mixer.clipAction(clip);
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      this.actions.set(state, action);
+    }
 
     this.actions.get('idle')!.play();
 
@@ -45,29 +48,24 @@ export class CharacterAnimator {
 
   update(delta: number, velocityMag: number, isCasting: boolean): void {
     this.mixer.update(delta);
+    if (this.dead || this.current === 'death') return;
+    if (this.current === 'cast') return;
+    if (isCasting) { this.transitionTo('cast'); return; }
+    this.transitionTo(velocityMag > 1.5 ? 'walk' : 'idle');
+  }
 
-    if (this.current === 'cast') return; // let cast finish via 'finished' event
-
-    if (isCasting) {
-      this.transitionTo('cast');
-      return;
-    }
-
-    const target: AnimState = velocityMag > 5 ? 'walk' : 'idle';
-    if (target !== this.current) this.transitionTo(target);
+  die(): void {
+    if (this.dead) return;
+    this.dead = true;
+    this.transitionTo('death');
   }
 
   private transitionTo(state: AnimState): void {
     if (state === this.current) return;
-    const from = this.actions.get(this.current)!;
+    const FADE = 0.2;
+    this.actions.forEach(a => a.fadeOut(FADE));
     const to = this.actions.get(state)!;
-
-    if (state === 'cast') {
-      to.reset();
-      to.play();
-    }
-
-    from.crossFadeTo(to, 0.2, true);
+    to.reset().fadeIn(FADE).play();
     this.current = state;
   }
 }

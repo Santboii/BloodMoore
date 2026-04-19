@@ -48,6 +48,7 @@ export function advanceState(state: GameState, inputs: Record<string, InputFrame
       mana: newMana,
       facing: newFacing,
       cooldowns: newCooldowns,
+      castingSpell: null,
     };
   }
 
@@ -69,6 +70,7 @@ export function advanceState(state: GameState, inputs: Record<string, InputFrame
       ...p,
       mana: p.mana - cfg.manaCost,
       cooldowns: { ...p.cooldowns, [spell]: cfg.cooldownTicks },
+      castingSpell: spell,
     };
 
     if (spell === 1) {

@@ -7,7 +7,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CameraController } from './CameraController';
 
-const FRUSTUM = 600;
+const FRUSTUM = 480;
 const INITIAL_CENTER_X = 1000;
 const INITIAL_CENTER_Z = 1000;
 
@@ -75,14 +75,14 @@ export class Scene {
   }
 
   private buildLighting(): void {
-    // Near-black warm ambient — prevents total darkness between torches
-    this.scene.add(new THREE.AmbientLight(0x110a08, 0.4));
+    // Warm ambient — base illumination so characters are always visible
+    this.scene.add(new THREE.AmbientLight(0x554433, 1.5));
 
     // Cool blue sky / blood-red ground gradient
-    this.scene.add(new THREE.HemisphereLight(0x001122, 0x220800, 0.3));
+    this.scene.add(new THREE.HemisphereLight(0x223355, 0x331100, 0.8));
 
-    // Dim moonlight — still casts shadows, cool blue-white
-    const moon = new THREE.DirectionalLight(0x4455aa, 0.25);
+    // Moonlight — casts shadows, cool blue-white
+    const moon = new THREE.DirectionalLight(0x7788cc, 1.0);
     moon.position.set(500, 800, 200);
     moon.castShadow = true;
     moon.shadow.mapSize.set(2048, 2048);
