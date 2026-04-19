@@ -91,4 +91,45 @@ export class Room {
       this.pauseState = null;
     }
   }
+
+  remapPlayer(oldSocketId: string, newSocketId: string): void {
+    // Remap players
+    const player = this.players.get(oldSocketId);
+    if (player) {
+      this.players.delete(oldSocketId);
+      player.socketId = newSocketId;
+      this.players.set(newSocketId, player);
+    }
+
+    // Remap userIds
+    const userId = this.userIds.get(oldSocketId);
+    if (userId !== undefined) {
+      this.userIds.delete(oldSocketId);
+      this.userIds.set(newSocketId, userId);
+    }
+
+    // Remap skillSets
+    const skills = this.skillSets.get(oldSocketId);
+    if (skills) {
+      this.skillSets.delete(oldSocketId);
+      this.skillSets.set(newSocketId, skills);
+    }
+
+    // Remap pendingInputs
+    const input = this.pendingInputs.get(oldSocketId);
+    if (input) {
+      this.pendingInputs.delete(oldSocketId);
+      this.pendingInputs.set(newSocketId, input);
+    }
+
+    // Remap player ID in GameState
+    if (this.state) {
+      const playerState = this.state.players[oldSocketId];
+      if (playerState) {
+        delete this.state.players[oldSocketId];
+        playerState.id = newSocketId;
+        this.state.players[newSocketId] = playerState;
+      }
+    }
+  }
 }
