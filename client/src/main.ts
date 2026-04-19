@@ -170,6 +170,7 @@ function startGame(): void {
   spellRenderer.setMyId(myId);
   inputHandler = new InputHandler(scene, scene.renderer.domElement);
 
+  hud.buildSpellSlots(ownedSpells);
   hud.show();
   lobby.hide();
 }

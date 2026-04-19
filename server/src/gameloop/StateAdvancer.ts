@@ -127,7 +127,7 @@ export function advanceState(
       players[id] = {
         ...players[id],
         position: newPos,
-        invulnUntil: (hasSkillSystem && tMods.etherealForm) ? tick + 30 : undefined,
+        invulnUntil: (hasSkillSystem && tMods.etherealForm) ? tick + 30 : players[id].invulnUntil,
         phantomStepUntil: (hasSkillSystem && tMods.phantomStep) ? tick + 2 * 60 : players[id].phantomStepUntil,
       };
     }
