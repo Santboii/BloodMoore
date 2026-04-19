@@ -1,4 +1,4 @@
-import { supabase } from '../supabase.ts';
+import { supabase } from '../supabase';
 
 type AuthCallbacks = {
   onAuthed: (username: string, accessToken: string) => void;

@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   resolve: {
-    alias: { '@arena/shared': resolve(__dirname, '../shared/src/types.ts') },
+    alias: { '@arena/shared': resolve(__dirname, '../shared/src/index.ts') },
   },
   server: {
     proxy: {

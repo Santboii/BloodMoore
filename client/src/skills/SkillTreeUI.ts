@@ -1,4 +1,4 @@
-import { supabase, fetchProfile, UserProfile } from '../supabase.ts';
+import { supabase, fetchProfile, UserProfile } from '../supabase';
 import { SKILL_NODES, canUnlock, NodeId, SkillNode } from '@arena/shared';
 
 const NODE_ICONS: Record<NodeId, string> = {
@@ -57,8 +57,6 @@ export class SkillTreeUI {
     const utilityNodes = SKILL_NODES.filter(n => n.tree === 'utility');
 
     this.el.innerHTML = `
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-      <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
       <div id="skill-tree-panel" style="
         background:#0f0b05;border:1px solid #3a2710;border-radius:2px;
         box-shadow:0 0 0 1px #1e1408,0 8px 40px #000000a0;
