@@ -40,10 +40,10 @@ const FIRE_POSITIONS: Partial<Record<NodeId, NodePos>> = {
 };
 
 const UTIL_POSITIONS: Partial<Record<NodeId, NodePos>> = {
-  'utility.teleport':      { x: 15, y: 0 },
-  'utility.phase_shift':   { x: 45, y: -20 },
-  'utility.ethereal_form': { x: 45, y: 20 },
-  'utility.phantom_step':  { x: 80, y: 0 },
+  'utility.teleport':      { x: 50, y: 0 },
+  'utility.phase_shift':   { x: 30, y: 90 },
+  'utility.ethereal_form': { x: 70, y: 90 },
+  'utility.phantom_step':  { x: 50, y: 180 },
 };
 
 const STYLES = `
@@ -86,9 +86,18 @@ const STYLES = `
 .st-divider-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,#5a3a10,transparent);}
 .st-divider-gem{width:10px;height:10px;background:#c8860a;transform:rotate(45deg);box-shadow:0 0 8px rgba(200,130,10,0.6);}
 .st-util-label{font-size:0.58rem;letter-spacing:0.22em;color:#5a4420;text-transform:uppercase;text-align:center;margin-bottom:12px;}
-.st-util-container{position:relative;width:100%;max-width:600px;height:80px;}
+.st-util-container{position:relative;width:100%;max-width:600px;height:250px;}
 .st-util-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
 .st-tooltip{display:none;position:fixed;background:#1a1208;border:1px solid #3a2710;padding:10px 14px;border-radius:2px;max-width:220px;font-size:0.68rem;line-height:1.5;color:#c8a870;z-index:300;pointer-events:none;}
+.st-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:400;}
+.st-confirm-panel{background:linear-gradient(160deg,rgba(16,12,6,0.98),rgba(8,6,2,0.99));border:1px solid #5a3010;border-top:2px solid rgba(200,134,10,0.6);border-radius:2px;padding:28px 32px;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.8);}
+.st-confirm-title{font-family:'Cinzel',serif;font-size:1rem;color:#ddb84a;letter-spacing:0.1em;margin-bottom:8px;}
+.st-confirm-text{font-family:'Crimson Text',Georgia,serif;font-size:0.82rem;color:#c8a870;margin-bottom:24px;line-height:1.5;}
+.st-confirm-buttons{display:flex;gap:12px;justify-content:center;}
+.st-confirm-yes{padding:9px 24px;background:linear-gradient(180deg,#7a1500 0%,#4a0d00 60%,#3a0800 100%);color:#ffcc88;border:1px solid rgba(140,40,0,0.9);font-family:'Cinzel',serif;font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;border-radius:2px;transition:all 0.15s;}
+.st-confirm-yes:hover{background:linear-gradient(180deg,#9a1a00 0%,#6a1200 60%,#4a0a00 100%);}
+.st-confirm-no{padding:9px 24px;background:#1a1208;border:1px solid #3a2710;color:#c8a870;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;cursor:pointer;border-radius:2px;transition:all 0.15s;}
+.st-confirm-no:hover{border-color:#c8860a;color:#ddb84a;}
 `;
 
 export class SkillTreeUI {
@@ -133,7 +142,7 @@ export class SkillTreeUI {
       <div class="st-ui">
         <div class="st-header">
           <div>
-            <div class="st-title">Sorceress Skills</div>
+            <div class="st-title">Mage Skills</div>
             <div class="st-points">Points Available: <b>${pts}</b></div>
           </div>
           <div class="st-header-buttons">
@@ -304,12 +313,31 @@ export class SkillTreeUI {
     await this.reload();
   }
 
-  private async handleRespec(): Promise<void> {
-    if (!confirm('Reset all skills? Points will be refunded.')) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { error } = await supabase.rpc('respec_skills', { p_user_id: user.id });
-    if (error) { console.error('Respec failed:', error.message); return; }
-    await this.reload();
+  private handleRespec(): void {
+    this.showConfirm('Reset Skills', 'All unlocked skills will be removed and points refunded. Are you sure?', async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase.rpc('respec_skills', { p_user_id: user.id });
+      if (error) { console.error('Respec failed:', error.message); return; }
+      await this.reload();
+    });
+  }
+
+  private showConfirm(title: string, text: string, onConfirm: () => void): void {
+    const overlay = document.createElement('div');
+    overlay.className = 'st-confirm-overlay';
+    overlay.innerHTML = `
+      <div class="st-confirm-panel">
+        <div class="st-confirm-title">${esc(title)}</div>
+        <div class="st-confirm-text">${esc(text)}</div>
+        <div class="st-confirm-buttons">
+          <button class="st-confirm-yes">Confirm</button>
+          <button class="st-confirm-no">Cancel</button>
+        </div>
+      </div>
+    `;
+    this.el.appendChild(overlay);
+    overlay.querySelector('.st-confirm-yes')!.addEventListener('click', () => { overlay.remove(); onConfirm(); });
+    overlay.querySelector('.st-confirm-no')!.addEventListener('click', () => overlay.remove());
   }
 }
