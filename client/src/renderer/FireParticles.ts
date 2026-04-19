@@ -150,6 +150,7 @@ export class FireParticles {
   }
 
   emitMeteorImpact(x: number, y: number, z: number): void {
+    if (this.activeCount >= SOFT_CAP) return;
     const count = 50 + Math.floor(Math.random() * 21); // 50–70
     for (let i = 0; i < count; i++) {
       if (this.activeCount >= POOL_SIZE) return;
