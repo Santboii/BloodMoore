@@ -23,6 +23,8 @@ const stateBuffer = new StateBuffer();
 const socket = new SocketClient();
 
 let myId = '';
+let currentRoomId = '';
+let currentPlayers: Record<string, string> = {};
 let playerMeshes = new Map<string, CharacterMesh>();
 let spellRenderer: SpellRenderer | null = null;
 let inputHandler: InputHandler | null = null;
@@ -32,49 +34,58 @@ let handlersRegistered = false;
 const PLAYER_COLORS: Record<number, number> = { 0: 0xc8a000, 1: 0xc00030 };
 let myColorIndex = 0;
 
+let myDisplayName = '';
+
 const lobby = new LobbyUI(uiOverlay, {
   onCreateRoom: async (displayName) => {
+    myDisplayName = displayName;
     const res = await fetch('/rooms', { method: 'POST' });
     const { roomId } = await res.json();
-    const shareUrl = `${location.origin}?room=${roomId}`;
     socket.connect();
     socket.joinRoom(roomId, displayName);
     socket.onRoomJoined(({ yourId }) => {
       myId = yourId;
+      currentRoomId = roomId;
+      currentPlayers = { [yourId]: displayName };
       myColorIndex = 0;
       hud.init(myId);
-      lobby.showWaiting(shareUrl);
+      lobby.showWaiting(roomId, displayName);
     });
     setupSocketHandlers(displayName);
   },
   onJoinRoom: (roomId, displayName) => {
+    myDisplayName = displayName;
     socket.connect();
     socket.joinRoom(roomId, displayName);
     socket.onRoomJoined(({ yourId, players }) => {
       myId = yourId;
+      currentRoomId = roomId;
+      currentPlayers = players;
       myColorIndex = 1;
       hud.init(myId);
       // Set opponent name from existing players
       const opponentEntry = Object.entries(players).find(([id]) => id !== yourId);
       if (opponentEntry) opponentName = opponentEntry[1];
-      if (Object.keys(players).length >= 2) lobby.showReady();
+      if (Object.keys(players).length >= 2) lobby.showReady(roomId, players, yourId);
     });
     setupSocketHandlers(displayName);
   },
   onReady: () => socket.ready(),
   onRematch: () => socket.rematch(),
+  onSendChatMessage: (text) => socket.sendChatMessage(text),
 });
 
 function setupSocketHandlers(_myDisplayName: string): void {
   if (handlersRegistered) return;
   handlersRegistered = true;
 
-  socket.onPlayerJoined(({ displayName }) => {
+  socket.onPlayerJoined(({ id, displayName }) => {
     opponentName = displayName;
-    lobby.showReady();
+    currentPlayers[id] = displayName;
+    lobby.showReady(currentRoomId, currentPlayers, myId);
   });
 
-  socket.onGameReady(() => lobby.showReady());
+  socket.onGameReady(() => lobby.showReady(currentRoomId, currentPlayers, myId));
 
   socket.onGameState((state: GameState) => {
     if (!spellRenderer) {
