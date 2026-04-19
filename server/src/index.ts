@@ -11,6 +11,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
 const roomManager = new RoomManager();
 const loops: Map<string, GameLoop> = new Map();
+const pauseTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
 app.use(express.json());
 
@@ -126,11 +127,154 @@ io.on('connection', socket => {
     if (!currentRoomId) return;
     const room = roomManager.getRoom(currentRoomId);
     if (!room) return;
-    room.removePlayer(socket.id);
+
+    const isMidMatch = room.state !== null && room.state.phase !== 'ended';
+
+    if (isMidMatch) {
+      const userId = room.userIds.get(socket.id);
+      if (!userId) return;
+
+      const loop = loops.get(currentRoomId);
+      loop?.pause();
+      room.pause(userId);
+
+      socket.to(currentRoomId).emit('match-paused', {
+        reason: 'opponent-disconnected',
+        countdown: 60,
+      });
+
+      const roomId = currentRoomId;
+      // Only start timer if one isn't already running (second disconnect during pause)
+      if (pauseTimers.has(roomId)) return;
+      const pauseTimer = setTimeout(() => {
+        const r = roomManager.getRoom(roomId);
+        if (!r || !r.pauseState) return;
+
+        const connectedSocketId = [...r.players.entries()]
+          .find(([sid]) => {
+            const uid = r.userIds.get(sid);
+            return uid && !r.pauseState!.disconnectedUserIds.has(uid);
+          })?.[0];
+
+        if (connectedSocketId) {
+          r.state!.phase = 'ended';
+          r.state!.winner = connectedSocketId;
+          io.to(roomId).emit('duel-ended', { winnerId: connectedSocketId });
+          for (const [sid, uid] of r.userIds.entries()) {
+            const won = sid === connectedSocketId;
+            creditMatchResult(uid, won).catch(console.error);
+          }
+        }
+        // No connected player = no result (both disconnected)
+
+        loops.get(roomId)?.stop();
+        loops.delete(roomId);
+        pauseTimers.delete(roomId);
+        roomManager.deleteRoom(roomId);
+      }, 60_000);
+
+      pauseTimers.set(roomId, pauseTimer);
+    } else {
+      // Lobby phase or ended phase — original behavior
+      room.removePlayer(socket.id);
+      loops.get(currentRoomId)?.stop();
+      loops.delete(currentRoomId);
+      io.to(currentRoomId).emit('opponent-disconnected');
+      if (room.players.size === 0) roomManager.deleteRoom(currentRoomId);
+    }
+  });
+
+  socket.on('rejoin-room', async ({ roomId, accessToken }: {
+    roomId: string;
+    accessToken: string;
+  }) => {
+    const room = roomManager.getRoom(roomId);
+    if (!room || !room.pauseState) {
+      socket.emit('rejoin-failed', { reason: 'Room not found or not paused' });
+      return;
+    }
+
+    const result = await loadSkillsForToken(accessToken);
+    if (!result.ok) {
+      socket.emit('rejoin-failed', { reason: 'Invalid token' });
+      return;
+    }
+
+    const userId = result.userId;
+    if (!room.pauseState.disconnectedUserIds.has(userId)) {
+      socket.emit('rejoin-failed', { reason: 'Not a disconnected player in this room' });
+      return;
+    }
+
+    // Find the old socket ID for this user
+    const oldSocketId = [...room.userIds.entries()]
+      .find(([, uid]) => uid === userId)?.[0];
+    if (!oldSocketId) {
+      socket.emit('rejoin-failed', { reason: 'Player not found in room' });
+      return;
+    }
+
+    // Remap socket ID
+    room.remapPlayer(oldSocketId, socket.id);
+    room.resume(userId);
+    socket.join(roomId);
+    currentRoomId = roomId;
+
+    // Cancel pause timer if no one is disconnected anymore
+    if (!room.pauseState) {
+      const timer = pauseTimers.get(roomId);
+      if (timer) {
+        clearTimeout(timer);
+        pauseTimers.delete(roomId);
+      }
+
+      // Resume game loop
+      loops.get(roomId)?.resume();
+    }
+
+    // Send current state to reconnecting client
+    socket.emit('rejoin-accepted');
+    if (room.state) {
+      socket.emit('game-state', room.state);
+    }
+
+    // Notify the other player
+    if (!room.pauseState) {
+      socket.to(roomId).emit('game-resumed');
+    }
+  });
+
+  socket.on('leave-paused-match', () => {
+    if (!currentRoomId) return;
+    const room = roomManager.getRoom(currentRoomId);
+    if (!room || !room.pauseState || !room.state) return;
+
+    // The leaving player concedes — the disconnected player wins
+    const disconnectedSocketId = [...room.players.entries()]
+      .find(([sid]) => {
+        const uid = room.userIds.get(sid);
+        return uid && room.pauseState!.disconnectedUserIds.has(uid);
+      })?.[0];
+
+    if (disconnectedSocketId) {
+      room.state.phase = 'ended';
+      room.state.winner = disconnectedSocketId;
+      io.to(currentRoomId).emit('duel-ended', { winnerId: disconnectedSocketId });
+      for (const [sid, uid] of room.userIds.entries()) {
+        const won = sid === disconnectedSocketId;
+        creditMatchResult(uid, won).catch(console.error);
+      }
+    }
+
+    // Clean up
+    const timer = pauseTimers.get(currentRoomId);
+    if (timer) {
+      clearTimeout(timer);
+      pauseTimers.delete(currentRoomId);
+    }
     loops.get(currentRoomId)?.stop();
     loops.delete(currentRoomId);
-    io.to(currentRoomId).emit('opponent-disconnected');
-    if (room.players.size === 0) roomManager.deleteRoom(currentRoomId);
+    roomManager.deleteRoom(currentRoomId);
   });
 });
 
