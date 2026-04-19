@@ -70,6 +70,7 @@ export class Room {
   reset(): void {
     for (const p of this.players.values()) p.ready = false;
     this.state = null;
+    this.pauseState = null;
     this.pendingInputs.clear();
   }
 

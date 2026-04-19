@@ -200,6 +200,12 @@ io.on('connection', socket => {
       return;
     }
 
+    // Re-check after await — timer may have fired during the Supabase call
+    if (!roomManager.getRoom(roomId) || !room.pauseState) {
+      socket.emit('rejoin-failed', { reason: 'Match already ended' });
+      return;
+    }
+
     const userId = result.userId;
     if (!room.pauseState.disconnectedUserIds.has(userId)) {
       socket.emit('rejoin-failed', { reason: 'Not a disconnected player in this room' });
