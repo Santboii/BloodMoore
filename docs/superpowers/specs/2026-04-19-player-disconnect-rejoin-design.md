@@ -16,7 +16,7 @@ On disconnect, stop the game loop but keep the Room and GameState alive in serve
 
 When a player disconnects mid-match (`room.state !== null` and `state.phase !== 'ended'`), the server transitions the room into a paused state instead of tearing it down:
 
-- **Room gets a new `pauseState` field** — tracks whether the room is paused, who disconnected (by Supabase user ID), and the server-side timer handle.
+- **Room gets a new `pauseState` field** — tracks whether the room is paused, which players are disconnected (a Set of Supabase user IDs, since both can disconnect), the timer handle, and the timestamp when the pause started.
 - **Game loop stops ticking** but is NOT destroyed. The `GameState` stays in memory as-is (projectiles frozen mid-flight, cooldowns frozen, HP/mana unchanged).
 - **A 60-second server timer starts.** If it expires:
   - The disconnected player forfeits — `state.phase` set to `'ended'`, winner is the connected player.
