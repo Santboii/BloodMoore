@@ -72,7 +72,7 @@ The `MeteorState` already has `{ id, ownerId, target, strikeAt }`. Client derive
 - Zero allocations per frame — just updating existing mesh uniforms
 
 **2. Falling rock**
-- `SphereGeometry(6, 4, 4)` — low-poly
+- `SphereGeometry(10, 4, 4)` — low-poly, starts visually small at altitude and grows to full size at impact
 - `MeshBasicMaterial`: bright orange-red `#ff4400` (no emissive needed — additive scene lighting makes it glow naturally)
 - Spawns at Three.js world position `(target.x, 500, target.y)`, moves to `y=0` interpolated by `t`
 - Removed on detonation
