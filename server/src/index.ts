@@ -215,8 +215,7 @@ io.on('connection', socket => {
         }, DISCONNECT_TIMEOUT_MS);
         pauseTimers.set(`${roomId}:${disconnectedSocketId}`, timer);
 
-        // Remove from active players but don't delete room
-        room.removePlayer(socket.id);
+        // Keep player in room so tick() still generates idle inputs for them
         socket.to(roomId).emit('player-disconnected', { playerId: socket.id });
       }
     } else {

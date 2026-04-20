@@ -161,5 +161,16 @@ export class Room {
         this.state.players[newSocketId] = playerState;
       }
     }
+
+    // Remap teams in GameState (2v2)
+    if (this.state?.teams) {
+      for (const [teamId, members] of Object.entries(this.state.teams)) {
+        const idx = members.indexOf(oldSocketId);
+        if (idx !== -1) {
+          members[idx] = newSocketId;
+          break;
+        }
+      }
+    }
   }
 }
