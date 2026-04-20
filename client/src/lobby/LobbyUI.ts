@@ -4,7 +4,7 @@ function escapeHtml(s: string): string {
 
 export type LobbyCallbacks = {
   onCreateRoom: (displayName: string, mode: string) => void;
-  onJoinRoom: (roomId: string, displayName: string) => void;
+  onJoinRoom: (roomId: string, displayName: string, teamId?: string) => void;
   onReady: () => void;
   onRematch: () => void;
   onReturnToLobby: () => void;
@@ -89,6 +89,8 @@ const STYLES = `
 .bm-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:13px;font-weight:700;flex-shrink:0;}
 .bm-avatar-0{background:#3a0800;border:1px solid #8a2000;color:#ff8844;}
 .bm-avatar-1{background:#001838;border:1px solid #004888;color:#4488ff;}
+.bm-avatar-2{background:#003040;border:1px solid #0080c0;color:#0080c0;}
+.bm-avatar-3{background:#003010;border:1px solid #00a040;color:#00a040;}
 .bm-avatar-empty{background:rgba(10,10,24,0.9);border:1px dashed rgba(40,28,6,0.7);color:#3a2a08;}
 .bm-slot-info{flex:1;}
 .bm-slot-name{font-family:'Cinzel',serif;font-size:13px;color:#d4a840;}
@@ -309,7 +311,7 @@ export class LobbyUI {
     this.renderLobby(roomId, slots, mode);
   }
 
-  showResult(won: boolean, mode?: string): void {
+  showResult(won: boolean, mode?: string, placement?: number): void {
     this.stopPolling();
     let title: string;
     let subtitle: string;
@@ -318,7 +320,14 @@ export class LobbyUI {
       subtitle = won ? 'Your team dominated the arena' : 'Your team has fallen';
     } else if (mode === 'ffa') {
       title = won ? 'Victory' : 'Defeated';
-      subtitle = won ? 'You are the last one standing' : 'You have been eliminated';
+      if (won) {
+        subtitle = 'You are the last one standing';
+      } else if (placement) {
+        const ordinal = placement === 2 ? '2nd' : placement === 3 ? '3rd' : `${placement}th`;
+        subtitle = `Defeated \u2014 ${ordinal} place`;
+      } else {
+        subtitle = 'You have been eliminated';
+      }
     } else {
       title = won ? 'Victory' : 'Defeat';
       subtitle = won ? 'You are victorious' : 'You have been slain';
@@ -439,22 +448,31 @@ export class LobbyUI {
       container.innerHTML = `<div class="bm-empty">No open lobbies<br>Be the first to enter the arena</div>`;
       return;
     }
-    container.innerHTML = rooms.map(r => `
-      <div class="bm-room-row" data-room-id="${escapeHtml(r.roomId)}">
+    container.innerHTML = rooms.map(r => {
+      const joinButtons = r.mode === '2v2'
+        ? `<button class="bm-btn-green-sm" data-team="team1">Join T1</button>
+           <button class="bm-btn-green-sm" data-team="team2" style="margin-left:4px">Join T2</button>`
+        : `<button class="bm-btn-green-sm">Join</button>`;
+      return `
+      <div class="bm-room-row" data-room-id="${escapeHtml(r.roomId)}" data-mode="${escapeHtml(r.mode)}">
         <div class="bm-room-info">
           <div class="bm-room-name">${escapeHtml(r.creatorName)}</div>
           <div class="bm-room-meta">Waiting for players</div>
         </div>
         <span class="bm-tag">${escapeHtml(r.mode)}</span>
         <div class="bm-players"><b>${r.playerCount}</b> / ${r.maxPlayers}</div>
-        <button class="bm-btn-green-sm">Join</button>
-      </div>`).join('');
+        ${joinButtons}
+      </div>`;
+    }).join('');
 
     container.querySelectorAll('.bm-room-row').forEach(row => {
-      row.querySelector('.bm-btn-green-sm')!.addEventListener('click', () => {
-        const roomId = (row as HTMLElement).dataset.roomId!;
-        const name = (this.ui.querySelector('#bm-name') as HTMLInputElement | null)?.value.trim() ?? '';
-        if (name) this.cb.onJoinRoom(roomId, name);
+      row.querySelectorAll('.bm-btn-green-sm').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const roomId = (row as HTMLElement).dataset.roomId!;
+          const name = (this.ui.querySelector('#bm-name') as HTMLInputElement | null)?.value.trim() ?? '';
+          const teamId = (btn as HTMLElement).dataset.team;
+          if (name) this.cb.onJoinRoom(roomId, name, teamId);
+        });
       });
     });
   }
@@ -470,7 +488,7 @@ export class LobbyUI {
     const slotHtml = (slot: { name: string; index: number; ready: boolean } | undefined, fallback: string) =>
       slot
         ? `<div class="bm-slot">
-             <div class="bm-avatar bm-avatar-${slot.index % 2}">${escapeHtml((slot.name[0] ?? '?').toUpperCase())}</div>
+             <div class="bm-avatar bm-avatar-${slot.index % 4}">${escapeHtml((slot.name[0] ?? '?').toUpperCase())}</div>
              <div class="bm-slot-info">
                <div class="bm-slot-name">${escapeHtml(slot.name)}</div>
                <div class="bm-slot-status ${slot.ready ? 'bm-status-ready' : 'bm-status-waiting'}">${slot.ready ? '✓ Ready' : 'Waiting...'}</div>

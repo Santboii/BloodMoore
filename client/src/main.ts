@@ -36,6 +36,7 @@ let currentMode = '1v1';
 let myTeamId: string | undefined;
 let handlersRegistered = false;
 let pendingRejoin: { roomId: string } | null = null;
+let deathOrder: string[] = [];
 
 let accessToken = '';
 let ownedSpells = new Set<SpellId>();
@@ -156,10 +157,10 @@ const lobby = new LobbyUI(uiOverlay, {
     });
     setupSocketHandlers(displayName);
   },
-  onJoinRoom: (roomId, displayName) => {
+  onJoinRoom: (roomId, displayName, teamId?) => {
     myDisplayName = displayName;
     socket.connect();
-    socket.joinRoom(roomId, displayName, accessToken);
+    socket.joinRoom(roomId, displayName, accessToken, teamId);
     socket.onRoomJoined(({ yourId, players, mode: serverMode, teams }) => {
       myId = yourId;
       currentRoomId = roomId;
@@ -272,7 +273,14 @@ function setupSocketHandlers(_myDisplayName: string): void {
     }
     lobby.hidePauseOverlay();
     stopGame();
-    lobby.showResult(won, mode);
+    if (mode === 'ffa' && !won) {
+      const myDeathIndex = deathOrder.indexOf(myId);
+      const totalPlayers = 4;
+      const placement = myDeathIndex >= 0 ? totalPlayers - myDeathIndex : 1;
+      lobby.showResult(won, mode, placement);
+    } else {
+      lobby.showResult(won, mode);
+    }
     lobby.show();
   });
 
@@ -286,11 +294,20 @@ function setupSocketHandlers(_myDisplayName: string): void {
   socket.onOpponentDisconnected(() => {
     if (duelEnded) {
       lobby.disableRematch();
-    } else {
+    } else if (currentMode === '1v1') {
       stopGame();
       lobby.showDisconnected();
       lobby.show();
+    } else {
+      // For FFA/2v2, just show a system message instead of the dramatic overlay
+      lobby.appendSystemMessage('A player disconnected');
     }
+  });
+
+  socket.onPlayerDisconnected(({ playerId }) => {
+    const name = allPlayerNames[playerId] ?? 'A player';
+    lobby.appendSystemMessage(`${name} disconnected`);
+    delete currentPlayers[playerId];
   });
 
   socket.onMatchPaused(({ countdown }) => {
@@ -351,6 +368,7 @@ function stopGame(): void {
   playerMeshes.clear();
   hud.hide();
   stateBuffer.clear();
+  deathOrder = [];
 }
 
 let lastFrameTime = performance.now();
@@ -377,6 +395,9 @@ scene.startRenderLoop(() => {
   }
 
   for (const [id, player] of Object.entries(state.players)) {
+    if (player.hp <= 0 && !deathOrder.includes(id)) {
+      deathOrder.push(id);
+    }
     if (!playerMeshes.has(id)) {
       const playerIds = Object.keys(state.players);
       const colorIndex = playerIds.indexOf(id) % Object.keys(PLAYER_COLORS).length;
