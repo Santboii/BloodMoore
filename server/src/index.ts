@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { RoomManager } from './rooms/RoomManager.ts';
@@ -13,6 +14,7 @@ const roomManager = new RoomManager();
 const loops: Map<string, GameLoop> = new Map();
 const pauseTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
+app.use(cors());
 app.use(express.json());
 
 app.post('/rooms', (_req, res) => {
