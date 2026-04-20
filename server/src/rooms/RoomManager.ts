@@ -1,4 +1,6 @@
 import { Room } from './Room.ts';
+import { GAME_MODES, DUEL_MODE } from '@arena/shared';
+import type { GameModeType } from '@arena/shared';
 
 export interface OpenRoomInfo {
   roomId: string;
@@ -11,9 +13,10 @@ export interface OpenRoomInfo {
 export class RoomManager {
   private rooms: Map<string, Room> = new Map();
 
-  createRoom(): Room {
+  createRoom(modeType: GameModeType = '1v1'): Room {
     const id = Math.random().toString(36).slice(2, 8);
-    const room = new Room(id);
+    const mode = GAME_MODES[modeType] ?? DUEL_MODE;
+    const room = new Room(id, mode);
     this.rooms.set(id, room);
     return room;
   }
@@ -41,8 +44,8 @@ export class RoomManager {
           roomId: room.id,
           creatorName: room.creatorName,
           playerCount: room.players.size,
-          maxPlayers: 2,
-          mode: '1v1',
+          maxPlayers: room.mode.maxPlayers,
+          mode: room.mode.type,
         });
       }
     }
