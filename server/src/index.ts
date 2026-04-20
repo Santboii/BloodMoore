@@ -35,7 +35,6 @@ app.post('/paused-match', async (req, res) => {
   const result = await loadSkillsForToken(token);
   if (!result.ok) { res.status(401).json({ roomId: null }); return; }
   const room = roomManager.findPausedMatchForUser(result.userId);
-  console.log('[paused-match] userId:', result.userId, 'found room:', room?.id ?? 'none');
   res.json({ roomId: room?.id ?? null });
 });
 
@@ -134,24 +133,20 @@ io.on('connection', socket => {
   });
 
   socket.on('disconnect', () => {
-    console.log('[disconnect]', socket.id, 'room:', currentRoomId);
     if (!currentRoomId) return;
     const room = roomManager.getRoom(currentRoomId);
-    if (!room) { console.log('[disconnect] no room'); return; }
+    if (!room) return;
 
     const isMidMatch = room.state !== null && room.state.phase !== 'ended';
-    console.log('[disconnect] state:', room.state?.phase ?? 'null', 'isMidMatch:', isMidMatch, 'userIds:', [...room.userIds.entries()]);
 
     if (isMidMatch) {
       const userId = room.userIds.get(socket.id);
-      if (!userId) { console.log('[disconnect] no userId for', socket.id); return; }
+      if (!userId) return;
 
       const loop = loops.get(currentRoomId);
       loop?.pause();
       room.pause(userId);
 
-      const roomSockets = io.sockets.adapter.rooms.get(currentRoomId);
-      console.log('[disconnect] emitting match-paused to room', currentRoomId, 'members:', roomSockets ? [...roomSockets] : 'empty');
       socket.to(currentRoomId).emit('match-paused', {
         reason: 'opponent-disconnected',
         countdown: 60,
@@ -202,10 +197,8 @@ io.on('connection', socket => {
     roomId: string;
     accessToken: string;
   }) => {
-    console.log('[rejoin-room] from', socket.id, 'for room', roomId);
     const room = roomManager.getRoom(roomId);
     if (!room || !room.pauseState) {
-      console.log('[rejoin-room] FAIL: room exists?', !!room, 'pauseState?', !!room?.pauseState);
       socket.emit('rejoin-failed', { reason: 'Room not found or not paused' });
       return;
     }
