@@ -1,11 +1,11 @@
 import {
   GameState, PlayerState, InputFrame, Vec2, SpellId, NodeId,
   SPELL_CONFIG, MAX_HP, MAX_MANA, MANA_REGEN_PER_TICK,
-  FIREWALL_DAMAGE_PER_TICK, TELEPORT_MAX_RANGE,
+  FIREWALL_DAMAGE_PER_TICK, FIREWALL_MAX_LENGTH, TELEPORT_MAX_RANGE, METEOR_AOE_RADIUS,
 } from '@arena/shared';
 import { movePlayer, clampToArena, resolvePlayerPillarCollisions } from '../physics/Movement.ts';
 import { spawnFireball, advanceFireball, isFireballExpired, fireballHitsPlayer, fireballDamage } from '../spells/Fireball.ts';
-import { spawnFireWall, fireWallDamagesPlayer } from '../spells/FireWall.ts';
+import { spawnFireWall, spawnFireCrater, fireWallDamagesPlayer } from '../spells/FireWall.ts';
 import { spawnMeteor, meteorDetonates, meteorHitsPlayer, meteorDamage } from '../spells/Meteor.ts';
 import { buildSpellModifiers } from '../skills/SpellModifiers.ts';
 
@@ -110,8 +110,16 @@ export function advanceState(
         split:     mods.fireball.split,
       });
       projectiles = [...projectiles, fb];
-    } else if (spell === 2 && input.aimTarget2) {
-      fireWalls = [...fireWalls, spawnFireWall(id, input.aimTarget, input.aimTarget2, tick, mods.firewall.durationMultiplier)];
+    } else if (spell === 2) {
+      const dx = input.aimTarget.x - p.position.x;
+      const dy = input.aimTarget.y - p.position.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const perpX = -dy / len;
+      const perpY = dx / len;
+      const half = FIREWALL_MAX_LENGTH / 2;
+      const from = { x: input.aimTarget.x - perpX * half, y: input.aimTarget.y - perpY * half };
+      const to = { x: input.aimTarget.x + perpX * half, y: input.aimTarget.y + perpY * half };
+      fireWalls = [...fireWalls, spawnFireWall(id, from, to, tick, mods.firewall.durationMultiplier)];
     } else if (spell === 3) {
       meteors = [...meteors, spawnMeteor(id, input.aimTarget, tick, {
         hidden: mods.meteor.hidden,
@@ -196,12 +204,8 @@ export function advanceState(
         }
       }
       if (m.moltenImpact) {
-        const crater = spawnFireWall(m.ownerId,
-          { x: m.target.x - 40, y: m.target.y },
-          { x: m.target.x + 40, y: m.target.y },
-          tick,
-        );
-        fireWalls = [...fireWalls, { ...crater, expiresAt: tick + 180 }];
+        const crater = spawnFireCrater(m.ownerId, { ...m.target }, METEOR_AOE_RADIUS, tick, 180);
+        fireWalls = [...fireWalls, crater];
       }
     } else {
       survivingMeteors.push(m);

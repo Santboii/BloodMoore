@@ -85,7 +85,7 @@ export class FireParticles {
         10 + Math.random() * 20,
         -dirZ * (40 + Math.random() * 30) + (Math.random() - 0.5) * 30,
         0.35 + Math.random() * 0.15,
-        4,
+        12 + Math.random() * 4,
       );
     }
   }
@@ -104,7 +104,7 @@ export class FireParticles {
         20 + Math.random() * 80,
         Math.sin(theta) * speed,
         0.5 + Math.random() * 0.3,
-        Math.random() > 0.5 ? 6 : 3,
+        Math.random() > 0.5 ? 16 : 10,
       );
     }
   }
@@ -123,7 +123,7 @@ export class FireParticles {
           40 + Math.random() * 40,
           (Math.random() - 0.5) * 15,
           0.4 + Math.random() * 0.3,
-          3 + Math.random() * 3,
+          14 + Math.random() * 10,
         );
       }
     }
@@ -144,7 +144,27 @@ export class FireParticles {
         20 + Math.random() * 20,
         Math.sin(theta) * spread,
         0.2 + Math.random() * 0.1,
-        2 + Math.random() * 2,
+        8 + Math.random() * 6,
+      );
+    }
+  }
+
+  emitCrater(x: number, z: number, radius: number): void {
+    if (this.activeCount >= SOFT_CAP) return;
+    const count = Math.max(4, Math.round(radius / 10));
+    for (let i = 0; i < count; i++) {
+      if (this.activeCount >= POOL_SIZE) return;
+      const theta = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * radius;
+      this.spawn(
+        x + Math.cos(theta) * r,
+        1,
+        z + Math.sin(theta) * r,
+        (Math.random() - 0.5) * 10,
+        30 + Math.random() * 30,
+        (Math.random() - 0.5) * 10,
+        0.3 + Math.random() * 0.3,
+        10 + Math.random() * 8,
       );
     }
   }
@@ -164,7 +184,7 @@ export class FireParticles {
         30 + Math.random() * 100,
         Math.sin(theta) * speed,
         0.5 + Math.random() * 0.3,
-        Math.random() > 0.5 ? 7 : 4,
+        Math.random() > 0.5 ? 18 : 12,
       );
     }
   }

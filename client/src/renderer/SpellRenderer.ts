@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GameState, METEOR_DELAY_TICKS } from '@arena/shared';
 import { FireParticles } from './FireParticles';
 
-type MeteorEntry = { ring: THREE.Mesh; rock: THREE.Mesh; target: { x: number; y: number } };
+type MeteorEntry = { ring: THREE.Mesh; rock: THREE.Mesh; target: { x: number; y: number }; spawnTime: number };
 
 export class SpellRenderer {
   private fireballs = new Map<string, THREE.Mesh>();
@@ -83,22 +83,36 @@ export class SpellRenderer {
     for (const fw of state.fireWalls) {
       if (!this.fireWalls.has(fw.id)) {
         const group = new THREE.Group();
-        for (const seg of fw.segments) {
-          const points = [
-            new THREE.Vector3(seg.x1, 1, seg.y1),
-            new THREE.Vector3(seg.x2, 1, seg.y2),
-          ];
-          const line = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints(points),
-            new THREE.LineBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.4 }),
+        if (fw.shape === 'circle' && fw.center && fw.radius) {
+          const disc = new THREE.Mesh(
+            new THREE.CircleGeometry(fw.radius, 32),
+            new THREE.MeshBasicMaterial({ color: 0xff2200, transparent: true, opacity: 0.2, side: THREE.DoubleSide }),
           );
-          group.add(line);
+          disc.rotation.x = -Math.PI / 2;
+          disc.position.set(fw.center.x, 1, fw.center.y);
+          group.add(disc);
+        } else {
+          for (const seg of fw.segments) {
+            const points = [
+              new THREE.Vector3(seg.x1, 1, seg.y1),
+              new THREE.Vector3(seg.x2, 1, seg.y2),
+            ];
+            const line = new THREE.Line(
+              new THREE.BufferGeometry().setFromPoints(points),
+              new THREE.LineBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.4 }),
+            );
+            group.add(line);
+          }
         }
         this.scene.add(group);
         this.fireWalls.set(fw.id, group);
       }
 
-      this.fireParticles.emitWall(fw.segments);
+      if (fw.shape === 'circle' && fw.center && fw.radius) {
+        this.fireParticles.emitCrater(fw.center.x, fw.center.y, fw.radius);
+      } else {
+        this.fireParticles.emitWall(fw.segments);
+      }
     }
   }
 
@@ -124,13 +138,13 @@ export class SpellRenderer {
         ring.position.set(meteor.target.x, 2, meteor.target.y);
 
         const rock = new THREE.Mesh(
-          new THREE.SphereGeometry(10, 4, 4),
+          new THREE.SphereGeometry(25, 6, 6),
           new THREE.MeshBasicMaterial({ color: 0xff4400 }),
         );
 
         this.scene.add(ring);
         this.scene.add(rock);
-        this.meteors.set(meteor.id, { ring, rock, target: { ...meteor.target } });
+        this.meteors.set(meteor.id, { ring, rock, target: { ...meteor.target }, spawnTime: this.elapsedTime });
       }
 
       const entry = this.meteors.get(meteor.id)!;
@@ -139,12 +153,12 @@ export class SpellRenderer {
       entry.rock.visible = visible;
       const t = Math.max(0, Math.min(1, 1 - (meteor.strikeAt - state.tick) / METEOR_DELAY_TICKS));
 
-      // Animate ring: shrink + pulse faster as strike approaches
       const scale = 1.0 - t * 0.4;
-      entry.ring.scale.set(scale, 1, scale);
-      const pulseFreq = 1 + t * 3; // 1Hz → 4Hz
+      entry.ring.scale.setScalar(scale);
+      const localTime = this.elapsedTime - entry.spawnTime;
+      const pulseFreq = 0.5 + t * 2; // 0.5Hz → 2.5Hz
       (entry.ring.material as THREE.MeshBasicMaterial).opacity =
-        Math.sin(this.elapsedTime * pulseFreq * Math.PI * 2) * 0.3 + 0.5;
+        Math.sin(localTime * pulseFreq * Math.PI * 2) * 0.3 + 0.5;
 
       // Animate rock: fall from y=500 to y=0
       const rockY = 500 * (1 - t);

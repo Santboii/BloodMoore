@@ -7,6 +7,7 @@ export type LobbyCallbacks = {
   onJoinRoom: (roomId: string, displayName: string) => void;
   onReady: () => void;
   onRematch: () => void;
+  onReturnToLobby: () => void;
   onSendChatMessage: (text: string) => void;
   onOpenSkills: () => void;
   onLogout: () => void;
@@ -301,8 +302,20 @@ export class LobbyUI {
         <div class="bm-result-title" style="color:${won ? '#c8860a' : '#cc2222'}">${won ? 'Victory' : 'Defeat'}</div>
         <div class="bm-result-sub">${won ? `You defeated ${escapedName}` : `${escapedName} defeated you`}</div>
         <button id="bm-rematch" class="bm-btn-rematch">⚔ Rematch</button>
+        <button id="bm-return-lobby" class="bm-btn-rematch" style="margin-top:8px;background:transparent;border:1px solid #554422;color:#998866">Return to Lobby</button>
       </div>`;
     this.ui.querySelector('#bm-rematch')!.addEventListener('click', () => this.cb.onRematch());
+    this.ui.querySelector('#bm-return-lobby')!.addEventListener('click', () => this.cb.onReturnToLobby());
+  }
+
+  disableRematch(): void {
+    const btn = this.ui.querySelector('#bm-rematch') as HTMLButtonElement | null;
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'default';
+      btn.textContent = 'Opponent left';
+    }
   }
 
   showDisconnected(): void {

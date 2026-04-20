@@ -7,7 +7,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CameraController } from './CameraController';
 
-const FRUSTUM = 480;
+const FRUSTUM = 380;
 const INITIAL_CENTER_X = 1000;
 const INITIAL_CENTER_Z = 1000;
 

@@ -9,8 +9,7 @@ export class InputHandler {
   private keys = new Set<string>();
   private activeSpell: SpellId = 1;
   private mouseWorld = { x: 1000, y: 1000 }; // center of new arena
-  private fireWallDragStart: { x: number; y: number } | null = null;
-  private pendingCast: { spell: SpellId; aimTarget: { x: number; y: number }; aimTarget2?: { x: number; y: number } } | null = null;
+  private pendingCast: { spell: SpellId; aimTarget: { x: number; y: number } } | null = null;
 
   constructor(private scene: Scene, private canvas: HTMLElement) {
     window.addEventListener('keydown', this.onKeyDown);
@@ -34,22 +33,11 @@ export class InputHandler {
     this.mouseWorld = this.scene.screenToWorld(e.clientX, e.clientY);
   };
 
-  private onMouseDown = (e: MouseEvent) => {
-    if (e.button !== 0) return;
-    if (this.activeSpell === 2) {
-      this.fireWallDragStart = this.scene.screenToWorld(e.clientX, e.clientY);
-    }
-  };
+  private onMouseDown = (_e: MouseEvent) => {};
 
   private onMouseUp = (e: MouseEvent) => {
     if (e.button !== 0) return;
-    if (this.activeSpell === 2 && this.fireWallDragStart) {
-      const end = this.scene.screenToWorld(e.clientX, e.clientY);
-      this.pendingCast = { spell: 2, aimTarget: this.fireWallDragStart, aimTarget2: end };
-      this.fireWallDragStart = null;
-    } else {
-      this.pendingCast = { spell: this.activeSpell, aimTarget: this.mouseWorld };
-    }
+    this.pendingCast = { spell: this.activeSpell, aimTarget: this.mouseWorld };
   };
 
   buildInputFrame(): InputFrame {
@@ -70,7 +58,6 @@ export class InputHandler {
     if (this.pendingCast) {
       frame.castSpell = this.pendingCast.spell;
       frame.aimTarget = this.pendingCast.aimTarget;
-      frame.aimTarget2 = this.pendingCast.aimTarget2;
       this.pendingCast = null;
     }
 
@@ -78,7 +65,6 @@ export class InputHandler {
   }
 
   getActiveSpell(): SpellId { return this.activeSpell; }
-  getFireWallDragStart(): { x: number; y: number } | null { return this.fireWallDragStart; }
   getCurrentMouseWorld(): { x: number; y: number } { return this.mouseWorld; }
 
   dispose(): void {
