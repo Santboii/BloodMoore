@@ -74,13 +74,14 @@ io.on('connection', socket => {
       players: Object.fromEntries([...room.players.entries()].map(([id, p]) => [id, p.displayName])),
       mode: room.mode.type,
       teams: Object.fromEntries(room.teamAssignments),
+      readyPlayerIds: [...room.players.entries()].filter(([, p]) => p.ready).map(([id]) => id),
     });
     socket.to(roomId).emit('player-joined', {
       id: socket.id,
       displayName,
       teamId: room.teamAssignments.get(socket.id),
     });
-    if (room.isFull) io.to(roomId).emit('game-ready');
+    if (room.players.size >= room.mode.minPlayers) io.to(roomId).emit('game-ready');
   });
 
   socket.on('chat-message', ({ text }: { text: string }) => {
@@ -219,11 +220,12 @@ io.on('connection', socket => {
         socket.to(roomId).emit('player-disconnected', { playerId: socket.id });
       }
     } else {
-      // Lobby phase or ended phase — original behavior
-      room.removePlayer(socket.id);
+      // Lobby phase or ended phase
+      const leavingId = socket.id;
+      room.removePlayer(leavingId);
       loops.get(currentRoomId)?.stop();
       loops.delete(currentRoomId);
-      io.to(currentRoomId).emit('opponent-disconnected');
+      io.to(currentRoomId).emit('player-left', { playerId: leavingId });
       if (room.players.size === 0) roomManager.deleteRoom(currentRoomId);
     }
   });

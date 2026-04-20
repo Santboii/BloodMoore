@@ -43,6 +43,7 @@ function teamWinCondition(
 export const DUEL_MODE: GameModeConfig = {
   type: '1v1',
   label: '1v1 Duel',
+  minPlayers: 2,
   maxPlayers: 2,
   teamsEnabled: false,
   friendlyFireMultiplier: 1,
@@ -53,6 +54,7 @@ export const DUEL_MODE: GameModeConfig = {
 export const FFA_MODE: GameModeConfig = {
   type: 'ffa',
   label: 'Free-For-All',
+  minPlayers: 2,
   maxPlayers: 4,
   teamsEnabled: false,
   friendlyFireMultiplier: 1,
@@ -63,6 +65,7 @@ export const FFA_MODE: GameModeConfig = {
 export const TEAM_DUEL_MODE: GameModeConfig = {
   type: '2v2',
   label: '2v2 Teams',
+  minPlayers: 4,
   maxPlayers: 4,
   teamsEnabled: true,
   teamCount: 2,

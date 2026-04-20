@@ -37,6 +37,7 @@ let myTeamId: string | undefined;
 let handlersRegistered = false;
 let pendingRejoin: { roomId: string } | null = null;
 let deathOrder: string[] = [];
+let readyPlayers = new Set<string>();
 
 let accessToken = '';
 let ownedSpells = new Set<SpellId>();
@@ -144,15 +145,16 @@ const lobby = new LobbyUI(uiOverlay, {
     const { roomId } = await res.json();
     socket.connect();
     socket.joinRoom(roomId, displayName, accessToken);
-    socket.onRoomJoined(({ yourId, mode: serverMode, teams }) => {
+    socket.onRoomJoined(({ yourId, mode: serverMode, teams, readyPlayerIds }) => {
       myId = yourId;
       currentRoomId = roomId;
       currentPlayers = { [yourId]: displayName };
       currentMode = serverMode ?? mode;
       myTeamId = teams?.[yourId];
+      readyPlayers = new Set(readyPlayerIds ?? []);
       myColorIndex = 0;
       hud.init(myId);
-      lobby.showWaiting(roomId, displayName, currentMode);
+      lobby.showReady(roomId, currentPlayers, myId, currentMode, readyPlayers);
       lobby.appendSystemMessage('You have entered the lobby');
     });
     setupSocketHandlers(displayName);
@@ -161,22 +163,17 @@ const lobby = new LobbyUI(uiOverlay, {
     myDisplayName = displayName;
     socket.connect();
     socket.joinRoom(roomId, displayName, accessToken, teamId);
-    socket.onRoomJoined(({ yourId, players, mode: serverMode, teams }) => {
+    socket.onRoomJoined(({ yourId, players, mode: serverMode, teams, readyPlayerIds }) => {
       myId = yourId;
       currentRoomId = roomId;
       currentPlayers = players;
       currentMode = serverMode ?? '1v1';
       myTeamId = teams?.[yourId];
+      readyPlayers = new Set(readyPlayerIds ?? []);
       myColorIndex = Object.keys(players).indexOf(yourId);
       hud.init(myId);
-      // Track all player names
       allPlayerNames = { ...players };
-      const maxPlayers = (currentMode === 'ffa' || currentMode === '2v2') ? 4 : 2;
-      if (Object.keys(players).length >= maxPlayers) {
-        lobby.showReady(roomId, players, yourId, currentMode);
-      } else {
-        lobby.showWaiting(roomId, displayName, currentMode);
-      }
+      lobby.showReady(roomId, players, yourId, currentMode, readyPlayers);
       lobby.appendSystemMessage('You have entered the lobby');
     });
     setupSocketHandlers(displayName);
@@ -240,16 +237,16 @@ function setupSocketHandlers(_myDisplayName: string): void {
   socket.onPlayerJoined(({ id, displayName }) => {
     allPlayerNames[id] = displayName;
     currentPlayers[id] = displayName;
-    const maxPlayers = (currentMode === 'ffa' || currentMode === '2v2') ? 4 : 2;
-    if (Object.keys(currentPlayers).length >= maxPlayers) {
-      lobby.showReady(currentRoomId, currentPlayers, myId, currentMode);
-    } else {
-      lobby.showReady(currentRoomId, currentPlayers, myId, currentMode);
-    }
+    lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers);
     lobby.appendSystemMessage(`${displayName} has entered the lobby`);
   });
 
-  socket.onGameReady(() => lobby.showReady(currentRoomId, currentPlayers, myId, currentMode));
+  socket.onGameReady(() => lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers));
+
+  socket.onPlayerReadyAck(({ playerId }) => {
+    readyPlayers.add(playerId);
+    lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers);
+  });
 
   socket.onGameState((state: GameState) => {
     if (!spellRenderer) {
@@ -308,6 +305,15 @@ function setupSocketHandlers(_myDisplayName: string): void {
     const name = allPlayerNames[playerId] ?? 'A player';
     lobby.appendSystemMessage(`${name} disconnected`);
     delete currentPlayers[playerId];
+    lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers);
+  });
+
+  socket.onPlayerLeft(({ playerId }) => {
+    const name = allPlayerNames[playerId] ?? 'A player';
+    lobby.appendSystemMessage(`${name} left the lobby`);
+    delete currentPlayers[playerId];
+    delete allPlayerNames[playerId];
+    lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers);
   });
 
   socket.onMatchPaused(({ countdown }) => {
@@ -369,6 +375,7 @@ function stopGame(): void {
   hud.hide();
   stateBuffer.clear();
   deathOrder = [];
+  readyPlayers = new Set();
 }
 
 let lastFrameTime = performance.now();
@@ -401,7 +408,7 @@ scene.startRenderLoop(() => {
     if (!playerMeshes.has(id)) {
       const playerIds = Object.keys(state.players);
       const colorIndex = playerIds.indexOf(id) % Object.keys(PLAYER_COLORS).length;
-      const gltf = colorIndex === 0 ? assets.characters.warrior : assets.characters.mage;
+      const gltf = assets.characters.pool[colorIndex] ?? assets.characters.pool[0];
       const mesh = new CharacterMesh(gltf, PLAYER_COLORS[colorIndex], player.displayName, uiOverlay);
       scene.scene.add(mesh.group);
       playerMeshes.set(id, mesh);

@@ -2,7 +2,7 @@
 import { io, Socket } from 'socket.io-client';
 import { GameState, InputFrame } from '@arena/shared';
 
-export type RoomJoinedPayload = { roomId: string; yourId: string; players: Record<string, string>; mode: string; teams: Record<string, string> };
+export type RoomJoinedPayload = { roomId: string; yourId: string; players: Record<string, string>; mode: string; teams: Record<string, string>; readyPlayerIds?: string[] };
 export type ChatMessagePayload = { senderId: string; displayName: string; text: string };
 
 export class SocketClient {
@@ -56,6 +56,9 @@ export class SocketClient {
   onTeamFull(cb: () => void): void { this.socket.once('team-full', cb); }
   onPlayerDisconnected(cb: (data: { playerId: string }) => void): void {
     this.socket.on('player-disconnected', cb);
+  }
+  onPlayerLeft(cb: (data: { playerId: string }) => void): void {
+    this.socket.on('player-left', cb);
   }
   onRoomNotFound(cb: () => void): void { this.socket.once('room-not-found', cb); }
   onChatMessage(cb: (payload: ChatMessagePayload) => void): void {

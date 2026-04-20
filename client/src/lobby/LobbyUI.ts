@@ -305,9 +305,9 @@ export class LobbyUI {
     this.renderLobby(roomId, [{ name: myDisplayName, index: 0, ready: false }], mode);
   }
 
-  showReady(roomId: string, players: Record<string, string>, _myId: string, mode?: string): void {
+  showReady(roomId: string, players: Record<string, string>, _myId: string, mode?: string, readyIds?: Set<string>): void {
     this.stopPolling();
-    const slots = Object.values(players).map((name, i) => ({ name, index: i, ready: false }));
+    const slots = Object.entries(players).map(([id, name], i) => ({ name, index: i, ready: readyIds?.has(id) ?? false }));
     this.renderLobby(roomId, slots, mode);
   }
 
@@ -480,14 +480,15 @@ export class LobbyUI {
   private renderLobby(roomId: string, slots: Array<{ name: string; index: number; ready: boolean }>, mode?: string): void {
     const shareUrl = `${location.origin}?room=${roomId}`;
     const maxPlayers = (mode === 'ffa' || mode === '2v2') ? 4 : 2;
-    const isFull = slots.length >= maxPlayers;
+    const minPlayers = (mode === '2v2') ? 4 : 2;
+    const canStart = slots.length >= minPlayers;
 
     const modeLabels: Record<string, string> = { '1v1': '1v1 Duel', 'ffa': 'Free-for-All', '2v2': '2v2 Teams' };
     const modeLabel = modeLabels[mode ?? '1v1'] ?? '1v1 Duel';
 
     const slotHtml = (slot: { name: string; index: number; ready: boolean } | undefined, fallback: string) =>
       slot
-        ? `<div class="bm-slot">
+        ? `<div class="bm-slot" style="${slot.ready ? 'border-color:#44aa22;box-shadow:0 0 6px rgba(68,170,34,0.3);' : ''}">
              <div class="bm-avatar bm-avatar-${slot.index % 4}">${escapeHtml((slot.name[0] ?? '?').toUpperCase())}</div>
              <div class="bm-slot-info">
                <div class="bm-slot-name">${escapeHtml(slot.name)}</div>
@@ -507,7 +508,7 @@ export class LobbyUI {
       slotsHtml += slotHtml(slots[i], `Slot ${i + 1}`);
     }
 
-    const readyBtn = isFull
+    const readyBtn = canStart
       ? `<button id="bm-ready" class="bm-btn-green">⚔ Ready</button>`
       : `<button class="bm-btn-green" style="opacity:0.4;cursor:not-allowed" disabled>⚔ Ready</button>
          <div class="bm-waiting-text">Waiting for players...</div>`;
@@ -528,6 +529,7 @@ export class LobbyUI {
           </div>
           ${slotsHtml}
           ${readyBtn}
+          <button id="bm-leave" class="bm-btn-leave" style="margin-top:12px;background:transparent;border:1px solid #5a3a1a;color:#a08060;padding:14px 28px;cursor:pointer;font-family:inherit;font-size:15px;width:100%;letter-spacing:2px;">← Leave Lobby</button>
         </div>
         <div class="bm-panel bm-panel-right" style="display:flex;flex-direction:column;">
           <div class="bm-ptitle">War Council</div>
@@ -541,6 +543,10 @@ export class LobbyUI {
 
     this.ui.querySelector('#bm-copy')!.addEventListener('click', () => {
       navigator.clipboard.writeText(shareUrl);
+    });
+
+    this.ui.querySelector('#bm-leave')!.addEventListener('click', () => {
+      this.cb.onReturnToLobby();
     });
 
     const readyBtnEl = this.ui.querySelector('#bm-ready');

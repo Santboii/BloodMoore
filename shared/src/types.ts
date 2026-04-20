@@ -127,6 +127,7 @@ export type GameModeType = '1v1' | 'ffa' | '2v2';
 export interface GameModeConfig {
   type: GameModeType;
   label: string;
+  minPlayers: number;
   maxPlayers: number;
   teamsEnabled: boolean;
   teamCount?: number;

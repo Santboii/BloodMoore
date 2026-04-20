@@ -27,7 +27,8 @@ export class Room {
   }
 
   get isFull(): boolean { return this.players.size >= this.mode.maxPlayers; }
-  get allReady(): boolean { return this.isFull && [...this.players.values()].every(p => p.ready); }
+  get canStart(): boolean { return this.players.size >= this.mode.minPlayers && [...this.players.values()].every(p => p.ready); }
+  get allReady(): boolean { return this.canStart; }
 
   addPlayer(socketId: string, displayName: string, teamId?: string): 'ok' | 'full' | 'team-full' {
     if (this.isFull) return 'full';

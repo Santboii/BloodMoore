@@ -9,7 +9,7 @@ export interface TextureSet {
 }
 
 export interface LoadedAssets {
-  characters: { warrior: GLTF; mage: GLTF };
+  characters: { warrior: GLTF; mage: GLTF; pool: GLTF[] };
   textures: { floor: TextureSet; stone: TextureSet };
 }
 
@@ -29,9 +29,12 @@ export class AssetLoader {
     const sRGB = THREE.SRGBColorSpace;
     const linear = THREE.LinearSRGBColorSpace;
 
-    const [warrior, mage, floorDiff, floorNorm, floorRough, stoneDiff, stoneNorm, stoneRough] =
+    const [warrior, mage, mage2, mage3, mage4, floorDiff, floorNorm, floorRough, stoneDiff, stoneNorm, stoneRough] =
       await Promise.all([
         loadGLTF('/assets/characters/warrior.glb'),
+        loadGLTF('/assets/characters/mage.glb'),
+        loadGLTF('/assets/characters/mage.glb'),
+        loadGLTF('/assets/characters/mage.glb'),
         loadGLTF('/assets/characters/mage.glb'),
         loadTex('/assets/textures/cobblestone/diffuse.jpg', sRGB),
         loadTex('/assets/textures/cobblestone/normal.jpg', linear),
@@ -42,7 +45,7 @@ export class AssetLoader {
       ]);
 
     return {
-      characters: { warrior, mage },
+      characters: { warrior, mage, pool: [mage, mage2, mage3, mage4] },
       textures: {
         floor: { map: floorDiff, normalMap: floorNorm, roughnessMap: floorRough },
         stone: { map: stoneDiff, normalMap: stoneNorm, roughnessMap: stoneRough },
