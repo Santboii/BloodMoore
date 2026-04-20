@@ -17,6 +17,7 @@ export type PlayerState = {
   cooldowns: Partial<Record<SpellId, number>>;
   invulnUntil?: number;
   phantomStepUntil?: number;
+  teamId?: string;
 };
 
 export type Projectile = {
@@ -59,6 +60,8 @@ export type GameState = {
   meteors: MeteorState[];
   phase: 'waiting' | 'countdown' | 'dueling' | 'ended';
   winner: string | null;
+  gameMode: GameModeType;
+  teams?: Record<string, string[]>;
 };
 
 export type InputFrame = {
@@ -118,3 +121,22 @@ export const SPAWN_POSITIONS: Vec2[] = [
   { x: 200,  y: 1000 },
   { x: 1800, y: 1000 },
 ];
+
+export type GameModeType = '1v1' | 'ffa' | '2v2';
+
+export interface GameModeConfig {
+  type: GameModeType;
+  label: string;
+  maxPlayers: number;
+  teamsEnabled: boolean;
+  teamCount?: number;
+  playersPerTeam?: number;
+  friendlyFireMultiplier: number;
+  spawnPositions: Vec2[];
+  checkWinCondition(
+    players: Record<string, PlayerState>,
+    teams?: Record<string, string[]>,
+  ): { phase: 'dueling' | 'ended'; winner: string | null };
+}
+
+export const DISCONNECT_TIMEOUT_MS = 30_000;
