@@ -4,6 +4,8 @@ import { Server } from 'socket.io';
 import { RoomManager } from './rooms/RoomManager.ts';
 import { GameLoop } from './gameloop/GameLoop.ts';
 import { InputFrame } from '@arena/shared';
+import type { GameModeType } from '@arena/shared';
+import { DISCONNECT_TIMEOUT_MS } from '@arena/shared';
 import { loadSkillsForToken, creditMatchResult } from './skills/loadSkills.ts';
 
 const app = express();
@@ -15,9 +17,10 @@ const pauseTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
 app.use(express.json());
 
-app.post('/rooms', (_req, res) => {
-  const room = roomManager.createRoom();
-  res.json({ roomId: room.id });
+app.post('/rooms', (req, res) => {
+  const mode = (req.body?.mode as GameModeType) ?? '1v1';
+  const room = roomManager.createRoom(mode);
+  res.json({ roomId: room.id, mode });
 });
 
 app.get('/rooms', (_req, res) => {
@@ -41,22 +44,24 @@ app.post('/paused-match', async (req, res) => {
 io.on('connection', socket => {
   let currentRoomId: string | null = null;
 
-  socket.on('join-room', async ({ roomId, displayName, accessToken }: {
+  socket.on('join-room', async ({ roomId, displayName, accessToken, teamId }: {
     roomId: string;
     displayName: string;
     accessToken?: string;
+    teamId?: string;
   }) => {
     const room = roomManager.getRoom(roomId);
     if (!room) { socket.emit('room-not-found'); return; }
-    if (room.isFull) { socket.emit('room-full'); return; }
 
-    room.addPlayer(socket.id, displayName);
+    const result = room.addPlayer(socket.id, displayName, teamId);
+    if (result === 'full') { socket.emit('room-full'); return; }
+    if (result === 'team-full') { socket.emit('team-full'); return; }
 
     if (accessToken) {
-      const result = await loadSkillsForToken(accessToken);
-      if (result.ok) {
-        room.skillSets.set(socket.id, result.skills);
-        room.userIds.set(socket.id, result.userId);
+      const skillResult = await loadSkillsForToken(accessToken);
+      if (skillResult.ok) {
+        room.skillSets.set(socket.id, skillResult.skills);
+        room.userIds.set(socket.id, skillResult.userId);
       }
     }
 
@@ -67,8 +72,14 @@ io.on('connection', socket => {
       roomId,
       yourId: socket.id,
       players: Object.fromEntries([...room.players.entries()].map(([id, p]) => [id, p.displayName])),
+      mode: room.mode.type,
+      teams: Object.fromEntries(room.teamAssignments),
     });
-    socket.to(roomId).emit('player-joined', { id: socket.id, displayName });
+    socket.to(roomId).emit('player-joined', {
+      id: socket.id,
+      displayName,
+      teamId: room.teamAssignments.get(socket.id),
+    });
     if (room.isFull) io.to(roomId).emit('game-ready');
   });
 
@@ -106,9 +117,15 @@ io.on('connection', socket => {
       loop.start(room, async state => {
         io.to(roomId).emit('game-state', state);
         if (state.phase === 'ended') {
-          io.to(roomId).emit('duel-ended', { winnerId: state.winner });
+          io.to(roomId).emit('duel-ended', { winnerId: state.winner, gameMode: state.gameMode });
           for (const [socketId, userId] of room.userIds.entries()) {
-            const won = state.winner === socketId;
+            let won: boolean;
+            if (state.gameMode === '2v2') {
+              const playerTeam = room.teamAssignments.get(socketId);
+              won = state.winner === playerTeam;
+            } else {
+              won = state.winner === socketId;
+            }
             creditMatchResult(userId, won).catch(console.error);
           }
         }
@@ -143,46 +160,65 @@ io.on('connection', socket => {
       const userId = room.userIds.get(socket.id);
       if (!userId) return;
 
-      const loop = loops.get(currentRoomId);
-      loop?.pause();
-      room.pause(userId);
+      if (room.mode.type === '1v1') {
+        // 1v1 pause logic
+        const loop = loops.get(currentRoomId);
+        loop?.pause();
+        room.pause(userId);
 
-      socket.to(currentRoomId).emit('match-paused', {
-        reason: 'opponent-disconnected',
-        countdown: 60,
-      });
+        socket.to(currentRoomId).emit('match-paused', {
+          reason: 'opponent-disconnected',
+          countdown: 60,
+        });
 
-      const roomId = currentRoomId;
-      // Only start timer if one isn't already running (second disconnect during pause)
-      if (pauseTimers.has(roomId)) return;
-      const pauseTimer = setTimeout(() => {
-        const r = roomManager.getRoom(roomId);
-        if (!r || !r.pauseState) return;
+        const roomId = currentRoomId;
+        // Only start timer if one isn't already running (second disconnect during pause)
+        if (pauseTimers.has(roomId)) return;
+        const pauseTimer = setTimeout(() => {
+          const r = roomManager.getRoom(roomId);
+          if (!r || !r.pauseState) return;
 
-        const connectedSocketId = [...r.players.entries()]
-          .find(([sid]) => {
-            const uid = r.userIds.get(sid);
-            return uid && !r.pauseState!.disconnectedUserIds.has(uid);
-          })?.[0];
+          const connectedSocketId = [...r.players.entries()]
+            .find(([sid]) => {
+              const uid = r.userIds.get(sid);
+              return uid && !r.pauseState!.disconnectedUserIds.has(uid);
+            })?.[0];
 
-        if (connectedSocketId) {
-          r.state!.phase = 'ended';
-          r.state!.winner = connectedSocketId;
-          io.to(roomId).emit('duel-ended', { winnerId: connectedSocketId });
-          for (const [sid, uid] of r.userIds.entries()) {
-            const won = sid === connectedSocketId;
-            creditMatchResult(uid, won).catch(console.error);
+          if (connectedSocketId) {
+            r.state!.phase = 'ended';
+            r.state!.winner = connectedSocketId;
+            io.to(roomId).emit('duel-ended', { winnerId: connectedSocketId });
+            for (const [sid, uid] of r.userIds.entries()) {
+              const won = sid === connectedSocketId;
+              creditMatchResult(uid, won).catch(console.error);
+            }
           }
-        }
-        // No connected player = no result (both disconnected)
+          // No connected player = no result (both disconnected)
 
-        loops.get(roomId)?.stop();
-        loops.delete(roomId);
-        pauseTimers.delete(roomId);
-        roomManager.deleteRoom(roomId);
-      }, 60_000);
+          loops.get(roomId)?.stop();
+          loops.delete(roomId);
+          pauseTimers.delete(roomId);
+          roomManager.deleteRoom(roomId);
+        }, 60_000);
 
-      pauseTimers.set(roomId, pauseTimer);
+        pauseTimers.set(roomId, pauseTimer);
+      } else {
+        // FFA / 2v2: don't pause, start elimination timer
+        const roomId = currentRoomId;
+        const disconnectedSocketId = socket.id;
+        const timer = setTimeout(() => {
+          const r = roomManager.getRoom(roomId);
+          if (r?.state && r.state.players[disconnectedSocketId]) {
+            r.state.players[disconnectedSocketId].hp = 0;
+          }
+          pauseTimers.delete(`${roomId}:${disconnectedSocketId}`);
+        }, DISCONNECT_TIMEOUT_MS);
+        pauseTimers.set(`${roomId}:${disconnectedSocketId}`, timer);
+
+        // Remove from active players but don't delete room
+        room.removePlayer(socket.id);
+        socket.to(roomId).emit('player-disconnected', { playerId: socket.id });
+      }
     } else {
       // Lobby phase or ended phase — original behavior
       room.removePlayer(socket.id);
