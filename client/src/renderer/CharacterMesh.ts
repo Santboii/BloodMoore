@@ -20,6 +20,11 @@ export class CharacterMesh {
     // warrior.glb and mage.glb are loaded as separate instances — no clone needed.
     const model = gltf.scene;
 
+    // Reset scale so setFromObject measures the native model, not a previously-
+    // scaled instance. The gltf.scene is reused across CharacterMesh instances
+    // (e.g. on rejoin), and leftover scale would make the new mesh giant.
+    model.scale.setScalar(1);
+
     // Auto-scale to TARGET_HEIGHT
     const box = new THREE.Box3().setFromObject(model);
     const height = box.max.y - box.min.y;
@@ -111,5 +116,6 @@ export class CharacterMesh {
 
   dispose(labelContainer: HTMLElement): void {
     labelContainer.removeChild(this.nameLabel);
+    this.group.removeFromParent();
   }
 }
