@@ -1,7 +1,12 @@
 import { GameState, InputFrame, SPAWN_POSITIONS, NodeId } from '@arena/shared';
 import { makeInitialState, advanceState, PlayerInit } from '../gameloop/StateAdvancer.ts';
 
-export type RoomPlayer = { socketId: string; displayName: string; ready: boolean };
+export type RoomPlayer = { socketId: string; displayName: string; ready: boolean; colorIndex: number };
+
+export type PauseState = {
+  disconnectedUserIds: Set<string>;
+  pausedAt: number; // Date.now() timestamp
+};
 
 export class Room {
   readonly id: string;
@@ -10,6 +15,7 @@ export class Room {
   skillSets: Map<string, Set<NodeId>> = new Map();
   userIds: Map<string, string> = new Map();
   state: GameState | null = null;
+  pauseState: PauseState | null = null;
   private pendingInputs: Map<string, InputFrame> = new Map();
 
   constructor(id: string) { this.id = id; }
@@ -20,7 +26,8 @@ export class Room {
   addPlayer(socketId: string, displayName: string): void {
     if (this.isFull) return;
     if (this.players.size === 0) this.creatorName = displayName;
-    this.players.set(socketId, { socketId, displayName, ready: false });
+    const colorIndex = this.players.size;
+    this.players.set(socketId, { socketId, displayName, ready: false, colorIndex });
   }
 
   removePlayer(socketId: string): void {
@@ -64,6 +71,67 @@ export class Room {
   reset(): void {
     for (const p of this.players.values()) p.ready = false;
     this.state = null;
+    this.pauseState = null;
     this.pendingInputs.clear();
+  }
+
+  pause(userId: string): void {
+    if (!this.pauseState) {
+      this.pauseState = {
+        disconnectedUserIds: new Set([userId]),
+        pausedAt: Date.now(),
+      };
+    } else {
+      this.pauseState.disconnectedUserIds.add(userId);
+    }
+  }
+
+  resume(userId: string): void {
+    if (!this.pauseState) return;
+    this.pauseState.disconnectedUserIds.delete(userId);
+    if (this.pauseState.disconnectedUserIds.size === 0) {
+      this.pauseState = null;
+    }
+  }
+
+  remapPlayer(oldSocketId: string, newSocketId: string): void {
+    // Remap players
+    const player = this.players.get(oldSocketId);
+    if (player) {
+      this.players.delete(oldSocketId);
+      player.socketId = newSocketId;
+      this.players.set(newSocketId, player);
+    }
+
+    // Remap userIds
+    const userId = this.userIds.get(oldSocketId);
+    if (userId !== undefined) {
+      this.userIds.delete(oldSocketId);
+      this.userIds.set(newSocketId, userId);
+    }
+
+    // Remap skillSets
+    const skills = this.skillSets.get(oldSocketId);
+    if (skills) {
+      this.skillSets.delete(oldSocketId);
+      this.skillSets.set(newSocketId, skills);
+    }
+
+    // Remap pendingInputs
+    const input = this.pendingInputs.get(oldSocketId);
+    if (input) {
+      this.pendingInputs.delete(oldSocketId);
+      this.pendingInputs.set(newSocketId, input);
+    }
+
+    // Remap player ID in GameState
+    if (this.state) {
+      const playerState = this.state.players[oldSocketId];
+      if (playerState) {
+        delete this.state.players[oldSocketId];
+        playerState.id = newSocketId;
+        this.state.players[newSocketId] = playerState;
+      }
+    }
   }
 }

@@ -26,6 +26,13 @@ export class RoomManager {
     this.rooms.delete(id);
   }
 
+  findPausedMatchForUser(userId: string): Room | null {
+    for (const room of this.rooms.values()) {
+      if (room.pauseState?.disconnectedUserIds.has(userId)) return room;
+    }
+    return null;
+  }
+
   listOpenRooms(): OpenRoomInfo[] {
     const result: OpenRoomInfo[] = [];
     for (const room of this.rooms.values()) {
