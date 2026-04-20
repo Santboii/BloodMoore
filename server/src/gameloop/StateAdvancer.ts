@@ -2,7 +2,9 @@ import {
   GameState, PlayerState, InputFrame, Vec2, SpellId, NodeId,
   SPELL_CONFIG, MAX_HP, MAX_MANA, MANA_REGEN_PER_TICK,
   FIREWALL_DAMAGE_PER_TICK, FIREWALL_MAX_LENGTH, TELEPORT_MAX_RANGE, METEOR_AOE_RADIUS,
+  DUEL_MODE,
 } from '@arena/shared';
+import type { GameModeConfig } from '@arena/shared';
 import { movePlayer, clampToArena, resolvePlayerPillarCollisions } from '../physics/Movement.ts';
 import { spawnFireball, advanceFireball, isFireballExpired, fireballHitsPlayer, fireballDamage } from '../spells/Fireball.ts';
 import { spawnFireWall, spawnFireCrater, fireWallDamagesPlayer } from '../spells/FireWall.ts';
@@ -11,8 +13,20 @@ import { buildSpellModifiers } from '../skills/SpellModifiers.ts';
 
 export type PlayerInit = { id: string; displayName: string; spawnPos: Vec2 };
 
-export function makeInitialState(players: PlayerInit[]): GameState {
+export function makeInitialState(
+  players: PlayerInit[],
+  mode?: GameModeConfig,
+  teams?: Record<string, string[]>,
+): GameState {
   const playerMap: Record<string, PlayerState> = {};
+  const teamLookup: Record<string, string> = {};
+  if (teams) {
+    for (const [teamId, memberIds] of Object.entries(teams)) {
+      for (const pid of memberIds) {
+        teamLookup[pid] = teamId;
+      }
+    }
+  }
   for (const p of players) {
     playerMap[p.id] = {
       id: p.id,
@@ -23,16 +37,19 @@ export function makeInitialState(players: PlayerInit[]): GameState {
       facing: 0,
       castingSpell: null,
       cooldowns: {},
+      teamId: teamLookup[p.id],
     };
   }
-  return { tick: 0, players: playerMap, projectiles: [], fireWalls: [], meteors: [], phase: 'dueling', winner: null };
+  return { tick: 0, players: playerMap, projectiles: [], fireWalls: [], meteors: [], phase: 'dueling', winner: null, gameMode: mode?.type ?? '1v1', teams };
 }
 
 export function advanceState(
   state: GameState,
   inputs: Record<string, InputFrame>,
   skillSets: Record<string, Set<NodeId>> = {},
+  mode?: GameModeConfig,
 ): GameState {
+  const resolvedMode = mode ?? DUEL_MODE;
   const players = deepCopyPlayers(state.players);
   const modifiers = Object.fromEntries(
     Object.keys(players).map(id => [id, buildSpellModifiers(skillSets[id] ?? new Set())])
@@ -147,7 +164,14 @@ export function advanceState(
   const survivingProjectiles = [];
   const newProjectiles: typeof projectiles = [];
   for (const fb of projectiles) {
-    const enemyEntry = Object.entries(players).find(([pid]) => pid !== fb.ownerId);
+    const candidates = Object.entries(players).filter(([pid]) => pid !== fb.ownerId && players[pid].hp > 0);
+    const enemyEntry = candidates.length > 0
+      ? candidates.reduce((closest, curr) => {
+          const closestDist = (closest[1].position.x - fb.position.x) ** 2 + (closest[1].position.y - fb.position.y) ** 2;
+          const currDist = (curr[1].position.x - fb.position.x) ** 2 + (curr[1].position.y - fb.position.y) ** 2;
+          return currDist < closestDist ? curr : closest;
+        })
+      : undefined;
     const moved = advanceFireball(fb, enemyEntry?.[1].position);
     if (isFireballExpired(moved)) continue;
     let hit = false;
@@ -155,7 +179,7 @@ export function advanceState(
       if (fireballHitsPlayer(moved, player.position, pid)) {
         const invuln = (player.invulnUntil ?? 0) > tick;
         if (!invuln) {
-          players[pid] = { ...player, hp: Math.max(0, player.hp - fireballDamage(moved)) };
+          players[pid] = { ...player, hp: Math.max(0, player.hp - fireballDamage(moved) * getDamageMultiplier(moved.ownerId, pid, players, resolvedMode)) };
         }
         if ((moved.split ?? 0) > 0) {
           const angles = [-0.4, 0, 0.4];
@@ -185,7 +209,7 @@ export function advanceState(
       if (fireWallDamagesPlayer(fw, players[pid].position, pid)) {
         const invuln = (players[pid].invulnUntil ?? 0) > tick;
         if (!invuln) {
-          players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - FIREWALL_DAMAGE_PER_TICK * dmgMultiplier) };
+          players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - FIREWALL_DAMAGE_PER_TICK * dmgMultiplier * getDamageMultiplier(fw.ownerId, pid, players, resolvedMode)) };
         }
       }
     }
@@ -199,7 +223,7 @@ export function advanceState(
         if (meteorHitsPlayer(m, players[pid].position, pid)) {
           const invuln = (players[pid].invulnUntil ?? 0) > tick;
           if (!invuln) {
-            players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - meteorDamage()) };
+            players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - meteorDamage() * getDamageMultiplier(m.ownerId, pid, players, resolvedMode)) };
           }
         }
       }
@@ -216,15 +240,12 @@ export function advanceState(
   let phase = state.phase;
   let winner = state.winner;
   if (phase !== 'ended') {
-    const deadIds = Object.keys(players).filter(id => players[id].hp <= 0);
-    if (deadIds.length >= 2) { phase = 'ended'; winner = null; }
-    else if (deadIds.length === 1) {
-      phase = 'ended';
-      winner = Object.keys(players).find(id => id !== deadIds[0]) ?? null;
-    }
+    const result = resolvedMode.checkWinCondition(players, state.teams);
+    phase = result.phase;
+    winner = result.winner;
   }
 
-  return { tick: tick + 1, players, projectiles, fireWalls, meteors: survivingMeteors, phase, winner };
+  return { tick: tick + 1, players, projectiles, fireWalls, meteors: survivingMeteors, phase, winner, gameMode: state.gameMode, teams: state.teams };
 }
 
 function deepCopyPlayers(players: Record<string, PlayerState>): Record<string, PlayerState> {
@@ -233,4 +254,19 @@ function deepCopyPlayers(players: Record<string, PlayerState>): Record<string, P
     copy[id] = { ...p, position: { ...p.position }, cooldowns: { ...p.cooldowns } };
   }
   return copy;
+}
+
+function getDamageMultiplier(
+  ownerId: string,
+  targetId: string,
+  players: Record<string, PlayerState>,
+  mode: GameModeConfig,
+): number {
+  if (!mode.teamsEnabled) return 1;
+  const ownerTeam = players[ownerId]?.teamId;
+  const targetTeam = players[targetId]?.teamId;
+  if (ownerTeam && targetTeam && ownerTeam === targetTeam) {
+    return mode.friendlyFireMultiplier;
+  }
+  return 1;
 }

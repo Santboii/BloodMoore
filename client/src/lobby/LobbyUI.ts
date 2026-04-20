@@ -3,8 +3,8 @@ function escapeHtml(s: string): string {
 }
 
 export type LobbyCallbacks = {
-  onCreateRoom: (displayName: string) => void;
-  onJoinRoom: (roomId: string, displayName: string) => void;
+  onCreateRoom: (displayName: string, mode: string) => void;
+  onJoinRoom: (roomId: string, displayName: string, teamId?: string) => void;
   onReady: () => void;
   onRematch: () => void;
   onReturnToLobby: () => void;
@@ -89,6 +89,8 @@ const STYLES = `
 .bm-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:13px;font-weight:700;flex-shrink:0;}
 .bm-avatar-0{background:#3a0800;border:1px solid #8a2000;color:#ff8844;}
 .bm-avatar-1{background:#001838;border:1px solid #004888;color:#4488ff;}
+.bm-avatar-2{background:#003040;border:1px solid #0080c0;color:#0080c0;}
+.bm-avatar-3{background:#003010;border:1px solid #00a040;color:#00a040;}
 .bm-avatar-empty{background:rgba(10,10,24,0.9);border:1px dashed rgba(40,28,6,0.7);color:#3a2a08;}
 .bm-slot-info{flex:1;}
 .bm-slot-name{font-family:'Cinzel',serif;font-size:13px;color:#d4a840;}
@@ -238,11 +240,10 @@ export class LobbyUI {
           <div class="bm-label">Display Name</div>
           <input id="bm-name" class="bm-input" type="text" placeholder="Enter your name..." maxlength="20" value="${nameValue}">
           <div class="bm-label">Game Mode</div>
-          <div class="bm-mode-grid">
-            <div class="bm-mode active"><span class="bm-mode-label">1v1</span><span class="bm-mode-desc">Duel · 2 players</span></div>
-            <div class="bm-mode locked"><span class="bm-mode-label">2v2</span><span class="bm-mode-desc">Teams · 4 players</span></div>
-            <div class="bm-mode locked"><span class="bm-mode-label">3v3</span><span class="bm-mode-desc">Teams · 6 players</span></div>
-            <div class="bm-mode locked"><span class="bm-mode-label">FFA</span><span class="bm-mode-desc">Free-for-All · 4p</span></div>
+          <div class="bm-mode-grid" id="mode-grid">
+            <div class="bm-mode active" data-mode="1v1"><span class="bm-mode-label">1v1</span><span class="bm-mode-desc">Duel · 2 players</span></div>
+            <div class="bm-mode" data-mode="ffa"><span class="bm-mode-label">FFA</span><span class="bm-mode-desc">Free-for-All · 4p</span></div>
+            <div class="bm-mode" data-mode="2v2"><span class="bm-mode-label">2v2</span><span class="bm-mode-desc">Teams · 4 players</span></div>
           </div>
           <button id="bm-create" class="bm-btn-red">⚔ Create Lobby</button>
           <div class="bm-sep"><div class="bm-sep-line"></div><div class="bm-sep-text">or</div><div class="bm-sep-line"></div></div>
@@ -267,9 +268,19 @@ export class LobbyUI {
     const logoutBtn = this.ui.querySelector('#bm-logout');
     if (logoutBtn) logoutBtn.addEventListener('click', () => this.cb.onLogout());
 
+    const modeGrid = this.ui.querySelector('#mode-grid')!;
+    let selectedMode = '1v1';
+    modeGrid.querySelectorAll('.bm-mode').forEach(el => {
+      el.addEventListener('click', () => {
+        modeGrid.querySelectorAll('.bm-mode').forEach(m => m.classList.remove('active'));
+        el.classList.add('active');
+        selectedMode = (el as HTMLElement).dataset.mode!;
+      });
+    });
+
     this.ui.querySelector('#bm-create')!.addEventListener('click', () => {
       const name = (this.ui.querySelector('#bm-name') as HTMLInputElement).value.trim();
-      if (name) this.cb.onCreateRoom(name);
+      if (name) this.cb.onCreateRoom(name, selectedMode);
     });
     this.ui.querySelector('#bm-join-code')!.addEventListener('click', () => {
       const name = (this.ui.querySelector('#bm-name') as HTMLInputElement).value.trim();
@@ -289,26 +300,44 @@ export class LobbyUI {
     }
   }
 
-  showWaiting(roomId: string, myDisplayName: string): void {
+  showWaiting(roomId: string, myDisplayName: string, mode?: string): void {
     this.stopPolling();
-    this.renderLobby(roomId, [{ name: myDisplayName, index: 0, ready: false }]);
+    this.renderLobby(roomId, [{ name: myDisplayName, index: 0, ready: false }], mode);
   }
 
-  showReady(roomId: string, players: Record<string, string>, _myId: string): void {
+  showReady(roomId: string, players: Record<string, string>, _myId: string, mode?: string, readyIds?: Set<string>): void {
     this.stopPolling();
-    const slots = Object.values(players).map((name, i) => ({ name, index: i, ready: false }));
-    this.renderLobby(roomId, slots);
+    const slots = Object.entries(players).map(([id, name], i) => ({ name, index: i, ready: readyIds?.has(id) ?? false }));
+    this.renderLobby(roomId, slots, mode);
   }
 
-  showResult(won: boolean, opponentName: string): void {
+  showResult(won: boolean, mode?: string, placement?: number): void {
     this.stopPolling();
-    const escapedName = escapeHtml(opponentName);
+    let title: string;
+    let subtitle: string;
+    if (mode === '2v2') {
+      title = won ? 'Your Team Wins' : 'Your Team Loses';
+      subtitle = won ? 'Your team dominated the arena' : 'Your team has fallen';
+    } else if (mode === 'ffa') {
+      title = won ? 'Victory' : 'Defeated';
+      if (won) {
+        subtitle = 'You are the last one standing';
+      } else if (placement) {
+        const ordinal = placement === 2 ? '2nd' : placement === 3 ? '3rd' : `${placement}th`;
+        subtitle = `Defeated \u2014 ${ordinal} place`;
+      } else {
+        subtitle = 'You have been eliminated';
+      }
+    } else {
+      title = won ? 'Victory' : 'Defeat';
+      subtitle = won ? 'You are victorious' : 'You have been slain';
+    }
     this.ui.innerHTML = `
       <div class="bm-title" style="font-size:42px;letter-spacing:8px">Blood Moor</div>
       <div class="bm-divider" style="max-width:500px"><div class="bm-divider-line"></div><div class="bm-divider-gem"></div><div class="bm-divider-line"></div></div>
       <div class="bm-panel bm-result-panel">
-        <div class="bm-result-title" style="color:${won ? '#c8860a' : '#cc2222'}">${won ? 'Victory' : 'Defeat'}</div>
-        <div class="bm-result-sub">${won ? `You defeated ${escapedName}` : `${escapedName} defeated you`}</div>
+        <div class="bm-result-title" style="color:${won ? '#c8860a' : '#cc2222'}">${title}</div>
+        <div class="bm-result-sub">${subtitle}</div>
         <button id="bm-rematch" class="bm-btn-rematch">⚔ Rematch</button>
         <button id="bm-return-lobby" class="bm-btn-rematch" style="margin-top:8px;background:transparent;border:1px solid #554422;color:#998866">Return to Lobby</button>
       </div>`;
@@ -419,36 +448,48 @@ export class LobbyUI {
       container.innerHTML = `<div class="bm-empty">No open lobbies<br>Be the first to enter the arena</div>`;
       return;
     }
-    container.innerHTML = rooms.map(r => `
-      <div class="bm-room-row" data-room-id="${escapeHtml(r.roomId)}">
+    container.innerHTML = rooms.map(r => {
+      const joinButtons = r.mode === '2v2'
+        ? `<button class="bm-btn-green-sm" data-team="team1">Join T1</button>
+           <button class="bm-btn-green-sm" data-team="team2" style="margin-left:4px">Join T2</button>`
+        : `<button class="bm-btn-green-sm">Join</button>`;
+      return `
+      <div class="bm-room-row" data-room-id="${escapeHtml(r.roomId)}" data-mode="${escapeHtml(r.mode)}">
         <div class="bm-room-info">
           <div class="bm-room-name">${escapeHtml(r.creatorName)}</div>
           <div class="bm-room-meta">Waiting for players</div>
         </div>
         <span class="bm-tag">${escapeHtml(r.mode)}</span>
         <div class="bm-players"><b>${r.playerCount}</b> / ${r.maxPlayers}</div>
-        <button class="bm-btn-green-sm">Join</button>
-      </div>`).join('');
+        ${joinButtons}
+      </div>`;
+    }).join('');
 
     container.querySelectorAll('.bm-room-row').forEach(row => {
-      row.querySelector('.bm-btn-green-sm')!.addEventListener('click', () => {
-        const roomId = (row as HTMLElement).dataset.roomId!;
-        const name = (this.ui.querySelector('#bm-name') as HTMLInputElement | null)?.value.trim() ?? '';
-        if (name) this.cb.onJoinRoom(roomId, name);
+      row.querySelectorAll('.bm-btn-green-sm').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const roomId = (row as HTMLElement).dataset.roomId!;
+          const name = (this.ui.querySelector('#bm-name') as HTMLInputElement | null)?.value.trim() ?? '';
+          const teamId = (btn as HTMLElement).dataset.team;
+          if (name) this.cb.onJoinRoom(roomId, name, teamId);
+        });
       });
     });
   }
 
-  private renderLobby(roomId: string, slots: Array<{ name: string; index: number; ready: boolean }>): void {
+  private renderLobby(roomId: string, slots: Array<{ name: string; index: number; ready: boolean }>, mode?: string): void {
     const shareUrl = `${location.origin}?room=${roomId}`;
-    const twoSlots = slots.length >= 2;
-    const slot0 = slots[0];
-    const slot1 = slots[1];
+    const maxPlayers = (mode === 'ffa' || mode === '2v2') ? 4 : 2;
+    const minPlayers = (mode === '2v2') ? 4 : 2;
+    const canStart = slots.length >= minPlayers;
+
+    const modeLabels: Record<string, string> = { '1v1': '1v1 Duel', 'ffa': 'Free-for-All', '2v2': '2v2 Teams' };
+    const modeLabel = modeLabels[mode ?? '1v1'] ?? '1v1 Duel';
 
     const slotHtml = (slot: { name: string; index: number; ready: boolean } | undefined, fallback: string) =>
       slot
-        ? `<div class="bm-slot">
-             <div class="bm-avatar bm-avatar-${slot.index}">${escapeHtml((slot.name[0] ?? '?').toUpperCase())}</div>
+        ? `<div class="bm-slot" style="${slot.ready ? 'border-color:#44aa22;box-shadow:0 0 6px rgba(68,170,34,0.3);' : ''}">
+             <div class="bm-avatar bm-avatar-${slot.index % 4}">${escapeHtml((slot.name[0] ?? '?').toUpperCase())}</div>
              <div class="bm-slot-info">
                <div class="bm-slot-name">${escapeHtml(slot.name)}</div>
                <div class="bm-slot-status ${slot.ready ? 'bm-status-ready' : 'bm-status-waiting'}">${slot.ready ? '✓ Ready' : 'Waiting...'}</div>
@@ -462,14 +503,19 @@ export class LobbyUI {
              </div>
            </div>`;
 
-    const readyBtn = twoSlots
+    let slotsHtml = '';
+    for (let i = 0; i < maxPlayers; i++) {
+      slotsHtml += slotHtml(slots[i], `Slot ${i + 1}`);
+    }
+
+    const readyBtn = canStart
       ? `<button id="bm-ready" class="bm-btn-green">⚔ Ready</button>`
       : `<button class="bm-btn-green" style="opacity:0.4;cursor:not-allowed" disabled>⚔ Ready</button>
-         <div class="bm-waiting-text">Waiting for opponent...</div>`;
+         <div class="bm-waiting-text">Waiting for players...</div>`;
 
     this.ui.innerHTML = `
       <div class="bm-title" style="font-size:42px;letter-spacing:8px">Blood Moor</div>
-      <div class="bm-subtitle">⚔ Lobby — 1v1 Duel</div>
+      <div class="bm-subtitle">⚔ Lobby — ${modeLabel}</div>
       <div class="bm-divider"><div class="bm-divider-line"></div><div class="bm-divider-gem"></div><div class="bm-divider-line"></div></div>
       <div class="bm-layout">
         <div class="bm-panel bm-panel-left">
@@ -481,9 +527,9 @@ export class LobbyUI {
             </div>
             <button id="bm-copy" class="bm-copy-btn">⎘ Copy Link</button>
           </div>
-          ${slotHtml(slot0, 'Slot 1')}
-          ${slotHtml(slot1, 'Slot 2')}
+          ${slotsHtml}
           ${readyBtn}
+          <button id="bm-leave" class="bm-btn-leave" style="margin-top:12px;background:transparent;border:1px solid #5a3a1a;color:#a08060;padding:14px 28px;cursor:pointer;font-family:inherit;font-size:15px;width:100%;letter-spacing:2px;">← Leave Lobby</button>
         </div>
         <div class="bm-panel bm-panel-right" style="display:flex;flex-direction:column;">
           <div class="bm-ptitle">War Council</div>
@@ -497,6 +543,10 @@ export class LobbyUI {
 
     this.ui.querySelector('#bm-copy')!.addEventListener('click', () => {
       navigator.clipboard.writeText(shareUrl);
+    });
+
+    this.ui.querySelector('#bm-leave')!.addEventListener('click', () => {
+      this.cb.onReturnToLobby();
     });
 
     const readyBtnEl = this.ui.querySelector('#bm-ready');

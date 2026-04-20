@@ -1,4 +1,5 @@
-import { GameState, InputFrame, SPAWN_POSITIONS, NodeId } from '@arena/shared';
+import { GameState, InputFrame, SPAWN_POSITIONS, NodeId, DUEL_MODE } from '@arena/shared';
+import type { GameModeConfig } from '@arena/shared';
 import { makeInitialState, advanceState, PlayerInit } from '../gameloop/StateAdvancer.ts';
 
 export type RoomPlayer = { socketId: string; displayName: string; ready: boolean; colorIndex: number };
@@ -10,28 +11,41 @@ export type PauseState = {
 
 export class Room {
   readonly id: string;
+  readonly mode: GameModeConfig;
   creatorName: string = '';
   players: Map<string, RoomPlayer> = new Map(); // socketId -> RoomPlayer
+  teamAssignments: Map<string, string> = new Map(); // socketId -> teamId
   skillSets: Map<string, Set<NodeId>> = new Map();
   userIds: Map<string, string> = new Map();
   state: GameState | null = null;
   pauseState: PauseState | null = null;
   private pendingInputs: Map<string, InputFrame> = new Map();
 
-  constructor(id: string) { this.id = id; }
+  constructor(id: string, mode: GameModeConfig = DUEL_MODE) {
+    this.id = id;
+    this.mode = mode;
+  }
 
-  get isFull(): boolean { return this.players.size === 2; }
-  get allReady(): boolean { return this.players.size === 2 && [...this.players.values()].every(p => p.ready); }
+  get isFull(): boolean { return this.players.size >= this.mode.maxPlayers; }
+  get canStart(): boolean { return this.players.size >= this.mode.minPlayers && [...this.players.values()].every(p => p.ready); }
+  get allReady(): boolean { return this.canStart; }
 
-  addPlayer(socketId: string, displayName: string): void {
-    if (this.isFull) return;
+  addPlayer(socketId: string, displayName: string, teamId?: string): 'ok' | 'full' | 'team-full' {
+    if (this.isFull) return 'full';
+    if (this.mode.teamsEnabled && teamId) {
+      const teamSize = [...this.teamAssignments.values()].filter(t => t === teamId).length;
+      if (teamSize >= (this.mode.playersPerTeam ?? Infinity)) return 'team-full';
+      this.teamAssignments.set(socketId, teamId);
+    }
     if (this.players.size === 0) this.creatorName = displayName;
     const colorIndex = this.players.size;
     this.players.set(socketId, { socketId, displayName, ready: false, colorIndex });
+    return 'ok';
   }
 
   removePlayer(socketId: string): void {
     this.players.delete(socketId);
+    this.teamAssignments.delete(socketId);
     this.skillSets.delete(socketId);
     this.userIds.delete(socketId);
   }
@@ -41,14 +55,22 @@ export class Room {
     if (p) p.ready = true;
   }
 
-  startDuel(): void {
+  startMatch(): void {
     const entries = [...this.players.entries()];
     const inits: PlayerInit[] = entries.map(([id, p], i) => ({
       id,
       displayName: p.displayName,
-      spawnPos: SPAWN_POSITIONS[i],
+      spawnPos: this.mode.spawnPositions[i],
     }));
-    this.state = makeInitialState(inits);
+    let teams: Record<string, string[]> | undefined;
+    if (this.mode.teamsEnabled) {
+      teams = {};
+      for (const [socketId, teamId] of this.teamAssignments) {
+        if (!teams[teamId]) teams[teamId] = [];
+        teams[teamId].push(socketId);
+      }
+    }
+    this.state = makeInitialState(inits, this.mode, teams);
     this.pendingInputs.clear();
   }
 
@@ -64,7 +86,7 @@ export class Room {
       inputs[id] = this.pendingInputs.get(id) ?? { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 400, y: 400 } };
     }
     const skillSetsObj: Record<string, Set<NodeId>> = Object.fromEntries(this.skillSets.entries());
-    this.state = advanceState(this.state, inputs, skillSetsObj);
+    this.state = advanceState(this.state, inputs, skillSetsObj, this.mode);
     return this.state;
   }
 
@@ -117,6 +139,13 @@ export class Room {
       this.skillSets.set(newSocketId, skills);
     }
 
+    // Remap teamAssignments
+    const team = this.teamAssignments.get(oldSocketId);
+    if (team !== undefined) {
+      this.teamAssignments.delete(oldSocketId);
+      this.teamAssignments.set(newSocketId, team);
+    }
+
     // Remap pendingInputs
     const input = this.pendingInputs.get(oldSocketId);
     if (input) {
@@ -131,6 +160,17 @@ export class Room {
         delete this.state.players[oldSocketId];
         playerState.id = newSocketId;
         this.state.players[newSocketId] = playerState;
+      }
+    }
+
+    // Remap teams in GameState (2v2)
+    if (this.state?.teams) {
+      for (const [teamId, members] of Object.entries(this.state.teams)) {
+        const idx = members.indexOf(oldSocketId);
+        if (idx !== -1) {
+          members[idx] = newSocketId;
+          break;
+        }
       }
     }
   }

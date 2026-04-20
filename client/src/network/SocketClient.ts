@@ -2,7 +2,7 @@
 import { io, Socket } from 'socket.io-client';
 import { GameState, InputFrame } from '@arena/shared';
 
-export type RoomJoinedPayload = { roomId: string; yourId: string; players: Record<string, string> };
+export type RoomJoinedPayload = { roomId: string; yourId: string; players: Record<string, string>; mode: string; teams: Record<string, string>; readyPlayerIds?: string[] };
 export type ChatMessagePayload = { senderId: string; displayName: string; text: string };
 
 export class SocketClient {
@@ -16,8 +16,8 @@ export class SocketClient {
   connect(): void { this.socket.connect(); }
   disconnect(): void { this.socket.removeAllListeners(); this.socket.disconnect(); }
 
-  joinRoom(roomId: string, displayName: string, accessToken?: string): void {
-    this.socket.emit('join-room', { roomId, displayName, accessToken });
+  joinRoom(roomId: string, displayName: string, accessToken?: string, teamId?: string): void {
+    this.socket.emit('join-room', { roomId, displayName, accessToken, teamId });
   }
 
   ready(): void { this.socket.emit('player-ready'); }
@@ -34,15 +34,15 @@ export class SocketClient {
   onRoomJoined(cb: (payload: RoomJoinedPayload) => void): void {
     this.socket.once('room-joined', cb);
   }
-  onPlayerJoined(cb: (p: { id: string; displayName: string }) => void): void {
-    this.socket.once('player-joined', cb);
+  onPlayerJoined(cb: (p: { id: string; displayName: string; teamId?: string }) => void): void {
+    this.socket.on('player-joined', cb);
   }
   onGameReady(cb: () => void): void { this.socket.once('game-ready', cb); }
   onGameState(cb: (state: GameState) => void): void {
     this.socket.off('game-state');
     this.socket.on('game-state', cb);
   }
-  onDuelEnded(cb: (payload: { winnerId: string }) => void): void {
+  onDuelEnded(cb: (payload: { winnerId: string | null; gameMode: string }) => void): void {
     this.socket.off('duel-ended');
     this.socket.on('duel-ended', cb);
   }
@@ -53,6 +53,13 @@ export class SocketClient {
   onOpponentDisconnected(cb: () => void): void {
     this.socket.off('opponent-disconnected');
     this.socket.on('opponent-disconnected', cb);
+  }
+  onTeamFull(cb: () => void): void { this.socket.once('team-full', cb); }
+  onPlayerDisconnected(cb: (data: { playerId: string }) => void): void {
+    this.socket.on('player-disconnected', cb);
+  }
+  onPlayerLeft(cb: (data: { playerId: string }) => void): void {
+    this.socket.on('player-left', cb);
   }
   onRoomNotFound(cb: () => void): void { this.socket.once('room-not-found', cb); }
   onChatMessage(cb: (payload: ChatMessagePayload) => void): void {

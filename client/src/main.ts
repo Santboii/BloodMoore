@@ -31,9 +31,13 @@ let currentPlayers: Record<string, string> = {};
 let playerMeshes = new Map<string, CharacterMesh>();
 let spellRenderer: SpellRenderer | null = null;
 let inputHandler: InputHandler | null = null;
-let opponentName = '';
+let allPlayerNames: Record<string, string> = {};
+let currentMode = '1v1';
+let myTeamId: string | undefined;
 let handlersRegistered = false;
 let pendingRejoin: { roomId: string } | null = null;
+let deathOrder: string[] = [];
+let readyPlayers = new Set<string>();
 
 let accessToken = '';
 let ownedSpells = new Set<SpellId>();
@@ -49,7 +53,12 @@ function spellsFromNodes(nodes: Set<NodeId>): Set<SpellId> {
   return result;
 }
 
-const PLAYER_COLORS: Record<number, number> = { 0: 0xc8a000, 1: 0xc00030 };
+const PLAYER_COLORS: Record<number, number> = {
+  0: 0xc8a000,  // gold
+  1: 0xc00030,  // red
+  2: 0x0080c0,  // blue
+  3: 0x00a040,  // green
+};
 let myColorIndex = 0;
 let assets: LoadedAssets;
 
@@ -111,8 +120,7 @@ async function attemptAutoRejoin(
     myId = payload.yourId;
     myColorIndex = payload.colorIndex;
     currentPlayers = payload.players;
-    const opponentEntry = Object.entries(payload.players).find(([id]) => id !== payload.yourId);
-    if (opponentEntry) opponentName = opponentEntry[1];
+    allPlayerNames = { ...payload.players };
     hud.init(myId);
     lobby.hide();
   });
@@ -126,41 +134,46 @@ async function attemptAutoRejoin(
 }
 
 const lobby = new LobbyUI(uiOverlay, {
-  onCreateRoom: async (displayName) => {
+  onCreateRoom: async (displayName, mode) => {
     myDisplayName = displayName;
-    const res = await fetch(`${import.meta.env.VITE_SERVER_URL ?? ''}/rooms`, { method: 'POST' });
+    currentMode = mode;
+    const res = await fetch(`${import.meta.env.VITE_SERVER_URL ?? ''}/rooms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode }),
+    });
     const { roomId } = await res.json();
     socket.connect();
     socket.joinRoom(roomId, displayName, accessToken);
-    socket.onRoomJoined(({ yourId }) => {
+    socket.onRoomJoined(({ yourId, mode: serverMode, teams, readyPlayerIds }) => {
       myId = yourId;
       currentRoomId = roomId;
       currentPlayers = { [yourId]: displayName };
+      currentMode = serverMode ?? mode;
+      myTeamId = teams?.[yourId];
+      readyPlayers = new Set(readyPlayerIds ?? []);
       myColorIndex = 0;
       hud.init(myId);
-      lobby.showWaiting(roomId, displayName);
+      lobby.showReady(roomId, currentPlayers, myId, currentMode, readyPlayers);
       lobby.appendSystemMessage('You have entered the lobby');
     });
     setupSocketHandlers(displayName);
   },
-  onJoinRoom: (roomId, displayName) => {
+  onJoinRoom: (roomId, displayName, teamId?) => {
     myDisplayName = displayName;
     socket.connect();
-    socket.joinRoom(roomId, displayName, accessToken);
-    socket.onRoomJoined(({ yourId, players }) => {
+    socket.joinRoom(roomId, displayName, accessToken, teamId);
+    socket.onRoomJoined(({ yourId, players, mode: serverMode, teams, readyPlayerIds }) => {
       myId = yourId;
       currentRoomId = roomId;
       currentPlayers = players;
-      myColorIndex = 1;
+      currentMode = serverMode ?? '1v1';
+      myTeamId = teams?.[yourId];
+      readyPlayers = new Set(readyPlayerIds ?? []);
+      myColorIndex = Object.keys(players).indexOf(yourId);
       hud.init(myId);
-      // Set opponent name from existing players
-      const opponentEntry = Object.entries(players).find(([id]) => id !== yourId);
-      if (opponentEntry) opponentName = opponentEntry[1];
-      if (Object.keys(players).length >= 2) {
-        lobby.showReady(roomId, players, yourId);
-      } else {
-        lobby.showWaiting(roomId, displayName);
-      }
+      allPlayerNames = { ...players };
+      lobby.showReady(roomId, players, yourId, currentMode, readyPlayers);
       lobby.appendSystemMessage('You have entered the lobby');
     });
     setupSocketHandlers(displayName);
@@ -173,7 +186,9 @@ const lobby = new LobbyUI(uiOverlay, {
     handlersRegistered = false;
     currentRoomId = '';
     currentPlayers = {};
-    opponentName = '';
+    allPlayerNames = {};
+    currentMode = '1v1';
+    myTeamId = undefined;
     lobby.showHome(myDisplayName);
   },
   onSendChatMessage: (text) => socket.sendChatMessage(text),
@@ -185,7 +200,9 @@ const lobby = new LobbyUI(uiOverlay, {
     myId = '';
     currentRoomId = '';
     currentPlayers = {};
-    opponentName = '';
+    allPlayerNames = {};
+    currentMode = '1v1';
+    myTeamId = undefined;
     ownedSpells = new Set();
     pendingRejoin = null;
     socket.disconnect();
@@ -218,13 +235,18 @@ function setupSocketHandlers(_myDisplayName: string): void {
   );
 
   socket.onPlayerJoined(({ id, displayName }) => {
-    opponentName = displayName;
+    allPlayerNames[id] = displayName;
     currentPlayers[id] = displayName;
-    lobby.showReady(currentRoomId, currentPlayers, myId);
+    lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers);
     lobby.appendSystemMessage(`${displayName} has entered the lobby`);
   });
 
-  socket.onGameReady(() => lobby.showReady(currentRoomId, currentPlayers, myId));
+  socket.onGameReady(() => lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers));
+
+  socket.onPlayerReadyAck(({ playerId }) => {
+    readyPlayers.add(playerId);
+    lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers);
+  });
 
   socket.onGameState((state: GameState) => {
     if (!spellRenderer) {
@@ -237,12 +259,25 @@ function setupSocketHandlers(_myDisplayName: string): void {
 
   let duelEnded = false;
 
-  socket.onDuelEnded(({ winnerId }) => {
+  socket.onDuelEnded(({ winnerId, gameMode }) => {
     duelEnded = true;
-    const won = winnerId === myId;
+    const mode = gameMode ?? currentMode;
+    let won: boolean;
+    if (mode === '2v2') {
+      won = winnerId === myTeamId;
+    } else {
+      won = winnerId === myId;
+    }
     lobby.hidePauseOverlay();
     stopGame();
-    lobby.showResult(won, opponentName);
+    if (mode === 'ffa' && !won) {
+      const myDeathIndex = deathOrder.indexOf(myId);
+      const totalPlayers = 4;
+      const placement = myDeathIndex >= 0 ? totalPlayers - myDeathIndex : 1;
+      lobby.showResult(won, mode, placement);
+    } else {
+      lobby.showResult(won, mode);
+    }
     lobby.show();
   });
 
@@ -256,11 +291,29 @@ function setupSocketHandlers(_myDisplayName: string): void {
   socket.onOpponentDisconnected(() => {
     if (duelEnded) {
       lobby.disableRematch();
-    } else {
+    } else if (currentMode === '1v1') {
       stopGame();
       lobby.showDisconnected();
       lobby.show();
+    } else {
+      // For FFA/2v2, just show a system message instead of the dramatic overlay
+      lobby.appendSystemMessage('A player disconnected');
     }
+  });
+
+  socket.onPlayerDisconnected(({ playerId }) => {
+    const name = allPlayerNames[playerId] ?? 'A player';
+    lobby.appendSystemMessage(`${name} disconnected`);
+    delete currentPlayers[playerId];
+    lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers);
+  });
+
+  socket.onPlayerLeft(({ playerId }) => {
+    const name = allPlayerNames[playerId] ?? 'A player';
+    lobby.appendSystemMessage(`${name} left the lobby`);
+    delete currentPlayers[playerId];
+    delete allPlayerNames[playerId];
+    lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers);
   });
 
   socket.onMatchPaused(({ countdown }) => {
@@ -321,6 +374,8 @@ function stopGame(): void {
   playerMeshes.clear();
   hud.hide();
   stateBuffer.clear();
+  deathOrder = [];
+  readyPlayers = new Set();
 }
 
 let lastFrameTime = performance.now();
@@ -347,9 +402,13 @@ scene.startRenderLoop(() => {
   }
 
   for (const [id, player] of Object.entries(state.players)) {
+    if (player.hp <= 0 && !deathOrder.includes(id)) {
+      deathOrder.push(id);
+    }
     if (!playerMeshes.has(id)) {
-      const colorIndex = id === myId ? myColorIndex : 1 - myColorIndex;
-      const gltf = colorIndex === 0 ? assets.characters.warrior : assets.characters.mage;
+      const playerIds = Object.keys(state.players);
+      const colorIndex = playerIds.indexOf(id) % Object.keys(PLAYER_COLORS).length;
+      const gltf = assets.characters.pool[colorIndex] ?? assets.characters.pool[0];
       const mesh = new CharacterMesh(gltf, PLAYER_COLORS[colorIndex], player.displayName, uiOverlay);
       scene.scene.add(mesh.group);
       playerMeshes.set(id, mesh);

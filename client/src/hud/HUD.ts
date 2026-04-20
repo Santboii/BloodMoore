@@ -1,4 +1,4 @@
-import { GameState, SpellId, SPELL_CONFIG, MAX_HP, MAX_MANA } from '@arena/shared';
+import { GameState, PlayerState, SpellId, SPELL_CONFIG, MAX_HP, MAX_MANA } from '@arena/shared';
 import { Minimap } from './Minimap';
 
 const SPELL_NAMES: Record<number, string> = { 1: 'FB', 2: 'FW', 3: 'MT', 4: 'TP' };
@@ -7,6 +7,7 @@ export class HUD {
   private el: HTMLElement;
   private minimap: Minimap;
   private myId = '';
+  private prevHp: Record<string, number> = {};
 
   constructor(container: HTMLElement) {
     this.minimap = new Minimap(container);
@@ -22,15 +23,15 @@ export class HUD {
         .spell-slot{width:44px;height:44px;border:2px solid #555;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#ccc;position:relative;overflow:hidden;cursor:pointer}
         .spell-slot.active{border-color:#ffaa00;color:#ffcc66}
         .spell-slot .cd-overlay{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);transition:height .1s}
-        .enemy-bar{position:fixed;top:12px;left:50%;transform:translateX(-50%);text-align:center;min-width:160px}
-        .enemy-name{font-size:12px;color:#ffcc44;margin-bottom:4px}
-        .enemy-hp-track{height:8px;background:#330000;border-radius:4px;overflow:hidden;width:160px}
-        .enemy-hp-fill{height:100%;background:#cc2222;border-radius:4px;transition:width .1s}
+        .hud-enemies{position:fixed;top:12px;right:140px;display:flex;flex-direction:column;gap:6px;min-width:160px}
+        .hud-enemy-entry{text-align:center}
+        .hud-enemy-entry .enemy-name{font-size:12px;color:#ffcc44;margin-bottom:2px}
+        .hud-enemy-entry .enemy-hp-track{height:8px;background:#330000;border-radius:4px;overflow:hidden;width:160px}
+        .hud-enemy-entry .enemy-hp-fill{height:100%;background:#cc2222;border-radius:4px;transition:width .1s}
+        .hud-elim{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Cinzel',serif;font-size:24px;color:#cc2222;letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 20px rgba(200,30,30,0.6);pointer-events:none;animation:hud-elim-fade 2s forwards}
+        @keyframes hud-elim-fade{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-80%) scale(0.9)}}
       </style>
-      <div class="enemy-bar">
-        <div class="enemy-name" id="hud-enemy-name">—</div>
-        <div class="enemy-hp-track"><div class="enemy-hp-fill" id="hud-enemy-hp" style="width:100%"></div></div>
-      </div>
+      <div id="hud-enemies" class="hud-enemies"></div>
       <div class="hud-panel">
         <div class="orb orb-hp"><div class="orb-fill" id="hud-hp" style="transform:translateY(0%)"></div></div>
         <div class="spells" id="hud-spells"></div>
@@ -40,7 +41,7 @@ export class HUD {
     container.appendChild(this.el);
   }
 
-  init(myId: string): void { this.myId = myId; }
+  init(myId: string): void { this.myId = myId; this.prevHp = {}; }
 
   buildSpellSlots(ownedSpells: Set<SpellId>): void {
     const spells = this.el.querySelector('#hud-spells')!;
@@ -72,15 +73,46 @@ export class HUD {
       (this.el.querySelector(`#cd-${key}`) as HTMLElement).style.height = `${pct}%`;
     }
 
-    const enemyId = Object.keys(state.players).find(id => id !== this.myId);
-    if (enemyId) {
-      const enemy = state.players[enemyId];
-      (this.el.querySelector('#hud-enemy-name') as HTMLElement).textContent = enemy.displayName;
-      (this.el.querySelector('#hud-enemy-hp') as HTMLElement).style.width = `${(enemy.hp / MAX_HP) * 100}%`;
-      this.minimap.update(me, enemy);
-    } else {
-      this.minimap.update(me, undefined);
+    // Render all enemy HP bars
+    const enemiesContainer = this.el.querySelector('#hud-enemies') as HTMLElement;
+    const others = Object.entries(state.players).filter(([id]) => id !== this.myId);
+    const otherStates: PlayerState[] = [];
+
+    // Build enemy bars HTML
+    let enemyHtml = '';
+    for (const [id, player] of others) {
+      const hpPct = (player.hp / MAX_HP) * 100;
+      const opacity = player.hp <= 0 ? '0.3' : '1';
+      enemyHtml += `<div class="hud-enemy-entry" style="opacity:${opacity}">
+        <div class="enemy-name">${player.displayName}</div>
+        <div class="enemy-hp-track"><div class="enemy-hp-fill" style="width:${hpPct}%"></div></div>
+      </div>`;
+      otherStates.push(player);
+
+      // Detect death for elimination notification
+      const prev = this.prevHp[id];
+      if (prev !== undefined && prev > 0 && player.hp <= 0) {
+        this.showElimination(player.displayName);
+      }
     }
+    enemiesContainer.innerHTML = enemyHtml;
+
+    // Track HP for next frame
+    const newPrevHp: Record<string, number> = {};
+    for (const [id, player] of Object.entries(state.players)) {
+      newPrevHp[id] = player.hp;
+    }
+    this.prevHp = newPrevHp;
+
+    this.minimap.update(me, otherStates);
+  }
+
+  showElimination(name: string): void {
+    const el = document.createElement('div');
+    el.className = 'hud-elim';
+    el.textContent = `${name} eliminated`;
+    this.el.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
   }
 
   show(): void { this.el.style.display = ''; this.minimap.show(); }

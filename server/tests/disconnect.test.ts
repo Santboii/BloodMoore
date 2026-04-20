@@ -9,7 +9,7 @@ describe('disconnect scenarios (unit-level)', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     const loop = new GameLoop();
     loop.start(room, vi.fn());
@@ -40,7 +40,7 @@ describe('disconnect scenarios (unit-level)', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     const loop = new GameLoop();
     loop.start(room, vi.fn());
@@ -65,7 +65,7 @@ describe('disconnect scenarios (unit-level)', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     room.pause('user-1');
 
@@ -82,7 +82,7 @@ describe('disconnect scenarios (unit-level)', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     room.pause('user-1');
     room.pause('user-2');

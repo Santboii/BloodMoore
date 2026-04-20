@@ -32,7 +32,7 @@ export class Minimap {
     this.ctx = this.canvas.getContext('2d')!;
   }
 
-  update(localPlayer: PlayerState, opponent: PlayerState | undefined): void {
+  update(localPlayer: PlayerState, others: PlayerState[]): void {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, SIZE, SIZE);
 
@@ -52,10 +52,13 @@ export class Minimap {
       ctx.fillRect(px - 2, py - 2, 4, 4);
     }
 
-    // Opponent
-    if (opponent) {
-      const [ox, oy] = toMini(opponent.position.x, opponent.position.y);
-      ctx.fillStyle = '#ff5252';
+    // Other players
+    const ENEMY_COLORS = ['#ff5252', '#ff9800', '#ab47bc'];
+    for (let i = 0; i < others.length; i++) {
+      const other = others[i];
+      if (other.hp <= 0) continue;
+      const [ox, oy] = toMini(other.position.x, other.position.y);
+      ctx.fillStyle = ENEMY_COLORS[i % ENEMY_COLORS.length];
       ctx.beginPath();
       ctx.arc(ox, oy, 3, 0, Math.PI * 2);
       ctx.fill();
