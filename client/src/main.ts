@@ -167,6 +167,15 @@ const lobby = new LobbyUI(uiOverlay, {
   },
   onReady: () => socket.ready(),
   onRematch: () => socket.rematch(),
+  onReturnToLobby: () => {
+    stopGame();
+    socket.disconnect();
+    handlersRegistered = false;
+    currentRoomId = '';
+    currentPlayers = {};
+    opponentName = '';
+    lobby.showHome(myDisplayName);
+  },
   onSendChatMessage: (text) => socket.sendChatMessage(text),
   onLogout: async () => {
     try { await supabase.auth.signOut(); } catch { /* proceed anyway */ }
@@ -226,7 +235,10 @@ function setupSocketHandlers(_myDisplayName: string): void {
     stateBuffer.push(state);
   });
 
+  let duelEnded = false;
+
   socket.onDuelEnded(({ winnerId }) => {
+    duelEnded = true;
     const won = winnerId === myId;
     lobby.hidePauseOverlay();
     stopGame();
@@ -235,15 +247,20 @@ function setupSocketHandlers(_myDisplayName: string): void {
   });
 
   socket.onRematchReady(() => {
+    duelEnded = false;
     stateBuffer.clear();
     startGame();
     lobby.hide();
   });
 
   socket.onOpponentDisconnected(() => {
-    stopGame();
-    lobby.showDisconnected();
-    lobby.show();
+    if (duelEnded) {
+      lobby.disableRematch();
+    } else {
+      stopGame();
+      lobby.showDisconnected();
+      lobby.show();
+    }
   });
 
   socket.onMatchPaused(({ countdown }) => {
@@ -287,8 +304,7 @@ function startGame(): void {
   spellRenderer?.dispose();
   inputHandler?.dispose();
 
-  spellRenderer = new SpellRenderer(scene.scene);
-  spellRenderer.setMyId(myId);
+  spellRenderer = new SpellRenderer(scene.scene, myId);
   inputHandler = new InputHandler(scene, scene.renderer.domElement);
 
   hud.buildSpellSlots(ownedSpells);

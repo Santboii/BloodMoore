@@ -37,6 +37,9 @@ export type FireWallState = {
   ownerId: string;
   segments: Segment[];
   expiresAt: number; // server tick
+  shape?: 'circle';
+  center?: Vec2;
+  radius?: number;
 };
 
 export type MeteorState = {

@@ -1,9 +1,10 @@
 import * as THREE from 'three';
+import { Segment } from '@arena/shared';
 
-const POOL_SIZE = 2048;
-const SOFT_CAP = Math.floor(POOL_SIZE * 0.9); // skip trail emission above this
+const POOL_SIZE = 4096;
+const SOFT_CAP = Math.floor(POOL_SIZE * 0.9);
 
-export class FireballParticles {
+export class FireParticles {
   private posX = new Float32Array(POOL_SIZE);
   private posY = new Float32Array(POOL_SIZE);
   private posZ = new Float32Array(POOL_SIZE);
@@ -84,7 +85,7 @@ export class FireballParticles {
         10 + Math.random() * 20,
         -dirZ * (40 + Math.random() * 30) + (Math.random() - 0.5) * 30,
         0.35 + Math.random() * 0.15,
-        4,
+        12 + Math.random() * 4,
       );
     }
   }
@@ -103,7 +104,87 @@ export class FireballParticles {
         20 + Math.random() * 80,
         Math.sin(theta) * speed,
         0.5 + Math.random() * 0.3,
-        Math.random() > 0.5 ? 6 : 3,
+        Math.random() > 0.5 ? 16 : 10,
+      );
+    }
+  }
+
+  emitWall(segments: Segment[]): void {
+    if (this.activeCount >= SOFT_CAP) return;
+    for (const seg of segments) {
+      for (let i = 0; i < 3; i++) {
+        if (this.activeCount >= POOL_SIZE) return;
+        const t = Math.random();
+        this.spawn(
+          seg.x1 + (seg.x2 - seg.x1) * t + (Math.random() - 0.5) * 4,
+          1,
+          seg.y1 + (seg.y2 - seg.y1) * t + (Math.random() - 0.5) * 4,
+          (Math.random() - 0.5) * 15,
+          40 + Math.random() * 40,
+          (Math.random() - 0.5) * 15,
+          0.4 + Math.random() * 0.3,
+          14 + Math.random() * 10,
+        );
+      }
+    }
+  }
+
+  emitMeteorTrail(x: number, y: number, z: number): void {
+    if (this.activeCount >= SOFT_CAP) return;
+    const count = 2 + Math.floor(Math.random() * 2); // 2–3
+    for (let i = 0; i < count; i++) {
+      if (this.activeCount >= POOL_SIZE) return;
+      const theta = Math.random() * Math.PI * 2;
+      const spread = 8 + Math.random() * 8;
+      this.spawn(
+        x + (Math.random() - 0.5) * 6,
+        y + (Math.random() - 0.5) * 6,
+        z + (Math.random() - 0.5) * 6,
+        Math.cos(theta) * spread,
+        20 + Math.random() * 20,
+        Math.sin(theta) * spread,
+        0.2 + Math.random() * 0.1,
+        8 + Math.random() * 6,
+      );
+    }
+  }
+
+  emitCrater(x: number, z: number, radius: number): void {
+    if (this.activeCount >= SOFT_CAP) return;
+    const count = Math.max(4, Math.round(radius / 10));
+    for (let i = 0; i < count; i++) {
+      if (this.activeCount >= POOL_SIZE) return;
+      const theta = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * radius;
+      this.spawn(
+        x + Math.cos(theta) * r,
+        1,
+        z + Math.sin(theta) * r,
+        (Math.random() - 0.5) * 10,
+        30 + Math.random() * 30,
+        (Math.random() - 0.5) * 10,
+        0.3 + Math.random() * 0.3,
+        10 + Math.random() * 8,
+      );
+    }
+  }
+
+  emitMeteorImpact(x: number, y: number, z: number): void {
+    if (this.activeCount >= SOFT_CAP) return;
+    const count = 50 + Math.floor(Math.random() * 21); // 50–70
+    for (let i = 0; i < count; i++) {
+      if (this.activeCount >= POOL_SIZE) return;
+      const theta = Math.random() * Math.PI * 2;
+      const speed = 80 + Math.random() * 120;
+      this.spawn(
+        x + (Math.random() - 0.5) * 10,
+        y + (Math.random() - 0.5) * 10,
+        z + (Math.random() - 0.5) * 10,
+        Math.cos(theta) * speed,
+        30 + Math.random() * 100,
+        Math.sin(theta) * speed,
+        0.5 + Math.random() * 0.3,
+        Math.random() > 0.5 ? 18 : 12,
       );
     }
   }

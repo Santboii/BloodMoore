@@ -93,8 +93,31 @@ function getPillarBlockRange(from: Vec2, to: Vec2, pillar: Pillar): [number, num
   return [tMin, tMax];
 }
 
+export function spawnFireCrater(
+  ownerId: string,
+  center: Vec2,
+  radius: number,
+  currentTick: number,
+  durationTicks: number,
+): FireWallState {
+  return {
+    id: nextId(),
+    ownerId,
+    segments: [],
+    expiresAt: currentTick + durationTicks,
+    shape: 'circle',
+    center,
+    radius,
+  };
+}
+
 export function fireWallDamagesPlayer(fw: FireWallState, playerPos: Vec2, playerId: string): boolean {
   if (fw.ownerId === playerId) return false;
+  if (fw.shape === 'circle' && fw.center && fw.radius) {
+    const dx = playerPos.x - fw.center.x;
+    const dy = playerPos.y - fw.center.y;
+    return Math.sqrt(dx * dx + dy * dy) < fw.radius + PLAYER_HALF_SIZE;
+  }
   const threshold = PLAYER_HALF_SIZE + 8;
   return fw.segments.some(seg => pointToSegmentDist(playerPos, seg) < threshold);
 }
