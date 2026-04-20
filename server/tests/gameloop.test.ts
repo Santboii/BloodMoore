@@ -14,7 +14,7 @@ describe('GameLoop pause/resume', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     const broadcast = vi.fn();
     const loop = new GameLoop();
@@ -39,7 +39,7 @@ describe('GameLoop pause/resume', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     const broadcast = vi.fn();
     const loop = new GameLoop();

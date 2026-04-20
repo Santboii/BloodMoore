@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Room } from '../src/rooms/Room.ts';
+import { DUEL_MODE, FFA_MODE, TEAM_DUEL_MODE } from '@arena/shared';
 
 describe('Room.creatorName', () => {
   it('stores the first player added as creator', () => {
@@ -28,7 +29,7 @@ describe('Room pause/resume', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     room.pause('user-1');
 
@@ -43,7 +44,7 @@ describe('Room pause/resume', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     room.pause('user-1');
     room.pause('user-2');
@@ -57,7 +58,7 @@ describe('Room pause/resume', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     room.pause('user-1');
     room.resume('user-1');
@@ -71,7 +72,7 @@ describe('Room pause/resume', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     room.pause('user-1');
     room.pause('user-2');
@@ -89,7 +90,7 @@ describe('Room.remapPlayer', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     room.remapPlayer('s1', 's1-new');
 
@@ -127,7 +128,7 @@ describe('Room.remapPlayer', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
     const input = { move: { x: 1, y: 0 }, castSpell: null, aimTarget: { x: 0, y: 0 } };
     room.queueInput('s1', input);
 
@@ -143,7 +144,7 @@ describe('Room.remapPlayer', () => {
     room.addPlayer('s2', 'Bob');
     room.userIds.set('s1', 'user-1');
     room.userIds.set('s2', 'user-2');
-    room.startDuel();
+    room.startMatch();
 
     room.remapPlayer('s1', 's1-new');
 
@@ -151,5 +152,89 @@ describe('Room.remapPlayer', () => {
     expect(room.state!.players['s1-new']).toBeDefined();
     expect(room.state!.players['s1-new'].displayName).toBe('Alice');
     expect(room.state!.players['s1-new'].id).toBe('s1-new');
+  });
+});
+
+describe('Room with game modes', () => {
+  it('1v1 room is full at 2 players', () => {
+    const room = new Room('r1', DUEL_MODE);
+    room.addPlayer('s1', 'Alice');
+    expect(room.isFull).toBe(false);
+    room.addPlayer('s2', 'Bob');
+    expect(room.isFull).toBe(true);
+  });
+
+  it('FFA room is full at 4 players', () => {
+    const room = new Room('r1', FFA_MODE);
+    room.addPlayer('s1', 'A');
+    room.addPlayer('s2', 'B');
+    expect(room.isFull).toBe(false);
+    room.addPlayer('s3', 'C');
+    expect(room.isFull).toBe(false);
+    room.addPlayer('s4', 'D');
+    expect(room.isFull).toBe(true);
+  });
+
+  it('rejects players beyond maxPlayers', () => {
+    const room = new Room('r1', DUEL_MODE);
+    room.addPlayer('s1', 'Alice');
+    room.addPlayer('s2', 'Bob');
+    room.addPlayer('s3', 'Charlie');
+    expect(room.players.size).toBe(2);
+  });
+});
+
+describe('Room team assignment', () => {
+  it('assigns team in 2v2 mode', () => {
+    const room = new Room('r1', TEAM_DUEL_MODE);
+    room.addPlayer('s1', 'Alice', 'team1');
+    room.addPlayer('s2', 'Bob', 'team2');
+    expect(room.teamAssignments.get('s1')).toBe('team1');
+    expect(room.teamAssignments.get('s2')).toBe('team2');
+  });
+
+  it('rejects player joining a full team', () => {
+    const room = new Room('r1', TEAM_DUEL_MODE);
+    room.addPlayer('s1', 'Alice', 'team1');
+    room.addPlayer('s2', 'Bob', 'team1');
+    const result = room.addPlayer('s3', 'Charlie', 'team1');
+    expect(result).toBe('team-full');
+    expect(room.players.size).toBe(2);
+  });
+
+  it('ignores team parameter for non-team modes', () => {
+    const room = new Room('r1', FFA_MODE);
+    room.addPlayer('s1', 'Alice', 'team1');
+    expect(room.teamAssignments.size).toBe(0);
+  });
+});
+
+describe('Room.startMatch with modes', () => {
+  it('uses mode spawn positions', () => {
+    const room = new Room('r1', FFA_MODE);
+    room.addPlayer('s1', 'A');
+    room.addPlayer('s2', 'B');
+    room.addPlayer('s3', 'C');
+    room.addPlayer('s4', 'D');
+    for (const p of room.players.values()) p.ready = true;
+    room.startMatch();
+    expect(room.state).not.toBeNull();
+    expect(Object.keys(room.state!.players)).toHaveLength(4);
+    expect(room.state!.gameMode).toBe('ffa');
+  });
+
+  it('builds teams record for 2v2', () => {
+    const room = new Room('r1', TEAM_DUEL_MODE);
+    room.addPlayer('s1', 'A', 'team1');
+    room.addPlayer('s2', 'B', 'team1');
+    room.addPlayer('s3', 'C', 'team2');
+    room.addPlayer('s4', 'D', 'team2');
+    for (const p of room.players.values()) p.ready = true;
+    room.startMatch();
+    expect(room.state!.teams).toEqual({
+      team1: ['s1', 's2'],
+      team2: ['s3', 's4'],
+    });
+    expect(room.state!.gameMode).toBe('2v2');
   });
 });

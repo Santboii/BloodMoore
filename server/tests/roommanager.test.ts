@@ -21,7 +21,7 @@ describe('RoomManager.listOpenRooms', () => {
     const rm = new RoomManager();
     const r1 = rm.createRoom(); r1.addPlayer('s1', 'Alice');
     const r2 = rm.createRoom(); r2.addPlayer('s2', 'Bob'); r2.addPlayer('s3', 'Carol');
-    r2.startDuel();
+    r2.startMatch();
 
     const open = rm.listOpenRooms();
     expect(open).toHaveLength(1);

@@ -99,7 +99,7 @@ io.on('connection', socket => {
     io.to(currentRoomId).emit('player-ready-ack', { playerId: socket.id });
 
     if (room.allReady) {
-      room.startDuel();
+      room.startMatch();
       const loop = new GameLoop();
       const roomId = currentRoomId;
       loops.set(roomId, loop);
