@@ -83,7 +83,7 @@ const auth = new AuthUI(uiOverlay, {
 
 async function checkPausedMatch(token: string): Promise<string | null> {
   try {
-    const res = await fetch('/paused-match', {
+    const res = await fetch(`${import.meta.env.VITE_SERVER_URL ?? ''}/paused-match`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -128,7 +128,7 @@ async function attemptAutoRejoin(
 const lobby = new LobbyUI(uiOverlay, {
   onCreateRoom: async (displayName) => {
     myDisplayName = displayName;
-    const res = await fetch('/rooms', { method: 'POST' });
+    const res = await fetch(`${import.meta.env.VITE_SERVER_URL ?? ''}/rooms`, { method: 'POST' });
     const { roomId } = await res.json();
     socket.connect();
     socket.joinRoom(roomId, displayName, accessToken);

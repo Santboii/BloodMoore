@@ -406,7 +406,7 @@ export class LobbyUI {
 
   private async pollLobbies(): Promise<void> {
     try {
-      const res = await fetch('/rooms');
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL ?? ''}/rooms`);
       const { rooms } = (await res.json()) as { rooms: OpenRoom[] };
       this.renderRoomRows(rooms);
     } catch { /* network error — silently ignore */ }

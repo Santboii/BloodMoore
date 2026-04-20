@@ -9,7 +9,8 @@ export class SocketClient {
   private socket: Socket;
 
   constructor() {
-    this.socket = io({ autoConnect: false });
+    const serverUrl = import.meta.env.VITE_SERVER_URL as string | undefined;
+    this.socket = io(serverUrl ?? '', { autoConnect: false });
   }
 
   connect(): void { this.socket.connect(); }
