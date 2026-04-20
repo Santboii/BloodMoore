@@ -150,6 +150,8 @@ io.on('connection', socket => {
       loop?.pause();
       room.pause(userId);
 
+      const roomSockets = io.sockets.adapter.rooms.get(currentRoomId);
+      console.log('[disconnect] emitting match-paused to room', currentRoomId, 'members:', roomSockets ? [...roomSockets] : 'empty');
       socket.to(currentRoomId).emit('match-paused', {
         reason: 'opponent-disconnected',
         countdown: 60,

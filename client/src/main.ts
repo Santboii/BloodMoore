@@ -339,6 +339,13 @@ scene.startRenderLoop(() => {
   const state = stateBuffer.getInterpolated();
   if (!state) return;
 
+  for (const [id, mesh] of playerMeshes) {
+    if (!(id in state.players)) {
+      mesh.dispose(uiOverlay);
+      playerMeshes.delete(id);
+    }
+  }
+
   for (const [id, player] of Object.entries(state.players)) {
     if (!playerMeshes.has(id)) {
       const colorIndex = id === myId ? myColorIndex : 1 - myColorIndex;
