@@ -8,6 +8,7 @@ const ISO_SIN   =  Math.sin(ISO_ANGLE); // ≈ -0.7071
 export class InputHandler {
   private keys = new Set<string>();
   private activeSpell: SpellId = 1;
+  private mouseScreen = { x: 0, y: 0 };
   private mouseWorld = { x: 1000, y: 1000 }; // center of new arena
   private pendingCast: { spell: SpellId; aimTarget: { x: number; y: number } } | null = null;
 
@@ -30,6 +31,7 @@ export class InputHandler {
   private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.code); };
 
   private onMouseMove = (e: MouseEvent) => {
+    this.mouseScreen = { x: e.clientX, y: e.clientY };
     this.mouseWorld = this.scene.screenToWorld(e.clientX, e.clientY);
   };
 
@@ -62,6 +64,10 @@ export class InputHandler {
     }
 
     return frame;
+  }
+
+  refreshMouseWorld(): void {
+    this.mouseWorld = this.scene.screenToWorld(this.mouseScreen.x, this.mouseScreen.y);
   }
 
   getActiveSpell(): SpellId { return this.activeSpell; }

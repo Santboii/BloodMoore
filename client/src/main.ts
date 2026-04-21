@@ -3,6 +3,7 @@ import { Arena } from './renderer/Arena';
 import { CharacterMesh } from './renderer/CharacterMesh';
 import { SpellRenderer } from './renderer/SpellRenderer';
 import { StateBuffer } from './network/StateBuffer';
+import { Predictor } from './network/Predictor';
 import { SocketClient } from './network/SocketClient';
 import { InputHandler } from './input/InputHandler';
 import { HUD } from './hud/HUD';
@@ -38,6 +39,7 @@ let handlersRegistered = false;
 let pendingRejoin: { roomId: string } | null = null;
 let deathOrder: string[] = [];
 let readyPlayers = new Set<string>();
+let predictor: Predictor | null = null;
 
 let accessToken = '';
 let ownedSpells = new Set<SpellId>();
@@ -254,7 +256,19 @@ function setupSocketHandlers(_myDisplayName: string): void {
       startGame();
       lobby.hide();
     }
-    stateBuffer.push(state);
+    const now = performance.now();
+    stateBuffer.push(state, now);
+
+    if (!predictor && state.players[myId]) {
+      predictor = new Predictor(state.players[myId].position);
+    }
+
+    if (predictor && state.players[myId] && state.ack) {
+      const ackSeq = state.ack[myId];
+      if (ackSeq !== undefined) {
+        predictor.reconcile(state.players[myId].position, ackSeq);
+      }
+    }
   });
 
   let duelEnded = false;
@@ -374,24 +388,30 @@ function stopGame(): void {
   playerMeshes.clear();
   hud.hide();
   stateBuffer.clear();
+  predictor = null;
   deathOrder = [];
   readyPlayers = new Set();
 }
 
 let lastFrameTime = performance.now();
 
-// Main render loop — runs always
 scene.startRenderLoop(() => {
   const now = performance.now();
-  const delta = Math.min((now - lastFrameTime) / 1000, 0.1); // cap at 100ms to avoid jumps
+  const delta = Math.min((now - lastFrameTime) / 1000, 0.1);
   lastFrameTime = now;
 
   if (!inputHandler || !spellRenderer) return;
 
   const frame = inputHandler.buildInputFrame();
+
+  if (predictor) {
+    const seq = predictor.applyInput(frame.move, now);
+    frame.seq = seq;
+  }
+
   socket.sendInput(frame);
 
-  const state = stateBuffer.getInterpolated();
+  const state = stateBuffer.getInterpolated(now);
   if (!state) return;
 
   for (const [id, mesh] of playerMeshes) {
@@ -414,17 +434,30 @@ scene.startRenderLoop(() => {
       playerMeshes.set(id, mesh);
     }
     const mesh = playerMeshes.get(id)!;
-    mesh.setPosition(player.position.x, player.position.y, player.facing);
+
+    if (id === myId && predictor) {
+      const predicted = predictor.getPosition(now);
+      mesh.setPosition(predicted.x, predicted.y, player.facing);
+    } else {
+      mesh.setPosition(player.position.x, player.position.y, player.facing);
+    }
+
     mesh.update(delta, player.castingSpell !== null);
     if (player.hp <= 0) mesh.die();
     mesh.updateLabel(scene.camera, scene.renderer);
   }
 
-  // Follow local player with camera
-  const myPlayer = state.players[myId];
-  if (myPlayer) {
-    scene.updateCamera(myPlayer.position.x, myPlayer.position.y, delta);
+  if (predictor && state.players[myId]) {
+    const predicted = predictor.getPosition(now);
+    scene.updateCamera(predicted.x, predicted.y, delta);
+  } else {
+    const myPlayer = state.players[myId];
+    if (myPlayer) {
+      scene.updateCamera(myPlayer.position.x, myPlayer.position.y, delta);
+    }
   }
+
+  inputHandler.refreshMouseWorld();
 
   spellRenderer.update(state);
   hud.update(state, inputHandler.getActiveSpell());
@@ -439,4 +472,13 @@ const assetsReady: Promise<void> = (async () => {
 })().catch(err => {
   console.error('Asset load failed:', err);
   throw err;
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && predictor) {
+    const latest = stateBuffer.getLatest();
+    if (latest?.players[myId]) {
+      predictor.reset(latest.players[myId].position);
+    }
+  }
 });
