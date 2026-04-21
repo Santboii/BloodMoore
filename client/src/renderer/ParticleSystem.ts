@@ -201,22 +201,22 @@ export class ParticleSystem {
   }
 
   emitTeleportSparks(x: number, y: number, z: number): void {
-    const count = 20 + Math.floor(Math.random() * 11);
+    const count = 10 + Math.floor(Math.random() * 6);
     for (let i = 0; i < count; i++) {
       if (this.activeCount >= POOL_SIZE) return;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.random() * Math.PI * 0.5;
-      const speed = 80 + Math.random() * 100;
+      const speed = 40 + Math.random() * 60;
       const idx = this.activeCount;
       this.spawn(
-        x + (Math.random() - 0.5) * 6,
-        y + (Math.random() - 0.5) * 6,
-        z + (Math.random() - 0.5) * 6,
+        x + (Math.random() - 0.5) * 4,
+        y + (Math.random() - 0.5) * 4,
+        z + (Math.random() - 0.5) * 4,
         Math.cos(theta) * Math.sin(phi) * speed,
-        Math.cos(phi) * speed * 0.5 + 20,
+        Math.cos(phi) * speed * 0.4 + 10,
         Math.sin(theta) * Math.sin(phi) * speed,
-        0.15 + Math.random() * 0.05,
-        10 + Math.random() * 6,
+        0.12 + Math.random() * 0.04,
+        7 + Math.random() * 4,
       );
       this.colorR[idx] = 1.0;
       this.colorG[idx] = 0.84 + Math.random() * 0.16;

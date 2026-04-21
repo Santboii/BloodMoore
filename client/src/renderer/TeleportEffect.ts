@@ -5,9 +5,9 @@ const LIGHTNING_DURATION = 0.08;
 const LIGHT_DURATION = 0.12;
 const RING_DURATION = 0.15;
 const TOTAL_DURATION = 0.2;
-const RING_MAX_RADIUS = 60;
-const LIGHTNING_COUNT_MIN = 8;
-const LIGHTNING_COUNT_MAX = 12;
+const RING_MAX_RADIUS = 35;
+const LIGHTNING_COUNT_MIN = 4;
+const LIGHTNING_COUNT_MAX = 6;
 
 const ringGeometry = new THREE.TorusGeometry(1, 0.3, 4, 32);
 
@@ -34,20 +34,20 @@ export class TeleportEffect {
     const count = LIGHTNING_COUNT_MIN + Math.floor(Math.random() * (LIGHTNING_COUNT_MAX - LIGHTNING_COUNT_MIN + 1));
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const length = 30 + Math.random() * 40;
+      const length = 15 + Math.random() * 25;
       const midLen = length * (0.3 + Math.random() * 0.4);
-      const fork = (Math.random() - 0.5) * 20;
+      const fork = (Math.random() - 0.5) * 12;
 
       const points = [
-        new THREE.Vector3(x, y + Math.random() * 10, z),
+        new THREE.Vector3(x, y + Math.random() * 6, z),
         new THREE.Vector3(
           x + Math.cos(angle) * midLen + fork,
-          y + 5 + Math.random() * 15,
+          y + 3 + Math.random() * 8,
           z + Math.sin(angle) * midLen + fork,
         ),
         new THREE.Vector3(
           x + Math.cos(angle) * length,
-          y + Math.random() * 8,
+          y + Math.random() * 5,
           z + Math.sin(angle) * length,
         ),
       ];
@@ -56,7 +56,7 @@ export class TeleportEffect {
       const material = new THREE.LineBasicMaterial({
         color: 0xffd700,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.6,
       });
       const line = new THREE.LineSegments(geometry, material);
       this.scene.add(line);
@@ -66,7 +66,7 @@ export class TeleportEffect {
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0xffd700,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.4,
       side: THREE.DoubleSide,
     });
     this.ringMesh = new THREE.Mesh(ringGeometry, ringMat);
@@ -75,8 +75,8 @@ export class TeleportEffect {
     this.ringMesh.scale.setScalar(0.01);
     this.scene.add(this.ringMesh);
 
-    this.pointLight = new THREE.PointLight(0xffeebb, 2, 200);
-    this.pointLight.position.set(x, 30, z);
+    this.pointLight = new THREE.PointLight(0xffeebb, 1, 120);
+    this.pointLight.position.set(x, 20, z);
     this.scene.add(this.pointLight);
   }
 
@@ -100,7 +100,7 @@ export class TeleportEffect {
         this.pointLight.dispose();
         this.lightDisposed = true;
       } else {
-        this.pointLight.intensity = 2 * (1 - this.elapsed / LIGHT_DURATION);
+        this.pointLight.intensity = 1 * (1 - this.elapsed / LIGHT_DURATION);
       }
     }
 
@@ -112,7 +112,7 @@ export class TeleportEffect {
       } else {
         const t = this.elapsed / RING_DURATION;
         this.ringMesh.scale.setScalar(RING_MAX_RADIUS * t);
-        (this.ringMesh.material as THREE.MeshBasicMaterial).opacity = 0.7 * (1 - t);
+        (this.ringMesh.material as THREE.MeshBasicMaterial).opacity = 0.4 * (1 - t);
       }
     }
 
