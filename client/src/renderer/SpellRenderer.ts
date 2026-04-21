@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GameState, METEOR_DELAY_TICKS } from '@arena/shared';
-import { FireParticles } from './FireParticles';
+import { ParticleSystem } from './ParticleSystem';
 
 type MeteorEntry = { ring: THREE.Mesh; rock: THREE.Mesh; target: { x: number; y: number }; spawnTime: number };
 
@@ -8,13 +8,13 @@ export class SpellRenderer {
   private fireballs = new Map<string, THREE.Mesh>();
   private fireWalls = new Map<string, THREE.Group>();
   private meteors = new Map<string, MeteorEntry>();
-  private fireParticles: FireParticles;
+  private particles: ParticleSystem;
   private prevFireballPositions = new Map<string, { x: number; y: number; z: number }>();
   private clock = new THREE.Clock();
   private elapsedTime = 0;
 
   constructor(private scene: THREE.Scene, private myId: string) {
-    this.fireParticles = new FireParticles(scene);
+    this.particles = new ParticleSystem(scene);
   }
 
   update(state: GameState): void {
@@ -23,7 +23,7 @@ export class SpellRenderer {
     this.syncFireballs(state);
     this.syncFireWalls(state);
     this.syncMeteors(state);
-    this.fireParticles.update(delta);
+    this.particles.update(delta);
   }
 
   private syncFireballs(state: GameState): void {
@@ -32,7 +32,7 @@ export class SpellRenderer {
     for (const [id, mesh] of this.fireballs) {
       if (!activeIds.has(id)) {
         const last = this.prevFireballPositions.get(id);
-        if (last) this.fireParticles.emitExplosion(last.x, last.y, last.z);
+        if (last) this.particles.emitExplosion(last.x, last.y, last.z);
         this.scene.remove(mesh);
         this.fireballs.delete(id);
         this.prevFireballPositions.delete(id);
@@ -68,7 +68,7 @@ export class SpellRenderer {
         const len = Math.sqrt(dx * dx + dz * dz);
         if (len > 0) { dirX = dx / len; dirZ = dz / len; }
       }
-      this.fireParticles.emitTrail(wx, wy, wz, dirX, dirZ);
+      this.particles.emitTrail(wx, wy, wz, dirX, dirZ);
       this.prevFireballPositions.set(fb.id, { x: wx, y: wy, z: wz });
     }
   }
@@ -109,9 +109,9 @@ export class SpellRenderer {
       }
 
       if (fw.shape === 'circle' && fw.center && fw.radius) {
-        this.fireParticles.emitCrater(fw.center.x, fw.center.y, fw.radius);
+        this.particles.emitCrater(fw.center.x, fw.center.y, fw.radius);
       } else {
-        this.fireParticles.emitWall(fw.segments);
+        this.particles.emitWall(fw.segments);
       }
     }
   }
@@ -123,7 +123,7 @@ export class SpellRenderer {
       if (!activeIds.has(id)) {
         this.scene.remove(entry.ring);
         this.scene.remove(entry.rock);
-        this.fireParticles.emitMeteorImpact(entry.target.x, 0, entry.target.y);
+        this.particles.emitMeteorImpact(entry.target.x, 0, entry.target.y);
         this.meteors.delete(id);
       }
     }
@@ -167,7 +167,7 @@ export class SpellRenderer {
       entry.rock.scale.setScalar(rockScale);
 
       // Emit trail while falling
-      this.fireParticles.emitMeteorTrail(meteor.target.x, rockY, meteor.target.y);
+      this.particles.emitMeteorTrail(meteor.target.x, rockY, meteor.target.y);
     }
   }
 
@@ -181,6 +181,6 @@ export class SpellRenderer {
     this.fireballs.clear();
     this.fireWalls.clear();
     this.meteors.clear();
-    this.fireParticles.dispose();
+    this.particles.dispose();
   }
 }
