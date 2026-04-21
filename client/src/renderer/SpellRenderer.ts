@@ -1,9 +1,13 @@
 import * as THREE from 'three';
-import { GameState, METEOR_DELAY_TICKS, PLAYER_SPEED, DELTA } from '@arena/shared';
+import { GameState, METEOR_DELAY_TICKS, PLAYER_SPEED } from '@arena/shared';
 import { ParticleSystem } from './ParticleSystem';
 import { TeleportEffect } from './TeleportEffect';
 
-const TELEPORT_THRESHOLD = PLAYER_SPEED * 2 * DELTA;
+// Motion faster than 3x player speed (measured against real frame delta) is a teleport.
+// Using a speed-based threshold avoids false positives when frame delta varies (frame
+// hitches, lower refresh rates, tab refocus) — a fixed-distance threshold assumes
+// frames tick at server rate, which isn't true.
+const TELEPORT_SPEED_MULTIPLIER = 3;
 
 type MeteorEntry = { ring: THREE.Mesh; rock: THREE.Mesh; target: { x: number; y: number }; spawnTime: number };
 
@@ -23,7 +27,8 @@ export class SpellRenderer {
     this.particles = new ParticleSystem(scene);
   }
 
-  private detectTeleports(state: GameState): void {
+  private detectTeleports(state: GameState, delta: number): void {
+    const threshold = PLAYER_SPEED * TELEPORT_SPEED_MULTIPLIER * delta;
     for (const [id, player] of Object.entries(state.players)) {
       const wx = player.position.x;
       const wz = player.position.y;
@@ -39,7 +44,7 @@ export class SpellRenderer {
         const dx = wx - prev.x;
         const dz = wz - prev.z;
         const dist = Math.sqrt(dx * dx + dz * dz);
-        if (dist > TELEPORT_THRESHOLD) {
+        if (dist > threshold) {
           this.teleportEffects.push(new TeleportEffect(this.scene, prev.x, prev.z, this.particles));
           this.teleportEffects.push(new TeleportEffect(this.scene, wx, wz, this.particles));
         }
@@ -58,7 +63,7 @@ export class SpellRenderer {
   update(state: GameState): void {
     const delta = this.clock.getDelta();
     this.elapsedTime += delta;
-    this.detectTeleports(state);
+    this.detectTeleports(state, delta);
     this.syncFireballs(state);
     this.syncFireWalls(state);
     this.syncMeteors(state);
