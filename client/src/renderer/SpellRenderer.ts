@@ -1,6 +1,9 @@
 import * as THREE from 'three';
-import { GameState, METEOR_DELAY_TICKS } from '@arena/shared';
+import { GameState, METEOR_DELAY_TICKS, PLAYER_SPEED, DELTA } from '@arena/shared';
 import { ParticleSystem } from './ParticleSystem';
+import { TeleportEffect } from './TeleportEffect';
+
+const TELEPORT_THRESHOLD = PLAYER_SPEED * 2 * DELTA;
 
 type MeteorEntry = { ring: THREE.Mesh; rock: THREE.Mesh; target: { x: number; y: number }; spawnTime: number };
 
@@ -12,18 +15,61 @@ export class SpellRenderer {
   private prevFireballPositions = new Map<string, { x: number; y: number; z: number }>();
   private clock = new THREE.Clock();
   private elapsedTime = 0;
+  private teleportEffects: TeleportEffect[] = [];
+  private prevPlayerPositions = new Map<string, { x: number; z: number }>();
+  private knownPlayerIds = new Set<string>();
 
   constructor(private scene: THREE.Scene, private myId: string) {
     this.particles = new ParticleSystem(scene);
   }
 
+  private detectTeleports(state: GameState): void {
+    for (const [id, player] of Object.entries(state.players)) {
+      const wx = player.position.x;
+      const wz = player.position.y;
+
+      if (!this.knownPlayerIds.has(id)) {
+        this.knownPlayerIds.add(id);
+        this.prevPlayerPositions.set(id, { x: wx, z: wz });
+        continue;
+      }
+
+      const prev = this.prevPlayerPositions.get(id);
+      if (prev) {
+        const dx = wx - prev.x;
+        const dz = wz - prev.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist > TELEPORT_THRESHOLD) {
+          this.teleportEffects.push(new TeleportEffect(this.scene, prev.x, prev.z, this.particles));
+          this.teleportEffects.push(new TeleportEffect(this.scene, wx, wz, this.particles));
+        }
+      }
+      this.prevPlayerPositions.set(id, { x: wx, z: wz });
+    }
+
+    for (const id of this.prevPlayerPositions.keys()) {
+      if (!(id in state.players)) {
+        this.prevPlayerPositions.delete(id);
+        this.knownPlayerIds.delete(id);
+      }
+    }
+  }
+
   update(state: GameState): void {
     const delta = this.clock.getDelta();
     this.elapsedTime += delta;
+    this.detectTeleports(state);
     this.syncFireballs(state);
     this.syncFireWalls(state);
     this.syncMeteors(state);
     this.particles.update(delta);
+
+    for (let i = this.teleportEffects.length - 1; i >= 0; i--) {
+      this.teleportEffects[i].update(delta);
+      if (this.teleportEffects[i].done) {
+        this.teleportEffects.splice(i, 1);
+      }
+    }
   }
 
   private syncFireballs(state: GameState): void {
@@ -178,9 +224,13 @@ export class SpellRenderer {
       this.scene.remove(entry.ring);
       this.scene.remove(entry.rock);
     }
+    for (const effect of this.teleportEffects) effect.dispose();
     this.fireballs.clear();
     this.fireWalls.clear();
     this.meteors.clear();
+    this.teleportEffects.length = 0;
+    this.prevPlayerPositions.clear();
+    this.knownPlayerIds.clear();
     this.particles.dispose();
   }
 }
