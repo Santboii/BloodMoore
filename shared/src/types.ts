@@ -62,9 +62,11 @@ export type GameState = {
   winner: string | null;
   gameMode: GameModeType;
   teams?: Record<string, string[]>;
+  ack?: Record<string, number>;
 };
 
 export type InputFrame = {
+  seq?: number;
   move: Vec2;
   castSpell: SpellId | null;
   aimTarget: Vec2;
@@ -80,9 +82,9 @@ export const PLAYER_HALF_SIZE = 16;
 export const PLAYER_SPEED = 200;   // units/sec
 export const TICK_RATE = 60;
 export const DELTA = 1 / TICK_RATE;
-export const MAX_HP = 500;
-export const MAX_MANA = 300;
-export const MANA_REGEN_PER_TICK = 10 / TICK_RATE;
+export const MAX_HP = 750;
+export const MAX_MANA = 500;
+export const MANA_REGEN_PER_TICK = 18 / TICK_RATE;
 
 export const PILLARS: Pillar[] = [
   { x: 350,  y: 300,  halfSize: 28 },

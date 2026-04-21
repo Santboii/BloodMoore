@@ -20,6 +20,7 @@ export class Room {
   state: GameState | null = null;
   pauseState: PauseState | null = null;
   private pendingInputs: Map<string, InputFrame> = new Map();
+  private lastProcessedSeq: Map<string, number> = new Map();
 
   constructor(id: string, mode: GameModeConfig = DUEL_MODE) {
     this.id = id;
@@ -87,10 +88,15 @@ export class Room {
     if (this.state.phase === 'ended') return this.state;
     const inputs: Record<string, InputFrame> = {};
     for (const [id] of this.players) {
-      inputs[id] = this.pendingInputs.get(id) ?? { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 400, y: 400 } };
+      const pending = this.pendingInputs.get(id) ?? { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 400, y: 400 } };
+      if (pending.seq !== undefined) {
+        this.lastProcessedSeq.set(id, pending.seq);
+      }
+      inputs[id] = pending;
     }
     const skillSetsObj: Record<string, Set<NodeId>> = Object.fromEntries(this.skillSets.entries());
     this.state = advanceState(this.state, inputs, skillSetsObj, this.mode);
+    this.state.ack = Object.fromEntries(this.lastProcessedSeq);
     for (const [id, pending] of this.pendingInputs) {
       if (pending.castSpell) {
         this.pendingInputs.set(id, { ...pending, castSpell: null });
@@ -104,6 +110,7 @@ export class Room {
     this.state = null;
     this.pauseState = null;
     this.pendingInputs.clear();
+    this.lastProcessedSeq.clear();
   }
 
   pause(userId: string): void {
@@ -160,6 +167,13 @@ export class Room {
     if (input) {
       this.pendingInputs.delete(oldSocketId);
       this.pendingInputs.set(newSocketId, input);
+    }
+
+    // Remap lastProcessedSeq
+    const seq = this.lastProcessedSeq.get(oldSocketId);
+    if (seq !== undefined) {
+      this.lastProcessedSeq.delete(oldSocketId);
+      this.lastProcessedSeq.set(newSocketId, seq);
     }
 
     // Remap player ID in GameState
