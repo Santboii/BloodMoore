@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { movePlayer, resolvePlayerPillarCollisions } from '../src/physics/Movement.ts';
-import { circleHitsAABB, pillarContainsPoint } from '../src/physics/Collision.ts';
+import { movePlayer, resolvePlayerPillarCollisions, clampToArena, circleHitsAABB, PILLARS, ARENA_SIZE, PLAYER_HALF_SIZE } from '@arena/shared';
+import { pillarContainsPoint } from '../src/physics/Collision.ts';
 import { hasLineOfSight } from '../src/physics/LineOfSight.ts';
-import { PILLARS, ARENA_SIZE, PLAYER_HALF_SIZE } from '@arena/shared';
 
 describe('movePlayer', () => {
   it('moves in the given direction scaled by speed and delta', () => {
