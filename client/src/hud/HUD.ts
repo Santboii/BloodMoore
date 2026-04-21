@@ -15,7 +15,7 @@ export class HUD {
     this.el.innerHTML = `
       <style>
         .hud-panel{position:fixed;bottom:0;left:0;right:0;height:72px;background:rgba(0,0,0,0.85);border-top:2px solid #4a3000;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
-        .orb{width:52px;height:52px;border-radius:50%;position:relative;border:2px solid;overflow:hidden}
+        .orb{width:80px;height:80px;border-radius:50%;position:relative;border:3px solid;overflow:hidden;margin-bottom:16px}
         .orb-fill{position:absolute;inset:0;transition:transform .1s}
         .orb-hp{border-color:#aa1111}.orb-hp .orb-fill{background:radial-gradient(circle at 40% 30%,#ff4444,#880000)}
         .orb-mp{border-color:#1133aa}.orb-mp .orb-fill{background:radial-gradient(circle at 40% 30%,#4488ff,#001888)}

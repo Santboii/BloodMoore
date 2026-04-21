@@ -234,7 +234,7 @@ describe('advanceState — skill modifiers', () => {
       p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200,  y: 1000 } },
     };
     const next = advanceState(state, inputs, skills);
-    expect(next.players['p2'].hp).toBeLessThan(500);
+    expect(next.players['p2'].hp).toBeLessThan(MAX_HP);
   });
 
   it('casting fireball when fire.fireball not in skills does nothing', () => {
@@ -269,6 +269,6 @@ describe('advanceState — skill modifiers', () => {
       p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
     };
     const next = advanceState(state, inputs, skills);
-    expect(next.players['p1'].hp).toBe(500);
+    expect(next.players['p1'].hp).toBe(MAX_HP);
   });
 });
