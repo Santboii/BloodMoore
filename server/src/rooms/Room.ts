@@ -75,6 +75,10 @@ export class Room {
   }
 
   queueInput(socketId: string, input: InputFrame): void {
+    const existing = this.pendingInputs.get(socketId);
+    if (existing?.castSpell && !input.castSpell) {
+      input = { ...input, castSpell: existing.castSpell, aimTarget: existing.aimTarget };
+    }
     this.pendingInputs.set(socketId, input);
   }
 
@@ -87,6 +91,11 @@ export class Room {
     }
     const skillSetsObj: Record<string, Set<NodeId>> = Object.fromEntries(this.skillSets.entries());
     this.state = advanceState(this.state, inputs, skillSetsObj, this.mode);
+    for (const [id, pending] of this.pendingInputs) {
+      if (pending.castSpell) {
+        this.pendingInputs.set(id, { ...pending, castSpell: null });
+      }
+    }
     return this.state;
   }
 
