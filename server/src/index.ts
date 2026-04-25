@@ -7,7 +7,7 @@ import { GameLoop } from './gameloop/GameLoop.ts';
 import { InputFrame } from '@arena/shared';
 import type { GameModeType } from '@arena/shared';
 import { DISCONNECT_TIMEOUT_MS } from '@arena/shared';
-import { loadSkillsForToken, creditMatchResult } from './skills/loadSkills.ts';
+import { loadSkillsForCharacter, creditMatchResult, loadUserFromToken } from './skills/loadSkills.ts';
 
 const app = express();
 const httpServer = createServer(app);
@@ -37,7 +37,7 @@ app.get('/rooms/:id', (req, res) => {
 app.post('/paused-match', async (req, res) => {
   const token = req.headers.authorization?.replace(/^Bearer /, '');
   if (!token) { res.status(401).json({ roomId: null }); return; }
-  const result = await loadSkillsForToken(token);
+  const result = await loadUserFromToken(token);
   if (!result.ok) { res.status(401).json({ roomId: null }); return; }
   const room = roomManager.findPausedMatchForUser(result.userId);
   res.json({ roomId: room?.id ?? null });
@@ -46,11 +46,12 @@ app.post('/paused-match', async (req, res) => {
 io.on('connection', socket => {
   let currentRoomId: string | null = null;
 
-  socket.on('join-room', async ({ roomId, displayName, accessToken, teamId }: {
+  socket.on('join-room', async ({ roomId, displayName, accessToken, teamId, characterId }: {
     roomId: string;
     displayName: string;
     accessToken?: string;
     teamId?: string;
+    characterId?: string;
   }) => {
     const room = roomManager.getRoom(roomId);
     if (!room) { socket.emit('room-not-found'); return; }
@@ -59,11 +60,12 @@ io.on('connection', socket => {
     if (result === 'full') { socket.emit('room-full'); return; }
     if (result === 'team-full') { socket.emit('team-full'); return; }
 
-    if (accessToken) {
-      const skillResult = await loadSkillsForToken(accessToken);
+    if (accessToken && characterId) {
+      const skillResult = await loadSkillsForCharacter(accessToken, characterId);
       if (skillResult.ok) {
         room.skillSets.set(socket.id, skillResult.skills);
         room.userIds.set(socket.id, skillResult.userId);
+        room.characterIds.set(socket.id, characterId);
       }
     }
 
@@ -120,8 +122,10 @@ io.on('connection', socket => {
       loop.start(room, async state => {
         io.to(roomId).emit('game-state', state);
         if (state.phase === 'ended') {
-          io.to(roomId).emit('duel-ended', { winnerId: state.winner, gameMode: state.gameMode });
+          const matchResults: Record<string, { xpGained: number; levelsGained: number; newLevel: number }> = {};
           for (const [socketId, userId] of room.userIds.entries()) {
+            const characterId = room.characterIds.get(socketId);
+            if (!characterId) continue;
             let won: boolean;
             if (state.gameMode === '2v2') {
               const playerTeam = room.teamAssignments.get(socketId);
@@ -129,8 +133,10 @@ io.on('connection', socket => {
             } else {
               won = state.winner === socketId;
             }
-            creditMatchResult(userId, won).catch(console.error);
+            const result = await creditMatchResult(userId, characterId, won);
+            matchResults[socketId] = { xpGained: result.xpGained, levelsGained: result.levelsGained, newLevel: result.newLevel };
           }
+          io.to(roomId).emit('duel-ended', { winnerId: state.winner, gameMode: state.gameMode, matchResults });
         }
       });
     }
@@ -192,8 +198,10 @@ io.on('connection', socket => {
             r.state!.winner = connectedSocketId;
             io.to(roomId).emit('duel-ended', { winnerId: connectedSocketId });
             for (const [sid, uid] of r.userIds.entries()) {
+              const cid = r.characterIds.get(sid);
+              if (!cid) continue;
               const won = sid === connectedSocketId;
-              creditMatchResult(uid, won).catch(console.error);
+              creditMatchResult(uid, cid, won).catch(console.error);
             }
           }
           // No connected player = no result (both disconnected)
@@ -242,7 +250,7 @@ io.on('connection', socket => {
       return;
     }
 
-    const result = await loadSkillsForToken(accessToken);
+    const result = await loadUserFromToken(accessToken);
     if (!result.ok) {
       socket.emit('rejoin-failed', { reason: 'Invalid token' });
       return;
@@ -323,8 +331,10 @@ io.on('connection', socket => {
       room.state.winner = disconnectedSocketId;
       io.to(currentRoomId).emit('duel-ended', { winnerId: disconnectedSocketId });
       for (const [sid, uid] of room.userIds.entries()) {
+        const cid = room.characterIds.get(sid);
+        if (!cid) continue;
         const won = sid === disconnectedSocketId;
-        creditMatchResult(uid, won).catch(console.error);
+        creditMatchResult(uid, cid, won).catch(console.error);
       }
     }
 
