@@ -14,9 +14,12 @@ import { supabase, fetchProfile } from './supabase';
 import { GameState, NodeId, SpellId } from '@arena/shared';
 import { AssetLoader } from './renderer/AssetLoader';
 import type { LoadedAssets } from './renderer/AssetLoader';
+import { LoadingScreen } from './loading/LoadingScreen';
 
 const container = document.getElementById('canvas-container')!;
 const uiOverlay = document.getElementById('ui-overlay')!;
+
+const loadingScreen = new LoadingScreen(uiOverlay);
 
 const scene = new Scene(container);
 
@@ -469,6 +472,7 @@ const assetsReady: Promise<void> = (async () => {
   const arena = new Arena(assets.textures);
   arena.addToScene(scene.scene);
   scene.initPostProcessing();
+  await loadingScreen.hide();
 })().catch(err => {
   console.error('Asset load failed:', err);
   throw err;
