@@ -11,13 +11,13 @@ export class LoadingScreen {
     this.el.innerHTML = `
       <style>
         @keyframes ls-flameCore {
-          0%   { height: 0;     border-radius: 0 0 55px 55px; opacity: 0.9; }
-          15%  { height: 40px;  border-radius: 0 0 55px 55px; opacity: 1; }
-          40%  { height: 95px;  border-radius: 40px 40px 55px 55px; opacity: 0.95; }
-          55%  { height: 110px; border-radius: 55px; opacity: 1; }
-          70%  { height: 105px; border-radius: 55px; opacity: 0.9; }
-          80%  { height: 80px;  border-radius: 45px 45px 55px 55px; opacity: 0.85; }
-          100% { height: 0;     border-radius: 0 0 55px 55px; opacity: 0.9; }
+          0%   { height: 0;     opacity: 0.9; }
+          15%  { height: 40px;  opacity: 1; }
+          40%  { height: 95px;  opacity: 0.95; }
+          55%  { height: 114px; opacity: 1; }
+          70%  { height: 108px; opacity: 0.9; }
+          80%  { height: 80px;  opacity: 0.85; }
+          100% { height: 0;     opacity: 0.9; }
         }
         @keyframes ls-flameInner {
           0%   { height: 0;     opacity: 0; }
@@ -78,23 +78,25 @@ export class LoadingScreen {
         <!-- Outer ring with glow -->
         <div style="position:absolute;inset:0;border-radius:50%;border:2px solid #3a2710;
                     animation:ls-glow 3s ease-in-out infinite, ls-ringGlow 3s ease-in-out infinite"></div>
-        <!-- Flame core (dark red/orange base) -->
-        <div style="position:absolute;bottom:5px;left:50%;width:108px;height:0;transform:translateX(-50%);
-                    background:radial-gradient(ellipse at center bottom,#cc4400,#991100 50%,#550800 85%);
-                    animation:ls-flameCore 3s ease-in-out infinite, ls-flicker 0.8s ease-in-out infinite;
-                    overflow:hidden;filter:blur(1px)">
-        </div>
-        <!-- Flame inner (bright orange layer) -->
-        <div style="position:absolute;bottom:5px;left:50%;width:80px;height:0;transform:translateX(-50%);
-                    background:radial-gradient(ellipse at center bottom,#ff8800,#ff5500 40%,#cc2200 80%);
-                    animation:ls-flameInner 3s ease-in-out infinite 0.1s, ls-flicker 0.6s ease-in-out infinite 0.2s;
-                    overflow:hidden;filter:blur(0.5px);border-radius:0 0 40px 40px">
-        </div>
-        <!-- Flame hot core (yellow-white center) -->
-        <div style="position:absolute;bottom:5px;left:50%;width:44px;height:0;transform:translateX(-50%);
-                    background:radial-gradient(ellipse at center bottom,#ffdd66,#ffaa22 50%,#ff6600 90%);
-                    animation:ls-flameWhite 3s ease-in-out infinite 0.2s, ls-flicker 0.5s ease-in-out infinite 0.1s;
-                    overflow:hidden;border-radius:0 0 22px 22px">
+        <!-- Circular clipping container for flames -->
+        <div style="position:absolute;inset:3px;border-radius:50%;overflow:hidden">
+          <!-- Flame core (dark red/orange base) -->
+          <div style="position:absolute;bottom:0;left:50%;width:108px;height:0;transform:translateX(-50%);
+                      background:radial-gradient(ellipse at center bottom,#cc4400,#991100 50%,#550800 85%);
+                      animation:ls-flameCore 3s ease-in-out infinite, ls-flicker 0.8s ease-in-out infinite;
+                      filter:blur(1px)">
+          </div>
+          <!-- Flame inner (bright orange layer) -->
+          <div style="position:absolute;bottom:0;left:50%;width:80px;height:0;transform:translateX(-50%);
+                      background:radial-gradient(ellipse at center bottom,#ff8800,#ff5500 40%,#cc2200 80%);
+                      animation:ls-flameInner 3s ease-in-out infinite 0.1s, ls-flicker 0.6s ease-in-out infinite 0.2s;
+                      filter:blur(0.5px)">
+          </div>
+          <!-- Flame hot core (yellow-white center) -->
+          <div style="position:absolute;bottom:0;left:50%;width:44px;height:0;transform:translateX(-50%);
+                      background:radial-gradient(ellipse at center bottom,#ffdd66,#ffaa22 50%,#ff6600 90%);
+                      animation:ls-flameWhite 3s ease-in-out infinite 0.2s, ls-flicker 0.5s ease-in-out infinite 0.1s">
+          </div>
         </div>
         <!-- Ember particles -->
         <div style="position:absolute;inset:-20px;pointer-events:none">
