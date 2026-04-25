@@ -30,6 +30,8 @@ export async function loadSkillsForCharacter(
   if (error) return { ok: false, error: error.message };
 
   const skills = new Set<NodeId>((data ?? []).map((row: { node_id: string }) => row.node_id as NodeId));
+  // Mages always have fireball so they're never without an ability
+  if (!skills.has('fire.fireball')) skills.add('fire.fireball');
   return { ok: true, userId: user.id, skills };
 }
 

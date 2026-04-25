@@ -145,6 +145,21 @@ export class SkillTreeUI {
       .eq('character_id', this.characterId);
     this.owned = new Set((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
 
+    if (!this.owned.has('fire.fireball')) {
+      const { error } = await supabase.rpc('unlock_skill_node', {
+        p_character_id: this.characterId,
+        p_node_id: 'fire.fireball',
+        p_cost: 0,
+      });
+      if (error) {
+        await supabase.from('skill_unlocks').insert({
+          character_id: this.characterId,
+          node_id: 'fire.fireball',
+        });
+      }
+      this.owned.add('fire.fireball');
+    }
+
     this.render();
   }
 

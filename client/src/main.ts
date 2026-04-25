@@ -107,6 +107,8 @@ const auth = new AuthUI(uiOverlay, {
   onAuthed: async (username, token) => {
     accessToken = token;
     auth.hide();
+    await assetsReady;
+    loadingScreen.hide();
 
     const pausedRoomId = await checkPausedMatch(token);
     if (pausedRoomId) {

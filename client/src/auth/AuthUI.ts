@@ -31,13 +31,15 @@ export class AuthUI {
   private showLogin(error = ''): void {
     this.el.innerHTML = `
       <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center bottom,rgba(255,80,0,0.06),transparent 60%);pointer-events:none"></div>
-      <div style="text-align:center;max-width:300px;width:100%;padding:24px;position:relative;z-index:1">
-        <h1 style="font-family:'Cinzel',serif;font-weight:900;font-size:2.2rem;color:#ddb84a;letter-spacing:0.25em;text-shadow:0 0 60px rgba(255,100,0,0.4),0 2px 4px rgba(0,0,0,0.8);margin-bottom:2px">BLOODMOOR</h1>
-        <p style="font-family:'Cinzel',serif;font-size:0.6rem;color:#7a5a28;letter-spacing:0.5em;text-transform:uppercase;margin-bottom:6px">Arena PvP</p>
-        <p style="font-family:'Crimson Text',serif;font-style:italic;color:#4a3a20;font-size:0.75rem;letter-spacing:0.1em;margin-bottom:36px">Enter the blood-soaked arena</p>
+      <div style="text-align:center;position:relative;z-index:1">
+        <h1 style="font-family:'Cinzel',serif;font-weight:900;font-size:2.2rem;color:#ddb84a;letter-spacing:0.25em;padding-left:0.25em;text-shadow:0 0 60px rgba(255,100,0,0.4),0 2px 4px rgba(0,0,0,0.8);margin-bottom:2px">BLOODMOOR</h1>
+        <p style="font-family:'Cinzel',serif;font-size:0.6rem;color:#7a5a28;letter-spacing:0.5em;padding-left:0.5em;text-transform:uppercase;margin-bottom:6px">Arena PvP</p>
+        <p style="font-family:'Crimson Text',serif;font-style:italic;color:#4a3a20;font-size:0.75rem;letter-spacing:0.1em;padding-left:0.1em;margin-bottom:36px">Enter the blood-soaked arena</p>
         <div style="width:120px;height:1px;background:linear-gradient(90deg,transparent,#3a2710,transparent);margin:0 auto 28px;position:relative">
           <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:0.5rem;color:#c8860a;background:#0e0804;padding:0 8px">◆</span>
         </div>
+      </div>
+      <div style="text-align:center;max-width:300px;width:100%;padding:0 24px;position:relative;z-index:1">
         ${error ? `<p style="color:#cc4444;font-size:0.8rem;margin-bottom:16px">${esc(error)}</p>` : ''}
         <div style="margin-bottom:10px">
           <span style="display:block;font-family:'Cinzel',serif;font-size:0.6rem;color:#4a3a20;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;text-align:left">Email</span>
@@ -69,12 +71,14 @@ export class AuthUI {
   private showRegister(error = ''): void {
     this.el.innerHTML = `
       <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center bottom,rgba(255,80,0,0.06),transparent 60%);pointer-events:none"></div>
-      <div style="text-align:center;max-width:300px;width:100%;padding:24px;position:relative;z-index:1">
-        <h1 style="font-family:'Cinzel',serif;font-weight:900;font-size:1.8rem;color:#ddb84a;letter-spacing:0.25em;text-shadow:0 0 60px rgba(255,100,0,0.4),0 2px 4px rgba(0,0,0,0.8);margin-bottom:6px">CREATE ACCOUNT</h1>
-        <p style="font-family:'Crimson Text',serif;font-style:italic;color:#4a3a20;font-size:0.75rem;letter-spacing:0.1em;margin-bottom:28px">Join the arena</p>
+      <div style="text-align:center;position:relative;z-index:1">
+        <h1 style="font-family:'Cinzel',serif;font-weight:900;font-size:1.8rem;color:#ddb84a;letter-spacing:0.25em;padding-left:0.25em;text-shadow:0 0 60px rgba(255,100,0,0.4),0 2px 4px rgba(0,0,0,0.8);margin-bottom:6px">CREATE ACCOUNT</h1>
+        <p style="font-family:'Crimson Text',serif;font-style:italic;color:#4a3a20;font-size:0.75rem;letter-spacing:0.1em;padding-left:0.1em;margin-bottom:28px">Join the arena</p>
         <div style="width:120px;height:1px;background:linear-gradient(90deg,transparent,#3a2710,transparent);margin:0 auto 24px;position:relative">
           <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:0.5rem;color:#c8860a;background:#0e0804;padding:0 8px">◆</span>
         </div>
+      </div>
+      <div style="text-align:center;max-width:300px;width:100%;padding:0 24px;position:relative;z-index:1">
         ${error ? `<p style="color:#cc4444;font-size:0.8rem;margin-bottom:16px">${esc(error)}</p>` : ''}
         <div style="margin-bottom:10px">
           <span style="display:block;font-family:'Cinzel',serif;font-size:0.6rem;color:#4a3a20;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;text-align:left">Username</span>

@@ -124,6 +124,15 @@ const STYLES = `
 .bm-disc-sub{font-family:'Cinzel',serif;font-size:12px;color:#5a3010;letter-spacing:2px;}
 .bm-btn-logout{background:transparent;border:1px solid rgba(80,40,10,0.6);color:#5a3a10;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;padding:6px 12px;cursor:pointer;border-radius:1px;text-transform:uppercase;transition:all 0.15s;}
 .bm-btn-logout:hover{border-color:#cc2222;color:#cc6644;}
+.bm-char-card{display:flex;align-items:center;gap:16px;background:linear-gradient(160deg,rgba(10,8,4,0.88) 0%,rgba(6,4,2,0.92) 100%);border:1px solid rgba(90,60,16,0.5);border-left:3px solid #c8860a;border-radius:2px;padding:10px 20px;margin:-8px 0 20px;font-family:'Cinzel',serif;max-width:600px;backdrop-filter:blur(6px);}
+.bm-char-icon{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1a0a30 0%,#2a1040 100%);border:2px solid #6a3acc;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 10px rgba(106,58,204,0.3);}
+.bm-char-details{flex:1;min-width:0;}
+.bm-char-name{font-size:16px;color:#d4a840;letter-spacing:2px;}
+.bm-char-meta{font-size:10px;color:#5a4a20;letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.bm-char-meta b{color:#ffcc66;}
+.bm-char-actions{display:flex;gap:8px;align-items:center;}
+.bm-btn-ghost{background:transparent;border:1px solid rgba(200,134,10,0.35);color:#a08040;font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:2px;padding:6px 14px;cursor:pointer;border-radius:1px;text-transform:uppercase;transition:all 0.15s;}
+.bm-btn-ghost:hover{border-color:#c8860a;color:#e8c060;box-shadow:0 0 8px rgba(200,134,10,0.15);}
 .bm-pause-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Cinzel',serif;}
 .bm-pause-title{font-size:32px;color:#cc2222;letter-spacing:6px;text-transform:uppercase;margin-bottom:12px;text-shadow:0 0 20px rgba(200,30,30,0.6);}
 .bm-pause-countdown{font-size:72px;color:#e8c060;letter-spacing:4px;margin-bottom:24px;text-shadow:0 0 30px rgba(200,160,60,0.4);}
@@ -221,14 +230,21 @@ export class LobbyUI {
     this.stopPolling();
     const prefilledCode = new URLSearchParams(window.location.search).get('room') ?? '';
     const hasProfile = username !== undefined || points !== undefined;
+    const mageStaffSvg = `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="8" r="5" stroke="#a478e8" stroke-width="1.5" fill="rgba(106,58,204,0.25)"/><circle cx="16" cy="8" r="2" fill="#c8a0ff" opacity="0.8"/><line x1="16" y1="13" x2="16" y2="30" stroke="#a478e8" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="12" x2="16" y2="15" stroke="#a478e8" stroke-width="1.2" stroke-linecap="round"/><line x1="20" y1="12" x2="16" y2="15" stroke="#a478e8" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+    const classIcon: Record<string, string> = { mage: mageStaffSvg };
+    const icon = classIcon[charClass ?? ''] ?? '⚔';
     const profileBarHtml = hasProfile
-      ? `<div style="display:flex;justify-content:center;align-items:center;gap:20px;margin:-14px 0 18px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase">
-           ${username ? `<span style="color:#8a7040"><b style="color:#d4a840">${escapeHtml(username)}</b>${charClass ? ` <span style="color:#5a4a20;font-size:9px">the ${escapeHtml(charClass)}</span>` : ''}</span>` : ''}
-           ${level !== undefined ? `<span style="color:#7a5a20">Lvl <b style="color:#ffcc66">${level}</b></span>` : ''}
-           ${points !== undefined ? `<span style="color:#7a5a20">Skill Points: <b style="color:#ffcc66">${points}</b></span>` : ''}
-           <button id="bm-skills" class="bm-btn-blue" style="padding:6px 14px">✦ Skills</button>
-           <button id="bm-switch-char" class="bm-btn-blue" style="padding:6px 14px">⇄ Switch</button>
-           <button id="bm-logout" class="bm-btn-logout">Sign Out</button>
+      ? `<div class="bm-char-card">
+           <div class="bm-char-icon">${icon}</div>
+           <div class="bm-char-details">
+             <div class="bm-char-name">${escapeHtml(username ?? '')}</div>
+             <div class="bm-char-meta">${charClass ? `${escapeHtml(charClass)}` : ''}${level !== undefined ? ` · Lvl <b>${level}</b>` : ''}${points !== undefined ? ` · <b>${points}</b> Skill Pts` : ''}</div>
+           </div>
+           <div class="bm-char-actions">
+             <button id="bm-skills" class="bm-btn-ghost">✦ Skills</button>
+             <button id="bm-switch-char" class="bm-btn-ghost">⇄ Switch</button>
+             <button id="bm-logout" class="bm-btn-logout">Sign Out</button>
+           </div>
          </div>`
       : '';
     const nameValue = username ? escapeHtml(username) : '';
@@ -240,8 +256,7 @@ export class LobbyUI {
       <div class="bm-layout">
         <div class="bm-panel bm-panel-left">
           <div class="bm-ptitle">Challenger</div>
-          <div class="bm-label">Display Name</div>
-          <input id="bm-name" class="bm-input" type="text" placeholder="Enter your name..." maxlength="20" value="${nameValue}">
+          <input id="bm-name" type="hidden" value="${nameValue}">
           <div class="bm-label">Game Mode</div>
           <div class="bm-mode-grid" id="mode-grid">
             <div class="bm-mode active" data-mode="1v1"><span class="bm-mode-label">1v1</span><span class="bm-mode-desc">Duel · 2 players</span></div>

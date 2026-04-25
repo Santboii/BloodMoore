@@ -43,7 +43,21 @@ export async function createCharacter(name: string, charClass: string): Promise<
     p_class: charClass,
   });
   if (error) { console.error('create_character failed:', error.message); return null; }
-  return data as string;
+  const characterId = data as string;
+
+  const starterSkills: Record<string, string[]> = {
+    mage: ['fire.fireball'],
+  };
+  for (const nodeId of starterSkills[charClass] ?? []) {
+    const { error: skillErr } = await supabase.rpc('unlock_skill_node', {
+      p_character_id: characterId,
+      p_node_id: nodeId,
+      p_cost: 0,
+    });
+    if (skillErr) console.error(`starter skill ${nodeId} failed:`, skillErr.message);
+  }
+
+  return characterId;
 }
 
 export async function deleteCharacter(characterId: string): Promise<boolean> {
