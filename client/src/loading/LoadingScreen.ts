@@ -10,39 +10,44 @@ export class LoadingScreen {
 
     this.el.innerHTML = `
       <style>
-        @keyframes ls-flameCore {
-          0%   { height: 0;     opacity: 0.9; }
-          15%  { height: 40px;  opacity: 1; }
-          40%  { height: 95px;  opacity: 0.95; }
-          55%  { height: 114px; opacity: 1; }
-          70%  { height: 108px; opacity: 0.9; }
-          80%  { height: 80px;  opacity: 0.85; }
-          100% { height: 0;     opacity: 0.9; }
+        @keyframes ls-orbFill {
+          0%   { transform: scale(0);   opacity: 0.8; }
+          10%  { transform: scale(0.2); opacity: 0.9; }
+          40%  { transform: scale(0.7); opacity: 1; }
+          55%  { transform: scale(1);   opacity: 1; }
+          70%  { transform: scale(1);   opacity: 0.9; }
+          85%  { transform: scale(0.5); opacity: 0.8; }
+          100% { transform: scale(0);   opacity: 0.8; }
         }
-        @keyframes ls-flameInner {
-          0%   { height: 0;     opacity: 0; }
-          20%  { height: 30px;  opacity: 0.8; }
-          45%  { height: 80px;  opacity: 1; }
-          60%  { height: 90px;  opacity: 0.9; }
-          75%  { height: 70px;  opacity: 0.7; }
-          100% { height: 0;     opacity: 0; }
+        @keyframes ls-orbFillInner {
+          0%   { transform: scale(0);   opacity: 0; }
+          15%  { transform: scale(0);   opacity: 0; }
+          25%  { transform: scale(0.2); opacity: 0.7; }
+          45%  { transform: scale(0.7); opacity: 1; }
+          60%  { transform: scale(1);   opacity: 0.9; }
+          75%  { transform: scale(0.8); opacity: 0.7; }
+          90%  { transform: scale(0.2); opacity: 0.3; }
+          100% { transform: scale(0);   opacity: 0; }
         }
-        @keyframes ls-flameWhite {
-          0%   { height: 0;     opacity: 0; }
-          30%  { height: 20px;  opacity: 0.6; }
-          50%  { height: 50px;  opacity: 0.8; }
-          65%  { height: 40px;  opacity: 0.5; }
-          100% { height: 0;     opacity: 0; }
+        @keyframes ls-orbFillHot {
+          0%   { transform: scale(0);   opacity: 0; }
+          25%  { transform: scale(0);   opacity: 0; }
+          35%  { transform: scale(0.15); opacity: 0.5; }
+          50%  { transform: scale(0.6); opacity: 0.9; }
+          60%  { transform: scale(0.8); opacity: 1; }
+          70%  { transform: scale(0.6); opacity: 0.7; }
+          85%  { transform: scale(0.1); opacity: 0.2; }
+          100% { transform: scale(0);   opacity: 0; }
         }
         @keyframes ls-flicker {
-          0%, 100% { transform: translateX(-50%) scaleX(1); }
-          25%  { transform: translateX(-50%) scaleX(0.96); }
-          50%  { transform: translateX(-50%) scaleX(1.03); }
-          75%  { transform: translateX(-50%) scaleX(0.98); }
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          25%  { transform: scale(0.97) rotate(1deg); }
+          50%  { transform: scale(1.02) rotate(-1deg); }
+          75%  { transform: scale(0.99) rotate(0.5deg); }
         }
         @keyframes ls-glow {
           0%, 100% { box-shadow: 0 0 20px rgba(255,100,0,0.15), 0 0 40px rgba(255,60,0,0.08); }
-          30%  { box-shadow: 0 0 30px rgba(255,120,0,0.25), 0 0 60px rgba(255,60,0,0.12); }
+          30%  { box-shadow: 0 0 35px rgba(255,120,0,0.3), 0 0 70px rgba(255,60,0,0.15); }
           60%  { box-shadow: 0 0 25px rgba(255,100,0,0.2), 0 0 50px rgba(255,60,0,0.1); }
         }
         @keyframes ls-emberFloat {
@@ -78,24 +83,28 @@ export class LoadingScreen {
         <!-- Outer ring with glow -->
         <div style="position:absolute;inset:0;border-radius:50%;border:2px solid #3a2710;
                     animation:ls-glow 3s ease-in-out infinite, ls-ringGlow 3s ease-in-out infinite"></div>
-        <!-- Circular clipping container for flames -->
-        <div style="position:absolute;inset:3px;border-radius:50%;overflow:hidden">
-          <!-- Flame core (dark red/orange base) -->
-          <div style="position:absolute;bottom:0;left:50%;width:108px;height:0;transform:translateX(-50%);
-                      background:radial-gradient(ellipse at center bottom,#cc4400,#991100 50%,#550800 85%);
-                      animation:ls-flameCore 3s ease-in-out infinite, ls-flicker 0.8s ease-in-out infinite;
+        <!-- Circular clipping container -->
+        <div style="position:absolute;inset:3px;border-radius:50%;overflow:hidden;
+                    animation:ls-flicker 0.7s ease-in-out infinite">
+          <!-- Flame base (dark red — largest circle) -->
+          <div style="position:absolute;bottom:-10%;left:-10%;width:120%;height:120%;border-radius:50%;
+                      background:radial-gradient(circle at 50% 60%,#cc4400,#991100 40%,#550800 70%,#220400 90%);
+                      transform:scale(0);transform-origin:center 70%;
+                      animation:ls-orbFill 3s ease-in-out infinite;
+                      filter:blur(2px)">
+          </div>
+          <!-- Flame middle (bright orange — medium circle) -->
+          <div style="position:absolute;bottom:0;left:5%;width:90%;height:90%;border-radius:50%;
+                      background:radial-gradient(circle at 50% 55%,#ff8800,#ff5500 35%,#cc2200 65%,#880800 90%);
+                      transform:scale(0);transform-origin:center 65%;
+                      animation:ls-orbFillInner 3s ease-in-out infinite;
                       filter:blur(1px)">
           </div>
-          <!-- Flame inner (bright orange layer) -->
-          <div style="position:absolute;bottom:0;left:50%;width:80px;height:0;transform:translateX(-50%);
-                      background:radial-gradient(ellipse at center bottom,#ff8800,#ff5500 40%,#cc2200 80%);
-                      animation:ls-flameInner 3s ease-in-out infinite 0.1s, ls-flicker 0.6s ease-in-out infinite 0.2s;
-                      filter:blur(0.5px)">
-          </div>
-          <!-- Flame hot core (yellow-white center) -->
-          <div style="position:absolute;bottom:0;left:50%;width:44px;height:0;transform:translateX(-50%);
-                      background:radial-gradient(ellipse at center bottom,#ffdd66,#ffaa22 50%,#ff6600 90%);
-                      animation:ls-flameWhite 3s ease-in-out infinite 0.2s, ls-flicker 0.5s ease-in-out infinite 0.1s">
+          <!-- Flame hot core (yellow — smallest circle) -->
+          <div style="position:absolute;bottom:10%;left:15%;width:70%;height:70%;border-radius:50%;
+                      background:radial-gradient(circle at 50% 50%,#ffee88,#ffcc44 30%,#ff8800 60%,#ff5500 85%);
+                      transform:scale(0);transform-origin:center 60%;
+                      animation:ls-orbFillHot 3s ease-in-out infinite">
           </div>
         </div>
         <!-- Ember particles -->
