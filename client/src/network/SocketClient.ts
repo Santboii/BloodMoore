@@ -50,6 +50,10 @@ export class SocketClient {
     this.socket.off('rematch-ready');
     this.socket.on('rematch-ready', cb);
   }
+  onRematchRequested(cb: (payload: { requesterId: string; countdown: number }) => void): void {
+    this.socket.off('rematch-requested');
+    this.socket.on('rematch-requested', cb);
+  }
   onOpponentDisconnected(cb: () => void): void {
     this.socket.off('opponent-disconnected');
     this.socket.on('opponent-disconnected', cb);
