@@ -90,6 +90,24 @@ export class LoadingScreen {
           65%  { opacity: 0.3; transform: translateX(9px) scale(0.35); }
           100% { bottom: 106%; opacity: 0; transform: translateX(-2px) scale(0.08); }
         }
+        @keyframes ls-bgMote1 {
+          0%   { bottom: -2%; opacity: 0; transform: translateX(0); }
+          5%   { opacity: 0.6; }
+          50%  { opacity: 0.3; transform: translateX(15px); }
+          100% { bottom: 60%; opacity: 0; transform: translateX(-10px); }
+        }
+        @keyframes ls-bgMote2 {
+          0%   { bottom: -3%; opacity: 0; transform: translateX(0); }
+          8%   { opacity: 0.5; }
+          45%  { opacity: 0.25; transform: translateX(-20px); }
+          100% { bottom: 55%; opacity: 0; transform: translateX(8px); }
+        }
+        @keyframes ls-bgMote3 {
+          0%   { bottom: -1%; opacity: 0; transform: translateX(0); }
+          6%   { opacity: 0.4; }
+          55%  { opacity: 0.2; transform: translateX(12px); }
+          100% { bottom: 50%; opacity: 0; transform: translateX(-15px); }
+        }
         @keyframes ls-pulse {
           0%, 100% { opacity: 0.4; }
           50%      { opacity: 1; }
@@ -100,8 +118,8 @@ export class LoadingScreen {
                   text-shadow:0 0 30px rgba(200,100,0,0.3);margin-bottom:2px">
         BLOODMOOR
       </div>
-      <div style="font-size:0.65rem;color:#6a5228;letter-spacing:0.3em;text-transform:uppercase;
-                  margin-bottom:24px">
+      <div style="font-size:0.9rem;color:#6a5228;letter-spacing:0.35em;text-transform:uppercase;
+                  margin-bottom:28px">
         Arena PvP
       </div>
 
@@ -171,6 +189,30 @@ export class LoadingScreen {
       <div style="font-size:0.7rem;color:#4a3a20;letter-spacing:0.2em;
                   font-family:'Crimson Text',serif;animation:ls-pulse 2s ease-in-out infinite">
         Forging the Arena...
+      </div>
+
+      <!-- Background motes rising from bottom of screen -->
+      <div style="position:fixed;bottom:0;left:0;right:0;height:60%;pointer-events:none">
+        <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff8833;box-shadow:0 0 4px 1px #ff4400;left:8%;animation:ls-bgMote1 4.5s ease-out infinite 0s"></div>
+        <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffaa44;box-shadow:0 0 5px 2px #ff6600;left:15%;animation:ls-bgMote2 5.2s ease-out infinite 0.8s"></div>
+        <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffcc66;box-shadow:0 0 3px 1px #ff7700;left:22%;animation:ls-bgMote3 4.0s ease-out infinite 1.5s"></div>
+        <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9944;box-shadow:0 0 4px 1px #ff5500;left:30%;animation:ls-bgMote1 5.8s ease-out infinite 2.3s"></div>
+        <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffbb55;box-shadow:0 0 3px 1px #ff8800;left:37%;animation:ls-bgMote2 4.3s ease-out infinite 0.4s"></div>
+        <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff7733;box-shadow:0 0 5px 1px #ff3300;left:43%;animation:ls-bgMote3 5.5s ease-out infinite 3.1s"></div>
+        <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffcc33;box-shadow:0 0 5px 2px #ff7700;left:50%;animation:ls-bgMote1 4.8s ease-out infinite 1.2s"></div>
+        <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd77;box-shadow:0 0 3px 1px #ffaa00;left:57%;animation:ls-bgMote2 5.0s ease-out infinite 2.7s"></div>
+        <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffaa55;box-shadow:0 0 4px 1px #ff6600;left:63%;animation:ls-bgMote3 4.6s ease-out infinite 0.6s"></div>
+        <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ff8844;box-shadow:0 0 3px 1px #ff4400;left:70%;animation:ls-bgMote1 5.3s ease-out infinite 1.9s"></div>
+        <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffbb33;box-shadow:0 0 6px 2px #ff5500;left:78%;animation:ls-bgMote2 4.2s ease-out infinite 3.5s"></div>
+        <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9933;box-shadow:0 0 4px 1px #ff5500;left:85%;animation:ls-bgMote3 5.6s ease-out infinite 0.3s"></div>
+        <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffcc77;box-shadow:0 0 3px 1px #ff8800;left:92%;animation:ls-bgMote1 4.9s ease-out infinite 2.0s"></div>
+        <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffaa33;box-shadow:0 0 5px 1px #ff6600;left:5%;animation:ls-bgMote3 5.1s ease-out infinite 1.7s"></div>
+        <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd55;box-shadow:0 0 3px 1px #ffaa00;left:47%;animation:ls-bgMote1 4.4s ease-out infinite 3.8s"></div>
+        <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff8855;box-shadow:0 0 4px 1px #ff4400;left:73%;animation:ls-bgMote2 5.4s ease-out infinite 1.0s"></div>
+        <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffbb55;box-shadow:0 0 5px 2px #ff6600;left:18%;animation:ls-bgMote1 4.7s ease-out infinite 2.5s"></div>
+        <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffcc44;box-shadow:0 0 3px 1px #ff7700;left:60%;animation:ls-bgMote3 5.7s ease-out infinite 0.9s"></div>
+        <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9955;box-shadow:0 0 4px 1px #ff5500;left:33%;animation:ls-bgMote2 4.1s ease-out infinite 3.3s"></div>
+        <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee66;box-shadow:0 0 3px 1px #ffaa00;left:88%;animation:ls-bgMote1 5.9s ease-out infinite 1.4s"></div>
       </div>
     `;
 
