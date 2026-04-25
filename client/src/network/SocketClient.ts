@@ -42,7 +42,7 @@ export class SocketClient {
     this.socket.off('game-state');
     this.socket.on('game-state', cb);
   }
-  onDuelEnded(cb: (payload: { winnerId: string | null; gameMode: string }) => void): void {
+  onDuelEnded(cb: (payload: { winnerId: string | null; gameMode: string; matchResults?: Record<string, { xpGained: number; levelsGained: number; newLevel: number; newXp: number }> }) => void): void {
     this.socket.off('duel-ended');
     this.socket.on('duel-ended', cb);
   }

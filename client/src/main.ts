@@ -10,8 +10,10 @@ import { HUD } from './hud/HUD';
 import { LobbyUI } from './lobby/LobbyUI';
 import { AuthUI } from './auth/AuthUI';
 import { SkillTreeUI } from './skills/SkillTreeUI';
-import { supabase, fetchProfile } from './supabase';
+import { supabase, fetchProfile, fetchCharacters } from './supabase';
 import { GameState, NodeId, SpellId } from '@arena/shared';
+import { CharacterSelectUI } from './character/CharacterSelectUI';
+import type { CharacterRecord } from '@arena/shared';
 import { AssetLoader } from './renderer/AssetLoader';
 import type { LoadedAssets } from './renderer/AssetLoader';
 import { LoadingScreen } from './loading/LoadingScreen';
@@ -45,6 +47,7 @@ let readyPlayers = new Set<string>();
 let predictor: Predictor | null = null;
 
 let accessToken = '';
+let activeCharacter: CharacterRecord | null = null;
 let ownedSpells = new Set<SpellId>();
 
 function spellsFromNodes(nodes: Set<NodeId>): Set<SpellId> {
@@ -71,31 +74,47 @@ let myDisplayName = '';
 
 const skillTreeUI = new SkillTreeUI(uiOverlay);
 
+const charSelect = new CharacterSelectUI(uiOverlay, {
+  onSelectCharacter: (character) => {
+    activeCharacter = character;
+    charSelect.hide();
+    lobby.show();
+    lobby.showHome(character.name, character.skill_points_available, character.class, character.level);
+  },
+  onLogout: async () => {
+    try { await supabase.auth.signOut(); } catch {}
+    stopGame();
+    accessToken = '';
+    activeCharacter = null;
+    handlersRegistered = false;
+    myId = '';
+    currentRoomId = '';
+    currentPlayers = {};
+    allPlayerNames = {};
+    currentMode = '1v1';
+    myTeamId = undefined;
+    ownedSpells = new Set();
+    pendingRejoin = null;
+    socket.disconnect();
+    lobby.hide();
+    charSelect.hide();
+    auth.show();
+  },
+});
+charSelect.hide();
+
 const auth = new AuthUI(uiOverlay, {
   onAuthed: async (username, token) => {
     accessToken = token;
     auth.hide();
-    const profile = await fetchProfile();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from('skill_unlocks').select('node_id').eq('user_id', user.id);
-      const nodeSet = new Set<NodeId>((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
-      ownedSpells = spellsFromNodes(nodeSet);
-      hud.buildSpellSlots(ownedSpells);
-    }
 
     const pausedRoomId = await checkPausedMatch(token);
     if (pausedRoomId) {
-      await attemptAutoRejoin(pausedRoomId, username, profile?.skill_points_available);
-      await assetsReady;
-      loadingScreen.hide();
+      await attemptAutoRejoin(pausedRoomId, username, undefined);
       return;
     }
 
-    lobby.show();
-    lobby.showHome(username, profile?.skill_points_available);
-    await assetsReady;
-    loadingScreen.hide();
+    await charSelect.show();
   },
   onShowLogin: async () => {
     await assetsReady;
@@ -157,7 +176,7 @@ const lobby = new LobbyUI(uiOverlay, {
     });
     const { roomId } = await res.json();
     socket.connect();
-    socket.joinRoom(roomId, displayName, accessToken);
+    socket.joinRoom(roomId, displayName, accessToken, undefined, activeCharacter?.id);
     socket.onRoomJoined(({ yourId, mode: serverMode, teams, readyPlayerIds }) => {
       myId = yourId;
       currentRoomId = roomId;
@@ -175,7 +194,7 @@ const lobby = new LobbyUI(uiOverlay, {
   onJoinRoom: (roomId, displayName, teamId?) => {
     myDisplayName = displayName;
     socket.connect();
-    socket.joinRoom(roomId, displayName, accessToken, teamId);
+    socket.joinRoom(roomId, displayName, accessToken, teamId, activeCharacter?.id);
     socket.onRoomJoined(({ yourId, players, mode: serverMode, teams, readyPlayerIds }) => {
       myId = yourId;
       currentRoomId = roomId;
@@ -202,13 +221,18 @@ const lobby = new LobbyUI(uiOverlay, {
     allPlayerNames = {};
     currentMode = '1v1';
     myTeamId = undefined;
-    lobby.showHome(myDisplayName);
+    if (activeCharacter) {
+      lobby.showHome(activeCharacter.name, activeCharacter.skill_points_available, activeCharacter.class, activeCharacter.level);
+    } else {
+      lobby.showHome(myDisplayName);
+    }
   },
   onSendChatMessage: (text) => socket.sendChatMessage(text),
   onLogout: async () => {
     try { await supabase.auth.signOut(); } catch { /* proceed anyway */ }
     stopGame();
     accessToken = '';
+    activeCharacter = null;
     handlersRegistered = false;
     myId = '';
     currentRoomId = '';
@@ -223,18 +247,27 @@ const lobby = new LobbyUI(uiOverlay, {
     auth.show();
   },
   onOpenSkills: async () => {
+    if (!activeCharacter) return;
     lobby.hide();
-    await skillTreeUI.show();
+    await skillTreeUI.show(activeCharacter.id);
+    const chars = await fetchCharacters();
+    const updated = chars.find(c => c.id === activeCharacter!.id);
+    if (updated) activeCharacter = updated;
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from('skill_unlocks').select('node_id').eq('user_id', user.id);
+    if (user && activeCharacter) {
+      const { data } = await supabase.from('skill_unlocks').select('node_id').eq('character_id', activeCharacter.id);
       const nodeSet = new Set<NodeId>((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
       ownedSpells = spellsFromNodes(nodeSet);
       hud.buildSpellSlots(ownedSpells);
     }
-    const profile = await fetchProfile();
     lobby.show();
-    lobby.showHome(undefined, profile?.skill_points_available);
+    if (activeCharacter) {
+      lobby.showHome(activeCharacter.name, activeCharacter.skill_points_available, activeCharacter.class, activeCharacter.level);
+    }
+  },
+  onSwitchCharacter: async () => {
+    lobby.hide();
+    await charSelect.show();
   },
 });
 lobby.hide();
@@ -284,7 +317,7 @@ function setupSocketHandlers(_myDisplayName: string): void {
 
   let duelEnded = false;
 
-  socket.onDuelEnded(({ winnerId, gameMode }) => {
+  socket.onDuelEnded(({ winnerId, gameMode, matchResults }) => {
     duelEnded = true;
     const mode = gameMode ?? currentMode;
     let won: boolean;
@@ -295,15 +328,25 @@ function setupSocketHandlers(_myDisplayName: string): void {
     }
     lobby.hidePauseOverlay();
     stopGame();
+
+    const myResult = matchResults?.[myId];
     if (mode === 'ffa' && !won) {
       const myDeathIndex = deathOrder.indexOf(myId);
       const totalPlayers = 4;
       const placement = myDeathIndex >= 0 ? totalPlayers - myDeathIndex : 1;
-      lobby.showResult(won, mode, placement);
+      lobby.showResult(won, mode, placement, myResult);
     } else {
-      lobby.showResult(won, mode);
+      lobby.showResult(won, mode, undefined, myResult);
     }
     lobby.show();
+
+    if (activeCharacter && myResult) {
+      activeCharacter = {
+        ...activeCharacter,
+        level: myResult.newLevel || activeCharacter.level,
+        xp: myResult.newXp ?? activeCharacter.xp,
+      };
+    }
   });
 
   socket.onRematchReady(() => {
