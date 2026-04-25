@@ -17,6 +17,7 @@ export type PlayerState = {
   cooldowns: Partial<Record<SpellId, number>>;
   invulnUntil?: number;
   phantomStepUntil?: number;
+  teleported?: Vec2;
   teamId?: string;
 };
 

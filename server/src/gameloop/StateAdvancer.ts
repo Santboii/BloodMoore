@@ -154,6 +154,7 @@ export function advanceState(
       players[id] = {
         ...players[id],
         position: newPos,
+        teleported: { ...p.position },
         invulnUntil: (hasSkillSystem && tMods.etherealForm) ? tick + 30 : players[id].invulnUntil,
         phantomStepUntil: (hasSkillSystem && tMods.phantomStep) ? tick + 2 * 60 : players[id].phantomStepUntil,
       };
@@ -251,7 +252,7 @@ export function advanceState(
 function deepCopyPlayers(players: Record<string, PlayerState>): Record<string, PlayerState> {
   const copy: Record<string, PlayerState> = {};
   for (const [id, p] of Object.entries(players)) {
-    copy[id] = { ...p, position: { ...p.position }, cooldowns: { ...p.cooldowns } };
+    copy[id] = { ...p, position: { ...p.position }, cooldowns: { ...p.cooldowns }, teleported: undefined };
   }
   return copy;
 }
