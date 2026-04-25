@@ -87,11 +87,19 @@ const auth = new AuthUI(uiOverlay, {
     const pausedRoomId = await checkPausedMatch(token);
     if (pausedRoomId) {
       await attemptAutoRejoin(pausedRoomId, username, profile?.skill_points_available);
+      await assetsReady;
+      loadingScreen.hide();
       return;
     }
 
     lobby.show();
     lobby.showHome(username, profile?.skill_points_available);
+    await assetsReady;
+    loadingScreen.hide();
+  },
+  onShowLogin: async () => {
+    await assetsReady;
+    loadingScreen.hide();
   },
 });
 
@@ -472,7 +480,6 @@ const assetsReady: Promise<void> = (async () => {
   const arena = new Arena(assets.textures);
   arena.addToScene(scene.scene);
   scene.initPostProcessing();
-  await loadingScreen.hide();
 })().catch(err => {
   console.error('Asset load failed:', err);
   throw err;

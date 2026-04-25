@@ -2,6 +2,7 @@ import { supabase } from '../supabase';
 
 type AuthCallbacks = {
   onAuthed: (username: string, accessToken: string) => void;
+  onShowLogin?: () => void;
 };
 
 function esc(s: string): string {
@@ -62,6 +63,7 @@ export class AuthUI {
         input.style.boxShadow = 'none';
       });
     });
+    this.cb.onShowLogin?.();
   }
 
   private showRegister(error = ''): void {
