@@ -159,6 +159,7 @@ io.on('connection', socket => {
     const roomId = currentRoomId;
     if (!rematchVotes.has(roomId)) rematchVotes.set(roomId, new Set());
     const votes = rematchVotes.get(roomId)!;
+    if (votes.has(socket.id)) return;
     votes.add(socket.id);
 
     const allVoted = [...room.players.keys()].every(id => votes.has(id));
