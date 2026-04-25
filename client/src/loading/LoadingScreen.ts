@@ -76,6 +76,20 @@ export class LoadingScreen {
           45%  { opacity: 0.8; transform: translateX(-5px) scale(0.8); }
           100% { bottom: 108%; opacity: 0; transform: translateX(7px) scale(0.2); }
         }
+        @keyframes ls-ember5 {
+          0%   { bottom: 28%; opacity: 0; transform: translateX(0) scale(1); }
+          12%  { opacity: 1; }
+          40%  { opacity: 0.9; transform: translateX(4px) scale(0.8); }
+          70%  { opacity: 0.4; transform: translateX(-6px) scale(0.4); }
+          100% { bottom: 102%; opacity: 0; transform: translateX(2px) scale(0.05); }
+        }
+        @keyframes ls-ember6 {
+          0%   { bottom: 22%; opacity: 0; transform: translateX(0) scale(1); }
+          8%   { opacity: 0.8; }
+          35%  { opacity: 0.7; transform: translateX(-3px) scale(0.9); }
+          65%  { opacity: 0.3; transform: translateX(9px) scale(0.35); }
+          100% { bottom: 106%; opacity: 0; transform: translateX(-2px) scale(0.08); }
+        }
         @keyframes ls-pulse {
           0%, 100% { opacity: 0.4; }
           50%      { opacity: 1; }
@@ -118,21 +132,39 @@ export class LoadingScreen {
           </div>
         </div>
         <!-- Ember particles -->
-        <div style="position:absolute;inset:-24px;pointer-events:none">
+        <div style="position:absolute;inset:-30px;pointer-events:none">
+          <!-- Large bright motes (3px) -->
           <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffcc44;box-shadow:0 0 6px 2px #ff6600;left:26%;animation:ls-ember1 1.8s ease-out infinite 0s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9933;box-shadow:0 0 4px 1px #ff4400;left:42%;animation:ls-ember2 2.1s ease-out infinite 0.2s"></div>
           <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffbb33;box-shadow:0 0 5px 2px #ff5500;left:58%;animation:ls-ember3 1.9s ease-out infinite 0.5s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffaa22;box-shadow:0 0 6px 2px #ff6600;left:50%;animation:ls-ember1 2.2s ease-out infinite 1.0s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ff7722;box-shadow:0 0 5px 2px #ff4400;left:38%;animation:ls-ember4 2.4s ease-out infinite 0.6s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffbb44;box-shadow:0 0 6px 2px #ff6600;left:54%;animation:ls-ember3 2.1s ease-out infinite 1.8s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffaa33;box-shadow:0 0 5px 2px #ff5500;left:22%;animation:ls-ember5 2.5s ease-out infinite 0.7s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffcc22;box-shadow:0 0 6px 2px #ff7700;left:44%;animation:ls-ember6 2.0s ease-out infinite 1.4s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ff9933;box-shadow:0 0 5px 2px #ff5500;left:68%;animation:ls-ember1 1.7s ease-out infinite 2.1s"></div>
+          <!-- Medium motes (2px) -->
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9933;box-shadow:0 0 4px 1px #ff4400;left:42%;animation:ls-ember2 2.1s ease-out infinite 0.2s"></div>
           <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffdd66;box-shadow:0 0 4px 1px #ff7700;left:70%;animation:ls-ember4 2.3s ease-out infinite 0.3s"></div>
           <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff8833;box-shadow:0 0 5px 1px #ff3300;left:34%;animation:ls-ember3 2.0s ease-out infinite 0.8s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffaa22;box-shadow:0 0 6px 2px #ff6600;left:50%;animation:ls-ember1 2.2s ease-out infinite 1.0s"></div>
           <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffcc55;box-shadow:0 0 4px 1px #ff5500;left:64%;animation:ls-ember2 1.7s ease-out infinite 1.3s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ff7722;box-shadow:0 0 5px 2px #ff4400;left:38%;animation:ls-ember4 2.4s ease-out infinite 0.6s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffee77;box-shadow:0 0 4px 1px #ffaa00;left:46%;animation:ls-ember1 1.6s ease-out infinite 1.5s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffbb44;box-shadow:0 0 6px 2px #ff6600;left:54%;animation:ls-ember3 2.1s ease-out infinite 1.8s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9944;box-shadow:0 0 4px 1px #ff3300;left:30%;animation:ls-ember2 1.9s ease-out infinite 0.4s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffee77;box-shadow:0 0 4px 1px #ffaa00;left:46%;animation:ls-ember5 1.6s ease-out infinite 1.5s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9944;box-shadow:0 0 4px 1px #ff3300;left:30%;animation:ls-ember6 1.9s ease-out infinite 0.4s"></div>
           <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffdd44;box-shadow:0 0 5px 1px #ff7700;left:66%;animation:ls-ember4 1.8s ease-out infinite 1.1s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffaa33;box-shadow:0 0 5px 2px #ff5500;left:22%;animation:ls-ember1 2.5s ease-out infinite 0.7s"></div>
           <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff8844;box-shadow:0 0 4px 1px #ff4400;left:74%;animation:ls-ember3 2.0s ease-out infinite 1.6s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffbb55;box-shadow:0 0 4px 1px #ff6600;left:52%;animation:ls-ember1 2.3s ease-out infinite 0.9s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffaa66;box-shadow:0 0 4px 1px #ff5500;left:36%;animation:ls-ember5 1.8s ease-out infinite 2.0s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff7744;box-shadow:0 0 5px 1px #ff3300;left:60%;animation:ls-ember6 2.2s ease-out infinite 0.1s"></div>
+          <!-- Tiny motes (1px) — distant sparks -->
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee88;box-shadow:0 0 3px 1px #ffaa00;left:28%;animation:ls-ember5 1.5s ease-out infinite 0.3s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd77;box-shadow:0 0 3px 1px #ff8800;left:48%;animation:ls-ember6 1.4s ease-out infinite 0.7s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffcc66;box-shadow:0 0 3px 1px #ff6600;left:62%;animation:ls-ember5 1.6s ease-out infinite 1.2s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffbb55;box-shadow:0 0 3px 1px #ff7700;left:40%;animation:ls-ember6 1.3s ease-out infinite 1.7s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee99;box-shadow:0 0 3px 1px #ffaa00;left:56%;animation:ls-ember5 1.7s ease-out infinite 0.5s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd88;box-shadow:0 0 3px 1px #ff8800;left:32%;animation:ls-ember6 1.5s ease-out infinite 2.2s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffcc77;box-shadow:0 0 3px 1px #ff6600;left:72%;animation:ls-ember5 1.8s ease-out infinite 1.9s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffbb66;box-shadow:0 0 3px 1px #ff7700;left:24%;animation:ls-ember6 1.6s ease-out infinite 0.8s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee77;box-shadow:0 0 3px 1px #ffaa00;left:45%;animation:ls-ember5 1.4s ease-out infinite 1.4s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd66;box-shadow:0 0 3px 1px #ff8800;left:55%;animation:ls-ember6 1.9s ease-out infinite 0.2s"></div>
         </div>
       </div>
 
