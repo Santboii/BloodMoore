@@ -75,8 +75,13 @@ let myDisplayName = '';
 const skillTreeUI = new SkillTreeUI(uiOverlay);
 
 const charSelect = new CharacterSelectUI(uiOverlay, {
-  onSelectCharacter: (character) => {
+  onSelectCharacter: async (character) => {
     activeCharacter = character;
+    const { data } = await supabase.from('skill_unlocks').select('node_id').eq('character_id', character.id);
+    const nodeSet = new Set<NodeId>((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
+    if (character.class === 'mage') nodeSet.add('fire.fireball');
+    ownedSpells = spellsFromNodes(nodeSet);
+    hud.buildSpellSlots(ownedSpells);
     charSelect.hide();
     lobby.show();
     lobby.showHome(character.name, character.skill_points_available, character.class, character.level);
@@ -259,6 +264,7 @@ const lobby = new LobbyUI(uiOverlay, {
     if (user && activeCharacter) {
       const { data } = await supabase.from('skill_unlocks').select('node_id').eq('character_id', activeCharacter.id);
       const nodeSet = new Set<NodeId>((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
+      if (activeCharacter.class === 'mage') nodeSet.add('fire.fireball');
       ownedSpells = spellsFromNodes(nodeSet);
       hud.buildSpellSlots(ownedSpells);
     }
@@ -294,6 +300,11 @@ function setupSocketHandlers(_myDisplayName: string): void {
   socket.onPlayerReadyAck(({ playerId }) => {
     readyPlayers.add(playerId);
     lobby.showReady(currentRoomId, currentPlayers, myId, currentMode, readyPlayers);
+  });
+
+  socket.onRematchRequested(({ requesterId, countdown }) => {
+    const isRequester = requesterId === myId;
+    lobby.showRematchCountdown(countdown, isRequester);
   });
 
   socket.onGameState((state: GameState) => {
