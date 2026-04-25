@@ -17,6 +17,7 @@ export class Room {
   teamAssignments: Map<string, string> = new Map(); // socketId -> teamId
   skillSets: Map<string, Set<NodeId>> = new Map();
   userIds: Map<string, string> = new Map();
+  characterIds: Map<string, string> = new Map();
   state: GameState | null = null;
   pauseState: PauseState | null = null;
   private pendingInputs: Map<string, InputFrame> = new Map();
@@ -49,6 +50,7 @@ export class Room {
     this.teamAssignments.delete(socketId);
     this.skillSets.delete(socketId);
     this.userIds.delete(socketId);
+    this.characterIds.delete(socketId);
   }
 
   setReady(socketId: string): void {
@@ -146,6 +148,13 @@ export class Room {
     if (userId !== undefined) {
       this.userIds.delete(oldSocketId);
       this.userIds.set(newSocketId, userId);
+    }
+
+    // Remap characterIds
+    const characterId = this.characterIds.get(oldSocketId);
+    if (characterId !== undefined) {
+      this.characterIds.delete(oldSocketId);
+      this.characterIds.set(newSocketId, characterId);
     }
 
     // Remap skillSets
