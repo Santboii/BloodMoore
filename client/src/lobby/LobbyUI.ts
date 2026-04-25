@@ -174,6 +174,9 @@ const STYLES = `
 .bm-pause-sub{font-size:13px;color:#5a4010;letter-spacing:2px;margin-bottom:32px;}
 .bm-btn-leave{padding:12px 32px;background:linear-gradient(180deg,#3a0800 0%,#1a0400 100%);color:#cc6644;border:1px solid rgba(140,40,0,0.7);font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:1px;transition:all 0.15s;}
 .bm-btn-leave:hover{background:linear-gradient(180deg,#5a0c00 0%,#2a0600 100%);border-color:#cc2222;}
+.bm-btn-rematch.waiting{opacity:0.6;cursor:default;pointer-events:none;}
+.bm-rematch-countdown{font-family:'Cinzel',serif;font-size:11px;color:#ffaa44;letter-spacing:2px;margin-top:6px;text-align:center;animation:bm-pulse 1s ease-in-out infinite;}
+@keyframes bm-pulse{0%,100%{opacity:1}50%{opacity:0.5}}
 `;
 
 const BG_HTML = `
@@ -445,13 +448,65 @@ export class LobbyUI {
   }
 
   disableRematch(): void {
+    if (this.rematchInterval) {
+      clearInterval(this.rematchInterval);
+      this.rematchInterval = null;
+    }
     const btn = this.ui.querySelector('#bm-rematch') as HTMLButtonElement | null;
     if (btn) {
       btn.disabled = true;
+      btn.classList.add('waiting');
       btn.style.opacity = '0.4';
       btn.style.cursor = 'default';
       btn.textContent = 'Opponent left';
     }
+    const label = this.ui.querySelector('.bm-rematch-countdown');
+    if (label) label.remove();
+  }
+
+  private rematchInterval: ReturnType<typeof setInterval> | null = null;
+
+  showRematchCountdown(countdown: number, isRequester: boolean): void {
+    if (this.rematchInterval) clearInterval(this.rematchInterval);
+    const btn = this.ui.querySelector('#bm-rematch') as HTMLButtonElement | null;
+    if (!btn) return;
+
+    let remaining = countdown;
+
+    if (isRequester) {
+      btn.classList.add('waiting');
+      btn.textContent = `Waiting... (${remaining}s)`;
+    } else {
+      btn.textContent = `⚔ Rematch (${remaining}s)`;
+    }
+
+    let label = this.ui.querySelector('.bm-rematch-countdown') as HTMLElement | null;
+    if (!label) {
+      label = document.createElement('div');
+      label.className = 'bm-rematch-countdown';
+      const btnContainer = this.ui.querySelector('.bm-result-buttons');
+      if (btnContainer) btnContainer.appendChild(label);
+    }
+    label.textContent = isRequester ? 'Waiting for opponent...' : 'Opponent wants a rematch!';
+
+    this.rematchInterval = setInterval(() => {
+      remaining--;
+      if (remaining <= 0) {
+        if (this.rematchInterval) clearInterval(this.rematchInterval);
+        this.rematchInterval = null;
+        if (isRequester) {
+          this.disableRematch();
+        }
+        return;
+      }
+      if (btn) {
+        if (isRequester) {
+          btn.textContent = `Waiting... (${remaining}s)`;
+        } else {
+          btn.textContent = `⚔ Rematch (${remaining}s)`;
+        }
+      }
+    }, 1000);
   }
 
   showDisconnected(): void {
