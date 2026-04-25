@@ -115,10 +115,45 @@ const STYLES = `
 .bm-chat-input{flex:1;background:rgba(2,2,8,0.9);border:1px solid rgba(58,42,8,0.8);border-bottom:1px solid rgba(106,74,16,0.9);color:#d4a840;font-family:'Crimson Text',serif;font-size:15px;padding:9px 12px;outline:none;border-radius:1px;}
 .bm-chat-input::placeholder{color:#3a2a08;}
 .bm-btn-send{background:linear-gradient(180deg,rgba(42,26,4,0.9) 0%,rgba(26,16,2,0.9) 100%);color:#c8860a;border:1px solid rgba(74,42,8,0.8);font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:2px;padding:9px 16px;cursor:pointer;border-radius:1px;text-transform:uppercase;}
-.bm-result-panel{text-align:center;max-width:400px;}
-.bm-result-title{font-family:'Cinzel',serif;font-size:56px;font-weight:900;letter-spacing:8px;text-transform:uppercase;margin-bottom:8px;}
-.bm-result-sub{font-size:18px;color:#7a6040;margin-bottom:32px;}
-.bm-btn-rematch{padding:12px 40px;background:linear-gradient(180deg,#7a1500 0%,#4a0d00 60%,#3a0800 100%);color:#ffcc88;border:1px solid rgba(140,40,0,0.9);font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:1px;}
+@keyframes bm-slam{0%{transform:scale(1.6);opacity:0;filter:blur(8px)}50%{transform:scale(0.97);opacity:1;filter:blur(0)}70%{transform:scale(1.02)}100%{transform:scale(1)}}
+@keyframes bm-rise{0%{transform:translateY(20px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes bm-lvlpop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes bm-glow-breathe{0%,100%{opacity:0.5}50%{opacity:1}}
+.bm-result-panel{text-align:center;max-width:460px;padding:40px 52px 36px !important;position:relative;overflow:hidden;}
+.bm-result-panel.bm-win{border-color:rgba(200,134,10,0.5);box-shadow:0 0 80px rgba(200,134,10,0.12),0 0 30px rgba(200,134,10,0.05) inset,0 4px 32px rgba(0,0,0,0.7);background:linear-gradient(170deg,rgba(22,16,4,0.96) 0%,rgba(10,8,4,0.97) 50%,rgba(18,12,2,0.96) 100%);}
+.bm-result-panel.bm-lose{border-color:rgba(160,30,20,0.35);box-shadow:0 0 80px rgba(140,20,10,0.1),0 0 30px rgba(100,10,5,0.05) inset,0 4px 32px rgba(0,0,0,0.7);background:linear-gradient(170deg,rgba(16,4,4,0.96) 0%,rgba(8,4,4,0.97) 50%,rgba(14,4,2,0.96) 100%);}
+.bm-result-glow{position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:300px;height:200px;border-radius:50%;filter:blur(60px);pointer-events:none;animation:bm-glow-breathe 3s ease-in-out infinite;}
+.bm-win .bm-result-glow{background:rgba(200,134,10,0.18);}
+.bm-lose .bm-result-glow{background:rgba(160,30,20,0.12);}
+.bm-result-ornament{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px;opacity:0;animation:bm-rise 0.6s ease-out 0.1s forwards;}
+.bm-result-ornament-line{width:60px;height:1px;}
+.bm-win .bm-result-ornament-line{background:linear-gradient(90deg,transparent,#7a5a20);}
+.bm-lose .bm-result-ornament-line{background:linear-gradient(90deg,transparent,#5a2020);}
+.bm-result-ornament-gem{width:8px;height:8px;transform:rotate(45deg);}
+.bm-win .bm-result-ornament-gem{background:#c8860a;box-shadow:0 0 8px rgba(200,134,10,0.6);}
+.bm-lose .bm-result-ornament-gem{background:#aa2222;box-shadow:0 0 8px rgba(170,34,34,0.5);}
+.bm-result-title{font-family:'Cinzel',serif;font-size:52px;font-weight:900;text-transform:uppercase;margin-bottom:10px;opacity:0;animation:bm-slam 0.8s cubic-bezier(0.16,1,0.3,1) 0.2s forwards;line-height:1.1;letter-spacing:6px;}
+.bm-win .bm-result-title{color:#e8b830;text-shadow:0 0 30px rgba(200,134,10,0.7),0 0 60px rgba(200,100,0,0.3),0 2px 0 #5a3000;}
+.bm-lose .bm-result-title{color:#cc2222;text-shadow:0 0 30px rgba(200,30,20,0.5),0 0 60px rgba(160,20,10,0.2),0 2px 0 #3a0800;}
+.bm-result-sub{font-family:'Crimson Text',Georgia,serif;font-size:17px;font-style:italic;margin-bottom:28px;opacity:0;animation:bm-rise 0.6s ease-out 0.55s forwards;}
+.bm-win .bm-result-sub{color:#a08050;}
+.bm-lose .bm-result-sub{color:#7a4040;}
+.bm-result-divider{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 20px;max-width:180px;opacity:0;animation:bm-rise 0.5s ease-out 0.7s forwards;}
+.bm-result-divider-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(90,60,16,0.5),transparent);}
+.bm-result-divider-dot{width:4px;height:4px;border-radius:50%;background:rgba(120,80,20,0.6);}
+.bm-result-xp{font-family:'Cinzel',serif;font-size:28px;font-weight:700;letter-spacing:4px;margin-bottom:4px;opacity:0;animation:bm-rise 0.6s ease-out 0.8s forwards;}
+.bm-win .bm-result-xp{color:#e8c060;}
+.bm-lose .bm-result-xp{color:#c8860a;}
+.bm-result-xp-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;margin-bottom:20px;opacity:0;animation:bm-rise 0.5s ease-out 0.9s forwards;}
+.bm-win .bm-result-xp-label{color:#6a5020;}
+.bm-lose .bm-result-xp-label{color:#5a3a20;}
+.bm-result-levelup{font-family:'Cinzel',serif;font-size:18px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#88dd44;margin-bottom:24px;opacity:0;animation:bm-lvlpop 0.7s cubic-bezier(0.16,1,0.3,1) 1.1s forwards;text-shadow:0 0 20px rgba(136,221,68,0.5),0 0 40px rgba(100,200,50,0.2);}
+.bm-result-levelup-num{font-size:26px;color:#aaff66;}
+.bm-result-buttons{display:flex;flex-direction:column;gap:8px;opacity:0;animation:bm-rise 0.5s ease-out forwards;}
+.bm-btn-rematch{width:100%;padding:13px 40px;background:linear-gradient(180deg,#7a1500 0%,#4a0d00 60%,#3a0800 100%);color:#ffcc88;border:1px solid rgba(140,40,0,0.9);border-bottom:2px solid #200500;font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:1px;box-shadow:0 2px 12px rgba(100,20,0,0.4);transition:all 0.15s;}
+.bm-btn-rematch:hover{background:linear-gradient(180deg,#9a1a00 0%,#6a1200 60%,#4a0a00 100%);box-shadow:0 2px 20px rgba(140,30,0,0.5);}
+.bm-btn-return{width:100%;padding:12px 40px;background:transparent;border:1px solid rgba(90,70,40,0.5);color:#8a7a60;font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:1px;transition:all 0.15s;}
+.bm-btn-return:hover{border-color:rgba(140,110,60,0.7);color:#b0a080;}
 .bm-disc-panel{text-align:center;max-width:360px;}
 .bm-disc-title{font-family:'Cinzel',serif;font-size:28px;color:#cc2222;letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;}
 .bm-disc-sub{font-family:'Cinzel',serif;font-size:12px;color:#5a3010;letter-spacing:2px;}
@@ -353,22 +388,58 @@ export class LobbyUI {
       title = won ? 'Victory' : 'Defeat';
       subtitle = won ? 'You are victorious' : 'You have been slain';
     }
+    const panelClass = won ? 'bm-win' : 'bm-lose';
+    const hasLevelUp = matchResult && matchResult.levelsGained > 0;
+    const btnDelay = !matchResult ? '0.8s' : hasLevelUp ? '1.4s' : '1.1s';
+
     const xpHtml = matchResult
-      ? `<div style="margin-top:16px;font-family:'Cinzel',serif;font-size:14px;color:#c8860a;letter-spacing:2px">
-           +${matchResult.xpGained} XP
-           ${matchResult.levelsGained > 0 ? `<br><span style="color:#88dd44;font-size:18px;letter-spacing:3px">LEVEL UP! → ${matchResult.newLevel}</span>` : ''}
-         </div>`
+      ? `<div class="bm-result-divider">
+           <div class="bm-result-divider-line"></div>
+           <div class="bm-result-divider-dot"></div>
+           <div class="bm-result-divider-line"></div>
+         </div>
+         <div class="bm-result-xp">+<span id="bm-xp-count">0</span> XP</div>
+         <div class="bm-result-xp-label">Experience Gained</div>
+         ${hasLevelUp ? `<div class="bm-result-levelup">Level Up <span class="bm-result-levelup-num">${matchResult.newLevel}</span></div>` : ''}`
       : '';
+
     this.ui.innerHTML = `
       <div class="bm-title" style="font-size:42px;letter-spacing:8px">Blood Moor</div>
       <div class="bm-divider" style="max-width:500px"><div class="bm-divider-line"></div><div class="bm-divider-gem"></div><div class="bm-divider-line"></div></div>
-      <div class="bm-panel bm-result-panel">
-        <div class="bm-result-title" style="color:${won ? '#c8860a' : '#cc2222'}">${title}</div>
+      <div class="bm-panel bm-result-panel ${panelClass}">
+        <div class="bm-result-glow"></div>
+        <div class="bm-result-ornament">
+          <div class="bm-result-ornament-line"></div>
+          <div class="bm-result-ornament-gem"></div>
+          <div class="bm-result-ornament-line" style="transform:scaleX(-1)"></div>
+        </div>
+        <div class="bm-result-title">${title}</div>
         <div class="bm-result-sub">${subtitle}</div>
         ${xpHtml}
-        <button id="bm-rematch" class="bm-btn-rematch">⚔ Rematch</button>
-        <button id="bm-return-lobby" class="bm-btn-rematch" style="margin-top:8px;background:transparent;border:1px solid #554422;color:#998866">Return to Lobby</button>
+        <div class="bm-result-buttons" style="animation-delay:${btnDelay}">
+          <button id="bm-rematch" class="bm-btn-rematch">⚔ Rematch</button>
+          <button id="bm-return-lobby" class="bm-btn-return">Return to Lobby</button>
+        </div>
       </div>`;
+
+    if (matchResult && matchResult.xpGained > 0) {
+      const xpEl = this.ui.querySelector('#bm-xp-count');
+      if (xpEl) {
+        const target = matchResult.xpGained;
+        const duration = 1200;
+        const startTime = performance.now() + 800;
+        const tick = (now: number) => {
+          const elapsed = now - startTime;
+          if (elapsed < 0) { requestAnimationFrame(tick); return; }
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          xpEl.textContent = String(Math.round(target * eased));
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+    }
+
     this.ui.querySelector('#bm-rematch')!.addEventListener('click', () => this.cb.onRematch());
     this.ui.querySelector('#bm-return-lobby')!.addEventListener('click', () => this.cb.onReturnToLobby());
   }
