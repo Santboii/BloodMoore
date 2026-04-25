@@ -6,7 +6,7 @@ import { RoomManager } from './rooms/RoomManager.ts';
 import { GameLoop } from './gameloop/GameLoop.ts';
 import { InputFrame } from '@arena/shared';
 import type { GameModeType } from '@arena/shared';
-import { DISCONNECT_TIMEOUT_MS } from '@arena/shared';
+import { DISCONNECT_TIMEOUT_MS, REMATCH_COUNTDOWN_MS } from '@arena/shared';
 import { loadSkillsForCharacter, creditMatchResult, loadUserFromToken } from './skills/loadSkills.ts';
 
 const app = express();
@@ -15,6 +15,8 @@ const io = new Server(httpServer, { cors: { origin: '*' } });
 const roomManager = new RoomManager();
 const loops: Map<string, GameLoop> = new Map();
 const pauseTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+const rematchVotes: Map<string, Set<string>> = new Map();
+const rematchTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
 app.use(cors());
 app.use(express.json());
@@ -152,14 +154,91 @@ io.on('connection', socket => {
     if (!currentRoomId) return;
     const room = roomManager.getRoom(currentRoomId);
     if (!room) return;
-    loops.get(currentRoomId)?.stop();
-    loops.delete(currentRoomId);
-    room.reset();
-    io.to(currentRoomId).emit('rematch-ready');
+    if (room.state?.phase !== 'ended') return;
+
+    const roomId = currentRoomId;
+    if (!rematchVotes.has(roomId)) rematchVotes.set(roomId, new Set());
+    const votes = rematchVotes.get(roomId)!;
+    votes.add(socket.id);
+
+    const allVoted = [...room.players.keys()].every(id => votes.has(id));
+
+    if (allVoted) {
+      // All players agreed — start new match
+      const timer = rematchTimers.get(roomId);
+      if (timer) clearTimeout(timer);
+      rematchTimers.delete(roomId);
+      rematchVotes.delete(roomId);
+
+      loops.get(roomId)?.stop();
+      loops.delete(roomId);
+      room.reset();
+      for (const id of room.players.keys()) room.setReady(id);
+      room.startMatch();
+
+      const loop = new GameLoop();
+      loops.set(roomId, loop);
+      loop.start(room, async state => {
+        io.to(roomId).emit('game-state', state);
+        if (state.phase === 'ended') {
+          const matchResults: Record<string, { xpGained: number; levelsGained: number; newLevel: number }> = {};
+          for (const [socketId, userId] of room.userIds.entries()) {
+            const characterId = room.characterIds.get(socketId);
+            if (!characterId) continue;
+            let won: boolean;
+            if (state.gameMode === '2v2') {
+              const playerTeam = room.teamAssignments.get(socketId);
+              won = state.winner === playerTeam;
+            } else {
+              won = state.winner === socketId;
+            }
+            const result = await creditMatchResult(userId, characterId, won);
+            matchResults[socketId] = { xpGained: result.xpGained, levelsGained: result.levelsGained, newLevel: result.newLevel };
+          }
+          io.to(roomId).emit('duel-ended', { winnerId: state.winner, gameMode: state.gameMode, matchResults });
+        }
+      });
+
+      io.to(roomId).emit('rematch-ready');
+    } else {
+      // First vote — start countdown, notify everyone
+      io.to(roomId).emit('rematch-requested', {
+        requesterId: socket.id,
+        countdown: REMATCH_COUNTDOWN_MS / 1000,
+      });
+
+      const timer = setTimeout(() => {
+        rematchTimers.delete(roomId);
+        rematchVotes.delete(roomId);
+        // Kick players who didn't vote
+        const currentRoom = roomManager.getRoom(roomId);
+        if (!currentRoom) return;
+        for (const [id] of currentRoom.players) {
+          if (!votes.has(id)) {
+            io.sockets.sockets.get(id)?.disconnect(true);
+          }
+        }
+      }, REMATCH_COUNTDOWN_MS);
+
+      rematchTimers.set(roomId, timer);
+    }
   });
 
   socket.on('disconnect', () => {
     if (!currentRoomId) return;
+
+    // Clean up any pending rematch vote for this player
+    const votes = rematchVotes.get(currentRoomId);
+    if (votes) {
+      votes.delete(socket.id);
+      if (votes.size === 0) {
+        rematchVotes.delete(currentRoomId);
+        const rTimer = rematchTimers.get(currentRoomId);
+        if (rTimer) clearTimeout(rTimer);
+        rematchTimers.delete(currentRoomId);
+      }
+    }
+
     const room = roomManager.getRoom(currentRoomId);
     if (!room) return;
 

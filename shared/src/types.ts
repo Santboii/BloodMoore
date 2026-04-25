@@ -144,3 +144,4 @@ export interface GameModeConfig {
 }
 
 export const DISCONNECT_TIMEOUT_MS = 30_000;
+export const REMATCH_COUNTDOWN_MS = 10_000;
