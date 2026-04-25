@@ -15,6 +15,8 @@ export class InputHandler {
   constructor(private scene: Scene, private canvas: HTMLElement) {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('blur', this.onBlur);
+    window.addEventListener('contextmenu', this.onBlur);
     canvas.addEventListener('mousemove', this.onMouseMove);
     canvas.addEventListener('mousedown', this.onMouseDown);
     canvas.addEventListener('mouseup', this.onMouseUp);
@@ -29,6 +31,8 @@ export class InputHandler {
   };
 
   private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.code); };
+
+  private onBlur = () => { this.keys.clear(); };
 
   private onMouseMove = (e: MouseEvent) => {
     this.mouseScreen = { x: e.clientX, y: e.clientY };
@@ -76,6 +80,8 @@ export class InputHandler {
   dispose(): void {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    window.removeEventListener('blur', this.onBlur);
+    window.removeEventListener('contextmenu', this.onBlur);
     this.canvas.removeEventListener('mousemove', this.onMouseMove);
     this.canvas.removeEventListener('mousedown', this.onMouseDown);
     this.canvas.removeEventListener('mouseup', this.onMouseUp);
