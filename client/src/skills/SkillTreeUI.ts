@@ -1,4 +1,4 @@
-import { supabase, fetchProfile, UserProfile } from '../supabase';
+import { supabase } from '../supabase';
 import { SKILL_NODES, GATES, canUnlock, NodeId, SkillNode } from '@arena/shared';
 
 const NODE_ICONS: Record<NodeId, string> = {
@@ -103,7 +103,10 @@ const STYLES = `
 export class SkillTreeUI {
   private el: HTMLElement;
   private owned = new Set<NodeId>();
-  private profile: UserProfile | null = null;
+  private characterId: string | null = null;
+  private skillPoints = 0;
+  private charName = '';
+  private charClass = '';
 
   constructor(container: HTMLElement) {
     const style = document.createElement('style');
@@ -115,7 +118,8 @@ export class SkillTreeUI {
     container.appendChild(this.el);
   }
 
-  async show(): Promise<void> {
+  async show(characterId?: string): Promise<void> {
+    this.characterId = characterId ?? null;
     this.el.style.display = 'block';
     await this.reload();
   }
@@ -123,17 +127,29 @@ export class SkillTreeUI {
   hide(): void { this.el.style.display = 'none'; }
 
   private async reload(): Promise<void> {
-    this.profile = await fetchProfile();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from('skill_unlocks').select('node_id').eq('user_id', user.id);
-      this.owned = new Set((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
-    }
+    if (!this.characterId) return;
+
+    const { data: charData } = await supabase
+      .from('characters')
+      .select('skill_points_available, name, class')
+      .eq('id', this.characterId)
+      .single();
+
+    this.skillPoints = charData?.skill_points_available ?? 0;
+    this.charName = charData?.name ?? 'Unknown';
+    this.charClass = charData?.class ?? 'mage';
+
+    const { data } = await supabase
+      .from('skill_unlocks')
+      .select('node_id')
+      .eq('character_id', this.characterId);
+    this.owned = new Set((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
+
     this.render();
   }
 
   private render(): void {
-    const pts = this.profile?.skill_points_available ?? 0;
+    const pts = this.skillPoints;
     const fireNodes = SKILL_NODES.filter(n => n.tree === 'fire');
     const utilNodes = SKILL_NODES.filter(n => n.tree === 'utility');
 
@@ -142,7 +158,7 @@ export class SkillTreeUI {
       <div class="st-ui">
         <div class="st-header">
           <div>
-            <div class="st-title">Mage Skills</div>
+            <div class="st-title">${esc(this.charName)} — ${esc(this.charClass)} Skills</div>
             <div class="st-points">Points Available: <b>${pts}</b></div>
           </div>
           <div class="st-header-buttons">
@@ -302,10 +318,9 @@ export class SkillTreeUI {
   }
 
   private async handleUnlock(id: NodeId, cost: number): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!this.characterId) return;
     const { error } = await supabase.rpc('unlock_skill_node', {
-      p_user_id: user.id,
+      p_character_id: this.characterId,
       p_node_id: id,
       p_cost: cost,
     });
@@ -315,9 +330,8 @@ export class SkillTreeUI {
 
   private handleRespec(): void {
     this.showConfirm('Reset Skills', 'All unlocked skills will be removed and points refunded. Are you sure?', async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { error } = await supabase.rpc('respec_skills', { p_user_id: user.id });
+      if (!this.characterId) return;
+      const { error } = await supabase.rpc('respec_skills', { p_character_id: this.characterId });
       if (error) { console.error('Respec failed:', error.message); return; }
       await this.reload();
     });

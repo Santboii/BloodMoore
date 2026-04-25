@@ -10,6 +10,7 @@ export type LobbyCallbacks = {
   onReturnToLobby: () => void;
   onSendChatMessage: (text: string) => void;
   onOpenSkills: () => void;
+  onSwitchCharacter: () => void;
   onLogout: () => void;
 };
 
@@ -216,15 +217,17 @@ export class LobbyUI {
     this.showHome();
   }
 
-  showHome(username?: string, points?: number): void {
+  showHome(username?: string, points?: number, charClass?: string, level?: number): void {
     this.stopPolling();
     const prefilledCode = new URLSearchParams(window.location.search).get('room') ?? '';
     const hasProfile = username !== undefined || points !== undefined;
     const profileBarHtml = hasProfile
       ? `<div style="display:flex;justify-content:center;align-items:center;gap:20px;margin:-14px 0 18px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase">
-           ${username ? `<span style="color:#8a7040">Welcome, <b style="color:#d4a840">${escapeHtml(username)}</b></span>` : ''}
+           ${username ? `<span style="color:#8a7040"><b style="color:#d4a840">${escapeHtml(username)}</b>${charClass ? ` <span style="color:#5a4a20;font-size:9px">the ${escapeHtml(charClass)}</span>` : ''}</span>` : ''}
+           ${level !== undefined ? `<span style="color:#7a5a20">Lvl <b style="color:#ffcc66">${level}</b></span>` : ''}
            ${points !== undefined ? `<span style="color:#7a5a20">Skill Points: <b style="color:#ffcc66">${points}</b></span>` : ''}
            <button id="bm-skills" class="bm-btn-blue" style="padding:6px 14px">✦ Skills</button>
+           <button id="bm-switch-char" class="bm-btn-blue" style="padding:6px 14px">⇄ Switch</button>
            <button id="bm-logout" class="bm-btn-logout">Sign Out</button>
          </div>`
       : '';
@@ -264,6 +267,9 @@ export class LobbyUI {
 
     const skillsBtn = this.ui.querySelector('#bm-skills');
     if (skillsBtn) skillsBtn.addEventListener('click', () => this.cb.onOpenSkills());
+
+    const switchCharBtn = this.ui.querySelector('#bm-switch-char');
+    if (switchCharBtn) switchCharBtn.addEventListener('click', () => this.cb.onSwitchCharacter());
 
     const logoutBtn = this.ui.querySelector('#bm-logout');
     if (logoutBtn) logoutBtn.addEventListener('click', () => this.cb.onLogout());
@@ -311,7 +317,7 @@ export class LobbyUI {
     this.renderLobby(roomId, slots, mode);
   }
 
-  showResult(won: boolean, mode?: string, placement?: number): void {
+  showResult(won: boolean, mode?: string, placement?: number, matchResult?: { xpGained: number; levelsGained: number; newLevel: number }): void {
     this.stopPolling();
     let title: string;
     let subtitle: string;
@@ -332,12 +338,19 @@ export class LobbyUI {
       title = won ? 'Victory' : 'Defeat';
       subtitle = won ? 'You are victorious' : 'You have been slain';
     }
+    const xpHtml = matchResult
+      ? `<div style="margin-top:16px;font-family:'Cinzel',serif;font-size:14px;color:#c8860a;letter-spacing:2px">
+           +${matchResult.xpGained} XP
+           ${matchResult.levelsGained > 0 ? `<br><span style="color:#88dd44;font-size:18px;letter-spacing:3px">LEVEL UP! → ${matchResult.newLevel}</span>` : ''}
+         </div>`
+      : '';
     this.ui.innerHTML = `
       <div class="bm-title" style="font-size:42px;letter-spacing:8px">Blood Moor</div>
       <div class="bm-divider" style="max-width:500px"><div class="bm-divider-line"></div><div class="bm-divider-gem"></div><div class="bm-divider-line"></div></div>
       <div class="bm-panel bm-result-panel">
         <div class="bm-result-title" style="color:${won ? '#c8860a' : '#cc2222'}">${title}</div>
         <div class="bm-result-sub">${subtitle}</div>
+        ${xpHtml}
         <button id="bm-rematch" class="bm-btn-rematch">⚔ Rematch</button>
         <button id="bm-return-lobby" class="bm-btn-rematch" style="margin-top:8px;background:transparent;border:1px solid #554422;color:#998866">Return to Lobby</button>
       </div>`;
