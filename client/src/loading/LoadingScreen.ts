@@ -53,42 +53,58 @@ export class LoadingScreen {
           50%  { border-color: #5a3a15; }
         }
         @keyframes ls-ember1 {
-          0%   { bottom: 25%; opacity: 0; transform: translateX(0) scale(1); }
-          10%  { opacity: 1; }
-          60%  { opacity: 0.6; transform: translateX(6px) scale(0.6); }
-          100% { bottom: 105%; opacity: 0; transform: translateX(-3px) scale(0.1); }
+          0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+          8%   { opacity: 1; }
+          25%  { opacity: 0.9; transform: translate(5px, -20px) scale(0.85); }
+          45%  { opacity: 0.7; transform: translate(-3px, -45px) scale(0.65); }
+          65%  { opacity: 0.4; transform: translate(7px, -65px) scale(0.4); }
+          85%  { opacity: 0.15; transform: translate(-2px, -85px) scale(0.2); }
+          100% { opacity: 0; transform: translate(4px, -100px) scale(0.05); }
         }
         @keyframes ls-ember2 {
-          0%   { bottom: 30%; opacity: 0; transform: translateX(0) scale(1); }
+          0%   { opacity: 0; transform: translate(0, 0) scale(1); }
           10%  { opacity: 1; }
-          50%  { opacity: 0.7; transform: translateX(-8px) scale(0.7); }
-          100% { bottom: 110%; opacity: 0; transform: translateX(4px) scale(0.15); }
+          30%  { opacity: 0.8; transform: translate(-7px, -18px) scale(0.9); }
+          50%  { opacity: 0.6; transform: translate(3px, -42px) scale(0.6); }
+          70%  { opacity: 0.3; transform: translate(-8px, -68px) scale(0.35); }
+          90%  { opacity: 0.1; transform: translate(5px, -88px) scale(0.15); }
+          100% { opacity: 0; transform: translate(-3px, -105px) scale(0.05); }
         }
         @keyframes ls-ember3 {
-          0%   { bottom: 20%; opacity: 0; transform: translateX(0) scale(1); }
-          15%  { opacity: 0.9; }
-          55%  { opacity: 0.5; transform: translateX(10px) scale(0.5); }
-          100% { bottom: 100%; opacity: 0; transform: translateX(-6px) scale(0.1); }
+          0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+          12%  { opacity: 0.9; }
+          28%  { opacity: 0.85; transform: translate(8px, -15px) scale(0.8); }
+          48%  { opacity: 0.5; transform: translate(-5px, -38px) scale(0.55); }
+          68%  { opacity: 0.25; transform: translate(10px, -60px) scale(0.3); }
+          88%  { opacity: 0.08; transform: translate(-4px, -82px) scale(0.12); }
+          100% { opacity: 0; transform: translate(6px, -95px) scale(0.05); }
         }
         @keyframes ls-ember4 {
-          0%   { bottom: 35%; opacity: 0; transform: translateX(0) scale(1); }
-          8%   { opacity: 1; }
-          45%  { opacity: 0.8; transform: translateX(-5px) scale(0.8); }
-          100% { bottom: 108%; opacity: 0; transform: translateX(7px) scale(0.2); }
+          0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+          7%   { opacity: 1; }
+          22%  { opacity: 0.9; transform: translate(-4px, -22px) scale(0.88); }
+          42%  { opacity: 0.65; transform: translate(6px, -48px) scale(0.6); }
+          62%  { opacity: 0.35; transform: translate(-7px, -70px) scale(0.35); }
+          82%  { opacity: 0.12; transform: translate(3px, -90px) scale(0.18); }
+          100% { opacity: 0; transform: translate(-5px, -108px) scale(0.05); }
         }
         @keyframes ls-ember5 {
-          0%   { bottom: 28%; opacity: 0; transform: translateX(0) scale(1); }
-          12%  { opacity: 1; }
-          40%  { opacity: 0.9; transform: translateX(4px) scale(0.8); }
-          70%  { opacity: 0.4; transform: translateX(-6px) scale(0.4); }
-          100% { bottom: 102%; opacity: 0; transform: translateX(2px) scale(0.05); }
+          0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+          10%  { opacity: 0.85; }
+          20%  { opacity: 0.9; transform: translate(3px, -12px) scale(0.9); }
+          38%  { opacity: 0.7; transform: translate(-6px, -32px) scale(0.7); }
+          55%  { opacity: 0.45; transform: translate(8px, -52px) scale(0.45); }
+          72%  { opacity: 0.2; transform: translate(-4px, -72px) scale(0.25); }
+          100% { opacity: 0; transform: translate(2px, -98px) scale(0.05); }
         }
         @keyframes ls-ember6 {
-          0%   { bottom: 22%; opacity: 0; transform: translateX(0) scale(1); }
-          8%   { opacity: 0.8; }
-          35%  { opacity: 0.7; transform: translateX(-3px) scale(0.9); }
-          65%  { opacity: 0.3; transform: translateX(9px) scale(0.35); }
-          100% { bottom: 106%; opacity: 0; transform: translateX(-2px) scale(0.08); }
+          0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+          6%   { opacity: 0.8; }
+          18%  { opacity: 0.85; transform: translate(-5px, -16px) scale(0.92); }
+          35%  { opacity: 0.6; transform: translate(9px, -35px) scale(0.65); }
+          52%  { opacity: 0.4; transform: translate(-3px, -55px) scale(0.42); }
+          75%  { opacity: 0.15; transform: translate(6px, -78px) scale(0.2); }
+          100% { opacity: 0; transform: translate(-4px, -102px) scale(0.05); }
         }
         @keyframes ls-bgMote1 {
           0%   { opacity: 0; transform: translateY(0) translateX(0); }
@@ -149,40 +165,37 @@ export class LoadingScreen {
                       filter:blur(0.5px)">
           </div>
         </div>
-        <!-- Ember particles -->
-        <div style="position:absolute;inset:-30px;pointer-events:none">
-          <!-- Large bright motes (3px) -->
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffcc44;box-shadow:0 0 6px 2px #ff6600;left:26%;animation:ls-ember1 1.8s ease-out infinite 0s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffbb33;box-shadow:0 0 5px 2px #ff5500;left:58%;animation:ls-ember3 1.9s ease-out infinite 0.5s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffaa22;box-shadow:0 0 6px 2px #ff6600;left:50%;animation:ls-ember1 2.2s ease-out infinite 1.0s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ff7722;box-shadow:0 0 5px 2px #ff4400;left:38%;animation:ls-ember4 2.4s ease-out infinite 0.6s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffbb44;box-shadow:0 0 6px 2px #ff6600;left:54%;animation:ls-ember3 2.1s ease-out infinite 1.8s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffaa33;box-shadow:0 0 5px 2px #ff5500;left:22%;animation:ls-ember5 2.5s ease-out infinite 0.7s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffcc22;box-shadow:0 0 6px 2px #ff7700;left:44%;animation:ls-ember6 2.0s ease-out infinite 1.4s"></div>
-          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ff9933;box-shadow:0 0 5px 2px #ff5500;left:68%;animation:ls-ember1 1.7s ease-out infinite 2.1s"></div>
-          <!-- Medium motes (2px) -->
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9933;box-shadow:0 0 4px 1px #ff4400;left:42%;animation:ls-ember2 2.1s ease-out infinite 0.2s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffdd66;box-shadow:0 0 4px 1px #ff7700;left:70%;animation:ls-ember4 2.3s ease-out infinite 0.3s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff8833;box-shadow:0 0 5px 1px #ff3300;left:34%;animation:ls-ember3 2.0s ease-out infinite 0.8s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffcc55;box-shadow:0 0 4px 1px #ff5500;left:64%;animation:ls-ember2 1.7s ease-out infinite 1.3s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffee77;box-shadow:0 0 4px 1px #ffaa00;left:46%;animation:ls-ember5 1.6s ease-out infinite 1.5s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9944;box-shadow:0 0 4px 1px #ff3300;left:30%;animation:ls-ember6 1.9s ease-out infinite 0.4s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffdd44;box-shadow:0 0 5px 1px #ff7700;left:66%;animation:ls-ember4 1.8s ease-out infinite 1.1s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff8844;box-shadow:0 0 4px 1px #ff4400;left:74%;animation:ls-ember3 2.0s ease-out infinite 1.6s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffbb55;box-shadow:0 0 4px 1px #ff6600;left:52%;animation:ls-ember1 2.3s ease-out infinite 0.9s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffaa66;box-shadow:0 0 4px 1px #ff5500;left:36%;animation:ls-ember5 1.8s ease-out infinite 2.0s"></div>
-          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff7744;box-shadow:0 0 5px 1px #ff3300;left:60%;animation:ls-ember6 2.2s ease-out infinite 0.1s"></div>
-          <!-- Tiny motes (1px) — distant sparks -->
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee88;box-shadow:0 0 3px 1px #ffaa00;left:28%;animation:ls-ember5 1.5s ease-out infinite 0.3s"></div>
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd77;box-shadow:0 0 3px 1px #ff8800;left:48%;animation:ls-ember6 1.4s ease-out infinite 0.7s"></div>
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffcc66;box-shadow:0 0 3px 1px #ff6600;left:62%;animation:ls-ember5 1.6s ease-out infinite 1.2s"></div>
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffbb55;box-shadow:0 0 3px 1px #ff7700;left:40%;animation:ls-ember6 1.3s ease-out infinite 1.7s"></div>
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee99;box-shadow:0 0 3px 1px #ffaa00;left:56%;animation:ls-ember5 1.7s ease-out infinite 0.5s"></div>
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd88;box-shadow:0 0 3px 1px #ff8800;left:32%;animation:ls-ember6 1.5s ease-out infinite 2.2s"></div>
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffcc77;box-shadow:0 0 3px 1px #ff6600;left:72%;animation:ls-ember5 1.8s ease-out infinite 1.9s"></div>
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffbb66;box-shadow:0 0 3px 1px #ff7700;left:24%;animation:ls-ember6 1.6s ease-out infinite 0.8s"></div>
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee77;box-shadow:0 0 3px 1px #ffaa00;left:45%;animation:ls-ember5 1.4s ease-out infinite 1.4s"></div>
-          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd66;box-shadow:0 0 3px 1px #ff8800;left:55%;animation:ls-ember6 1.9s ease-out infinite 0.2s"></div>
+        <!-- Ember particles — start from center of orb, drift upward -->
+        <div style="position:absolute;left:-15px;right:-15px;top:10px;bottom:-10px;pointer-events:none;overflow:visible">
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffcc44;box-shadow:0 0 6px 2px #ff6600;left:24%;bottom:20%;animation:ls-ember1 1.8s ease-out infinite 0s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffbb33;box-shadow:0 0 5px 2px #ff5500;left:60%;bottom:30%;animation:ls-ember3 1.9s ease-out infinite 0.5s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffaa22;box-shadow:0 0 6px 2px #ff6600;left:48%;bottom:15%;animation:ls-ember1 2.2s ease-out infinite 1.0s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ff7722;box-shadow:0 0 5px 2px #ff4400;left:36%;bottom:25%;animation:ls-ember4 2.4s ease-out infinite 0.6s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffbb44;box-shadow:0 0 6px 2px #ff6600;left:55%;bottom:10%;animation:ls-ember3 2.1s ease-out infinite 1.8s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffaa33;box-shadow:0 0 5px 2px #ff5500;left:20%;bottom:18%;animation:ls-ember5 2.5s ease-out infinite 0.7s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ffcc22;box-shadow:0 0 6px 2px #ff7700;left:42%;bottom:28%;animation:ls-ember6 2.0s ease-out infinite 1.4s"></div>
+          <div style="position:absolute;width:3px;height:3px;border-radius:50%;background:#ff9933;box-shadow:0 0 5px 2px #ff5500;left:70%;bottom:22%;animation:ls-ember1 1.7s ease-out infinite 2.1s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9933;box-shadow:0 0 4px 1px #ff4400;left:40%;bottom:12%;animation:ls-ember2 2.1s ease-out infinite 0.2s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffdd66;box-shadow:0 0 4px 1px #ff7700;left:72%;bottom:26%;animation:ls-ember4 2.3s ease-out infinite 0.3s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff8833;box-shadow:0 0 5px 1px #ff3300;left:32%;bottom:8%;animation:ls-ember3 2.0s ease-out infinite 0.8s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffcc55;box-shadow:0 0 4px 1px #ff5500;left:65%;bottom:18%;animation:ls-ember2 1.7s ease-out infinite 1.3s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffee77;box-shadow:0 0 4px 1px #ffaa00;left:45%;bottom:32%;animation:ls-ember5 1.6s ease-out infinite 1.5s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff9944;box-shadow:0 0 4px 1px #ff3300;left:28%;bottom:22%;animation:ls-ember6 1.9s ease-out infinite 0.4s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffdd44;box-shadow:0 0 5px 1px #ff7700;left:68%;bottom:14%;animation:ls-ember4 1.8s ease-out infinite 1.1s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff8844;box-shadow:0 0 4px 1px #ff4400;left:76%;bottom:6%;animation:ls-ember3 2.0s ease-out infinite 1.6s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffbb55;box-shadow:0 0 4px 1px #ff6600;left:52%;bottom:24%;animation:ls-ember1 2.3s ease-out infinite 0.9s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ffaa66;box-shadow:0 0 4px 1px #ff5500;left:34%;bottom:16%;animation:ls-ember5 1.8s ease-out infinite 2.0s"></div>
+          <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#ff7744;box-shadow:0 0 5px 1px #ff3300;left:58%;bottom:10%;animation:ls-ember6 2.2s ease-out infinite 0.1s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee88;box-shadow:0 0 3px 1px #ffaa00;left:26%;bottom:28%;animation:ls-ember5 1.5s ease-out infinite 0.3s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd77;box-shadow:0 0 3px 1px #ff8800;left:50%;bottom:6%;animation:ls-ember6 1.4s ease-out infinite 0.7s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffcc66;box-shadow:0 0 3px 1px #ff6600;left:63%;bottom:20%;animation:ls-ember5 1.6s ease-out infinite 1.2s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffbb55;box-shadow:0 0 3px 1px #ff7700;left:38%;bottom:30%;animation:ls-ember6 1.3s ease-out infinite 1.7s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee99;box-shadow:0 0 3px 1px #ffaa00;left:56%;bottom:14%;animation:ls-ember5 1.7s ease-out infinite 0.5s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd88;box-shadow:0 0 3px 1px #ff8800;left:30%;bottom:24%;animation:ls-ember6 1.5s ease-out infinite 2.2s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffcc77;box-shadow:0 0 3px 1px #ff6600;left:74%;bottom:16%;animation:ls-ember5 1.8s ease-out infinite 1.9s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffbb66;box-shadow:0 0 3px 1px #ff7700;left:22%;bottom:10%;animation:ls-ember6 1.6s ease-out infinite 0.8s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffee77;box-shadow:0 0 3px 1px #ffaa00;left:44%;bottom:26%;animation:ls-ember5 1.4s ease-out infinite 1.4s"></div>
+          <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#ffdd66;box-shadow:0 0 3px 1px #ff8800;left:54%;bottom:8%;animation:ls-ember6 1.9s ease-out infinite 0.2s"></div>
         </div>
       </div>
 
