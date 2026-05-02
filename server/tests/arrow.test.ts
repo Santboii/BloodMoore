@@ -25,20 +25,35 @@ describe('advanceArrow', () => {
     expect(moved.position.y).toBeCloseTo(100, 1);
   });
 
-  it('applies slight homing when homing=1', () => {
+  it('guided arrow (homing=1) flies straight initially', () => {
     const arrow = spawnArrow('p1', { x: 100, y: 100 }, { x: 200, y: 100 }, { homing: 1 });
     const enemy = { x: 100, y: 200 };
     const moved = advanceArrow(arrow, enemy);
-    expect(moved.velocity.y).toBeGreaterThan(0);
+    expect(moved.velocity.y).toBe(0);
+    expect(moved.homing).toBe(14);
   });
 
-  it('applies strong homing when homing=2', () => {
-    const arrow = spawnArrow('p1', { x: 100, y: 100 }, { x: 200, y: 100 }, { homing: 2 });
-    const enemy = { x: 100, y: 200 };
-    const moved = advanceArrow(arrow, enemy);
-    const arrowWeak = spawnArrow('p1', { x: 100, y: 100 }, { x: 200, y: 100 }, { homing: 1 });
-    const movedWeak = advanceArrow(arrowWeak, enemy);
-    expect(moved.velocity.y).toBeGreaterThan(movedWeak.velocity.y);
+  it('guided arrow (homing=1) snaps toward enemy after countdown', () => {
+    let arrow = spawnArrow('p1', { x: 100, y: 100 }, { x: 200, y: 100 }, { homing: 1 });
+    const enemy = { x: 100, y: 300 };
+    for (let i = 0; i < 15; i++) {
+      arrow = advanceArrow(arrow, enemy);
+    }
+    expect(arrow.homing).toBe(-1);
+    expect(arrow.velocity.y).toBeGreaterThan(0);
+    const angle = Math.atan2(arrow.velocity.y, arrow.velocity.x);
+    const toEnemy = Math.atan2(300 - arrow.position.y, 100 - arrow.position.x);
+    expect(Math.abs(angle - toEnemy)).toBeLessThan(0.1);
+  });
+
+  it('homing arrow (homing=2) redirects sooner than guided', () => {
+    let arrow = spawnArrow('p1', { x: 100, y: 100 }, { x: 200, y: 100 }, { homing: 2 });
+    const enemy = { x: 100, y: 300 };
+    for (let i = 0; i < 8; i++) {
+      arrow = advanceArrow(arrow, enemy);
+    }
+    expect(arrow.homing).toBe(-1);
+    expect(arrow.velocity.y).toBeGreaterThan(0);
   });
 });
 

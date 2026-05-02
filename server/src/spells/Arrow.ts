@@ -12,6 +12,9 @@ type ArrowConfig = {
   homing?: number;
 };
 
+const GUIDED_REDIRECT_TICKS = 15;
+const HOMING_REDIRECT_TICKS = 8;
+
 export function spawnArrow(
   ownerId: string,
   from: Vec2,
@@ -22,6 +25,9 @@ export function spawnArrow(
   const dx = target.x - from.x;
   const dy = target.y - from.y;
   const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  let homingTicks = 0;
+  if (cfg.homing === 2) homingTicks = HOMING_REDIRECT_TICKS;
+  else if (cfg.homing === 1) homingTicks = GUIDED_REDIRECT_TICKS;
   return {
     id: nextId(),
     ownerId,
@@ -31,27 +37,32 @@ export function spawnArrow(
     radius: ARROW_RADIUS,
     damageMin: cfg.damageMin ?? 60,
     damageMax: cfg.damageMax ?? 90,
-    homing: cfg.homing ?? 0,
+    homing: homingTicks,
   };
 }
 
 export function advanceArrow(p: Projectile, enemyPos?: Vec2): Projectile {
   let vx = p.velocity.x;
   let vy = p.velocity.y;
-  if (p.homing && p.homing > 0 && enemyPos) {
-    const dx = enemyPos.x - p.position.x;
-    const dy = enemyPos.y - p.position.y;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const strength = p.homing >= 2 ? 120 : 60;
-    vx += (dx / len) * strength * DELTA;
-    vy += (dy / len) * strength * DELTA;
-    const spd = Math.sqrt(p.velocity.x ** 2 + p.velocity.y ** 2);
-    const newSpd = Math.sqrt(vx * vx + vy * vy) || 1;
-    vx = (vx / newSpd) * spd;
-    vy = (vy / newSpd) * spd;
+  let homing = p.homing ?? 0;
+
+  if (homing > 0) {
+    homing--;
+    if (homing === 0 && enemyPos) {
+      // Sharp single redirect toward enemy (D2 Guided Arrow style)
+      const dx = enemyPos.x - p.position.x;
+      const dy = enemyPos.y - p.position.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const spd = Math.sqrt(vx * vx + vy * vy);
+      vx = (dx / len) * spd;
+      vy = (dy / len) * spd;
+      homing = -1;
+    }
   }
+
   return {
     ...p,
+    homing,
     velocity: { x: vx, y: vy },
     position: {
       x: p.position.x + vx * DELTA,
