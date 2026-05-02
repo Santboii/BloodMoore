@@ -17,6 +17,21 @@ const NODE_ICONS: Record<NodeId, string> = {
   'utility.phase_shift':  'fa-maximize',
   'utility.ethereal_form':'fa-ghost',
   'utility.phantom_step': 'fa-person-running',
+  'archer.power_shot':          'fa-bullseye',
+  'archer.guided':              'fa-location-arrow',
+  'archer.multishot':           'fa-arrows-split-up-and-left',
+  'archer.homing':              'fa-crosshairs',
+  'archer.barrage':             'fa-burst',
+  'archer.rain_of_arrows':      'fa-cloud-rain',
+  'archer.sustained_rain':      'fa-hourglass-half',
+  'archer.piercing_rain':       'fa-bolt',
+  'archer.burn':                'fa-fire',
+  'archer.freeze':              'fa-snowflake',
+  'archer.poison':              'fa-skull-crossbones',
+  'archer_utility.evade':       'fa-person-running',
+  'archer_utility.combat_roll': 'fa-person-falling',
+  'archer_utility.shadowstep':  'fa-ghost',
+  'archer_utility.acrobatics':  'fa-tornado',
 };
 
 function esc(s: string): string {
@@ -44,6 +59,27 @@ const UTIL_POSITIONS: Partial<Record<NodeId, NodePos>> = {
   'utility.phase_shift':   { x: 30, y: 90 },
   'utility.ethereal_form': { x: 70, y: 90 },
   'utility.phantom_step':  { x: 50, y: 180 },
+};
+
+const ARCHER_POSITIONS: Partial<Record<NodeId, NodePos>> = {
+  'archer.power_shot':      { x: 50, y: 0 },
+  'archer.guided':          { x: 30, y: 90 },
+  'archer.multishot':       { x: 70, y: 90 },
+  'archer.homing':          { x: 30, y: 180 },
+  'archer.barrage':         { x: 70, y: 180 },
+  'archer.rain_of_arrows':  { x: 50, y: 270 },
+  'archer.sustained_rain':  { x: 30, y: 360 },
+  'archer.piercing_rain':   { x: 70, y: 360 },
+  'archer.burn':            { x: 25, y: 450 },
+  'archer.freeze':          { x: 50, y: 450 },
+  'archer.poison':          { x: 75, y: 450 },
+};
+
+const ARCHER_UTIL_POSITIONS: Partial<Record<NodeId, NodePos>> = {
+  'archer_utility.evade':        { x: 50, y: 0 },
+  'archer_utility.combat_roll':  { x: 30, y: 90 },
+  'archer_utility.shadowstep':   { x: 70, y: 90 },
+  'archer_utility.acrobatics':   { x: 50, y: 180 },
 };
 
 const STYLES = `
@@ -150,13 +186,24 @@ export class SkillTreeUI {
       (data ?? []).map((r: { node_id: string; rank: number }) => [r.node_id as NodeId, r.rank ?? 1])
     );
 
-    if (!this.ranks.has('fire.fireball')) {
-      await supabase.rpc('unlock_skill_node', {
-        p_character_id: this.characterId,
-        p_node_id: 'fire.fireball',
-        p_cost: 0,
-      });
-      this.ranks.set('fire.fireball', 1);
+    if (this.charClass === 'amazon') {
+      if (!this.ranks.has('archer.power_shot' as NodeId)) {
+        await supabase.rpc('unlock_skill_node', {
+          p_character_id: this.characterId,
+          p_node_id: 'archer.power_shot',
+          p_cost: 0,
+        });
+        this.ranks.set('archer.power_shot' as NodeId, 1);
+      }
+    } else {
+      if (!this.ranks.has('fire.fireball' as NodeId)) {
+        await supabase.rpc('unlock_skill_node', {
+          p_character_id: this.characterId,
+          p_node_id: 'fire.fireball',
+          p_cost: 0,
+        });
+        this.ranks.set('fire.fireball' as NodeId, 1);
+      }
     }
 
     this.render();
@@ -164,8 +211,14 @@ export class SkillTreeUI {
 
   private render(): void {
     const pts = this.skillPoints;
-    const fireNodes = SKILL_NODES.filter(n => n.tree === 'fire');
-    const utilNodes = SKILL_NODES.filter(n => n.tree === 'utility');
+
+    const isAmazon = this.charClass === 'amazon';
+    const mainNodes = SKILL_NODES.filter(n => n.tree === (isAmazon ? 'archer' : 'fire'));
+    const utilNodes = SKILL_NODES.filter(n => n.tree === (isAmazon ? 'archer_utility' : 'utility'));
+    const mainPositions = isAmazon ? ARCHER_POSITIONS : FIRE_POSITIONS;
+    const utilPositions = isAmazon ? ARCHER_UTIL_POSITIONS : UTIL_POSITIONS;
+    const mainLabel = isAmazon ? 'Archer' : 'Fire';
+    const mainContainerHeight = isAmazon ? '520px' : '600px';
 
     this.el.innerHTML = `
       <div class="st-vignette"></div>
@@ -181,18 +234,18 @@ export class SkillTreeUI {
           </div>
         </div>
 
-        <div class="st-tree-label">Fire</div>
-        <div class="st-tree-container">
-          <svg id="st-fire-svg" class="st-tree-svg"></svg>
-          ${fireNodes.map(n => this.renderNode(n, pts, FIRE_POSITIONS[n.id])).join('')}
+        <div class="st-tree-label">${mainLabel}</div>
+        <div class="st-tree-container" style="height:${mainContainerHeight}">
+          <svg id="st-main-svg" class="st-tree-svg"></svg>
+          ${mainNodes.map(n => this.renderNode(n, pts, mainPositions[n.id])).join('')}
         </div>
 
         <div class="st-divider"><div class="st-divider-line"></div><div class="st-divider-gem"></div><div class="st-divider-line"></div></div>
 
-        <div class="st-util-label">Shared Utility</div>
+        <div class="st-util-label">${isAmazon ? 'Evasion' : 'Shared Utility'}</div>
         <div class="st-util-container">
           <svg id="st-util-svg" class="st-util-svg" overflow="visible"></svg>
-          ${utilNodes.map(n => this.renderNode(n, pts, UTIL_POSITIONS[n.id])).join('')}
+          ${utilNodes.map(n => this.renderNode(n, pts, utilPositions[n.id])).join('')}
         </div>
 
         <div id="st-tooltip" class="st-tooltip"></div>
@@ -202,8 +255,8 @@ export class SkillTreeUI {
     this.el.querySelector('#st-close')!.addEventListener('click', () => this.hide());
     this.el.querySelector('#st-respec')!.addEventListener('click', () => this.handleRespec());
 
-    this.drawConnections('st-fire-svg', FIRE_POSITIONS, fireNodes, pts);
-    this.drawConnections('st-util-svg', UTIL_POSITIONS, utilNodes, pts);
+    this.drawConnections('st-main-svg', mainPositions, mainNodes, pts);
+    this.drawConnections('st-util-svg', utilPositions, utilNodes, pts);
     this.attachNodeListeners(pts);
   }
 
@@ -314,11 +367,15 @@ export class SkillTreeUI {
         const currentRank = this.ranks.get(id) ?? 0;
         const isOwned = currentRank > 0;
         const canBuyFirst = !isOwned && canUnlock(id, this.ranks) && pts >= node.cost;
+        const gate = GATES[id];
+        const mutuallyLocked = gate?.mutuallyExclusive && gate.mutuallyExclusive.some(r => this.ranks.has(r));
         const gateBlocked = !isOwned && !canUnlock(id, this.ranks);
 
         let statusLine = '';
         let rankLine = '';
-        if (isOwned && isStackable(node)) {
+        if (mutuallyLocked) {
+          statusLine = '<span style="color:#884020;font-size:0.6rem">Locked (requires respec to change element)</span>';
+        } else if (isOwned && isStackable(node)) {
           const softCap = node.stackable!.softCap;
           const nextCost = rankUpCost(node, currentRank);
           const pastCap = currentRank >= softCap;
@@ -332,7 +389,6 @@ export class SkillTreeUI {
         } else if (isOwned) {
           statusLine = '<span style="color:#90a870;font-size:0.6rem">Owned</span>';
         } else if (gateBlocked) {
-          const gate = GATES[id];
           const missing: string[] = [];
           if (gate?.requiresAll) {
             for (const req of gate.requiresAll) {
