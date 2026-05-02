@@ -66,7 +66,7 @@ export function buildSpellModifiers(skills: Map<string, number>): SpellModifiers
       radius:         fbRadius,
       damageMin:      fbDmgMin,
       damageMax:      fbDmgMax,
-      homingStrength: sfRank > 0 ? effectAtRank(25, sfRank) : 0,
+      homingStrength: sfRank > 0 ? 12 * Math.pow(sfRank, 1.65) : 0,
       split:          pyRank > 0 ? Math.floor(effectAtRank(1, pyRank)) : 0,
     },
     firewall: {

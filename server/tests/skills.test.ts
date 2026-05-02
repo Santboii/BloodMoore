@@ -145,9 +145,9 @@ describe('buildSpellModifiers', () => {
     expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * veBonus * hfBonus, 5);
   });
 
-  it('applies Seeking Flame rank 3: homing strength', () => {
+  it('applies Seeking Flame rank 3: accelerating homing strength', () => {
     const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.seeking_flame', 3]]));
-    expect(m.fireball.homingStrength).toBeCloseTo(effectAtRank(25, 3), 5);
+    expect(m.fireball.homingStrength).toBeCloseTo(12 * Math.pow(3, 1.65), 5);
   });
 
   it('applies Pyroclasm rank 2: split count floored', () => {
