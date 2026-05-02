@@ -12,7 +12,7 @@ type ArrowConfig = {
   homing?: number;
 };
 
-const GUIDED_REDIRECT_TICKS = 15;
+const GUIDED_REDIRECT_TICKS = 28;
 const HOMING_REDIRECT_TICKS = 8;
 
 export function spawnArrow(

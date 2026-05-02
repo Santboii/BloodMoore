@@ -30,13 +30,13 @@ describe('advanceArrow', () => {
     const enemy = { x: 100, y: 200 };
     const moved = advanceArrow(arrow, enemy);
     expect(moved.velocity.y).toBe(0);
-    expect(moved.homing).toBe(14);
+    expect(moved.homing).toBe(27);
   });
 
   it('guided arrow (homing=1) snaps toward enemy after countdown', () => {
     let arrow = spawnArrow('p1', { x: 100, y: 100 }, { x: 200, y: 100 }, { homing: 1 });
     const enemy = { x: 100, y: 300 };
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 28; i++) {
       arrow = advanceArrow(arrow, enemy);
     }
     expect(arrow.homing).toBe(-1);

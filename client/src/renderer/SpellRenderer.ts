@@ -135,14 +135,14 @@ export class SpellRenderer {
           : 0xffffff;
 
         const shaft = new THREE.Mesh(
-          new THREE.BoxGeometry(12, 2, 2),
+          new THREE.BoxGeometry(18, 4, 4),
           new THREE.MeshBasicMaterial({ color }),
         );
         group.add(shaft);
 
         const trailPoints = [
-          new THREE.Vector3(-6, 0, 0),
-          new THREE.Vector3(-10, 0, 0),
+          new THREE.Vector3(-9, 0, 0),
+          new THREE.Vector3(-15, 0, 0),
         ];
         const trail = new THREE.Line(
           new THREE.BufferGeometry().setFromPoints(trailPoints),
