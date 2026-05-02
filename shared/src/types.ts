@@ -30,7 +30,7 @@ export type Projectile = {
   radius?: number;
   damageMin?: number;
   damageMax?: number;
-  homing?: boolean;
+  homing?: number;
   split?: number;
 };
 
