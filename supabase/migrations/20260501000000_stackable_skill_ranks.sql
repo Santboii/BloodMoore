@@ -30,14 +30,19 @@ CREATE OR REPLACE FUNCTION unlock_skill_node(
 ) RETURNS VOID AS $$
 DECLARE
   v_existing_rank INTEGER;
+  v_user_id UUID;
 BEGIN
   SELECT rank INTO v_existing_rank
   FROM skill_unlocks
   WHERE character_id = p_character_id AND node_id = p_node_id;
 
   IF v_existing_rank IS NULL THEN
-    INSERT INTO skill_unlocks (character_id, node_id, rank, total_spent)
-    VALUES (p_character_id, p_node_id, 1, p_cost);
+    SELECT user_id INTO v_user_id
+    FROM characters
+    WHERE id = p_character_id;
+
+    INSERT INTO skill_unlocks (character_id, node_id, rank, total_spent, user_id)
+    VALUES (p_character_id, p_node_id, 1, p_cost, v_user_id);
   ELSE
     UPDATE skill_unlocks
     SET rank = rank + 1, total_spent = total_spent + p_cost
