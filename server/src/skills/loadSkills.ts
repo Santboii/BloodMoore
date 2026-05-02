@@ -3,7 +3,7 @@ import type { NodeId } from '@arena/shared';
 import { XP_PER_MATCH_BASE, XP_PER_MATCH_WIN_BONUS } from '@arena/shared';
 
 export type SkillLoadResult =
-  | { ok: true; userId: string; skills: Set<NodeId> }
+  | { ok: true; userId: string; skills: Map<NodeId, number> }
   | { ok: false; error: string };
 
 export async function loadSkillsForCharacter(
@@ -24,14 +24,15 @@ export async function loadSkillsForCharacter(
 
   const { data, error } = await supabase
     .from('skill_unlocks')
-    .select('node_id')
+    .select('node_id, rank')
     .eq('character_id', characterId);
 
   if (error) return { ok: false, error: error.message };
 
-  const skills = new Set<NodeId>((data ?? []).map((row: { node_id: string }) => row.node_id as NodeId));
-  // Mages always have fireball so they're never without an ability
-  if (!skills.has('fire.fireball')) skills.add('fire.fireball');
+  const skills = new Map<NodeId, number>(
+    (data ?? []).map((row: { node_id: string; rank: number }) => [row.node_id as NodeId, row.rank ?? 1])
+  );
+  if (!skills.has('fire.fireball')) skills.set('fire.fireball', 1);
   return { ok: true, userId: user.id, skills };
 }
 

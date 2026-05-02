@@ -15,7 +15,7 @@ export class Room {
   creatorName: string = '';
   players: Map<string, RoomPlayer> = new Map(); // socketId -> RoomPlayer
   teamAssignments: Map<string, string> = new Map(); // socketId -> teamId
-  skillSets: Map<string, Set<NodeId>> = new Map();
+  skillSets: Map<string, Map<NodeId, number>> = new Map();
   userIds: Map<string, string> = new Map();
   characterIds: Map<string, string> = new Map();
   state: GameState | null = null;
@@ -96,7 +96,7 @@ export class Room {
       }
       inputs[id] = pending;
     }
-    const skillSetsObj: Record<string, Set<NodeId>> = Object.fromEntries(this.skillSets.entries());
+    const skillSetsObj: Record<string, Map<NodeId, number>> = Object.fromEntries(this.skillSets.entries());
     this.state = advanceState(this.state, inputs, skillSetsObj, this.mode);
     this.state.ack = Object.fromEntries(this.lastProcessedSeq);
     for (const [id, pending] of this.pendingInputs) {
