@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canUnlock, SKILL_NODES } from '@arena/shared';
+import { canUnlock, SKILL_NODES, effectAtRank, rankUpCost, totalSpentForRanks, isStackable, DIMINISHING_POWER } from '@arena/shared';
 
 describe('canUnlock', () => {
   it('allows unlocking a tier-I spell with no prerequisites', () => {
@@ -42,6 +42,56 @@ describe('canUnlock', () => {
     const util = SKILL_NODES.filter(n => n.tree === 'utility');
     expect(fire).toHaveLength(11);
     expect(util).toHaveLength(4);
+  });
+});
+
+describe('scaling helpers', () => {
+  it('effectAtRank returns baseEffect at rank 1', () => {
+    expect(effectAtRank(25, 1)).toBeCloseTo(25, 5);
+  });
+
+  it('effectAtRank applies diminishing power curve', () => {
+    expect(effectAtRank(25, 2)).toBeCloseTo(25 * Math.pow(2, 0.7), 5);
+    expect(effectAtRank(25, 5)).toBeCloseTo(25 * Math.pow(5, 0.7), 5);
+  });
+
+  it('effectAtRank returns 0 for rank 0', () => {
+    expect(effectAtRank(25, 0)).toBe(0);
+  });
+
+  it('rankUpCost returns base cost for ranks up to soft cap', () => {
+    const node = SKILL_NODES.find(n => n.id === 'fire.seeking_flame')!;
+    expect(rankUpCost(node, 0)).toBe(1);
+    expect(rankUpCost(node, 1)).toBe(1);
+    expect(rankUpCost(node, 4)).toBe(1);
+  });
+
+  it('rankUpCost ramps past soft cap', () => {
+    const node = SKILL_NODES.find(n => n.id === 'fire.seeking_flame')!;
+    expect(rankUpCost(node, 5)).toBe(2);
+    expect(rankUpCost(node, 6)).toBe(3);
+    expect(rankUpCost(node, 7)).toBe(4);
+  });
+
+  it('rankUpCost for binary node returns cost at rank 0, Infinity at rank 1', () => {
+    const node = SKILL_NODES.find(n => n.id === 'fire.blind_strike')!;
+    expect(rankUpCost(node, 0)).toBe(2);
+    expect(rankUpCost(node, 1)).toBe(Infinity);
+  });
+
+  it('totalSpentForRanks computes cumulative cost', () => {
+    const node = SKILL_NODES.find(n => n.id === 'fire.seeking_flame')!;
+    expect(totalSpentForRanks(node, 0)).toBe(0);
+    expect(totalSpentForRanks(node, 1)).toBe(1);
+    expect(totalSpentForRanks(node, 5)).toBe(5);
+    expect(totalSpentForRanks(node, 6)).toBe(7);
+    expect(totalSpentForRanks(node, 7)).toBe(10);
+  });
+
+  it('isStackable returns true for stackable nodes, false for binary', () => {
+    expect(isStackable(SKILL_NODES.find(n => n.id === 'fire.seeking_flame')!)).toBe(true);
+    expect(isStackable(SKILL_NODES.find(n => n.id === 'fire.blind_strike')!)).toBe(false);
+    expect(isStackable(SKILL_NODES.find(n => n.id === 'fire.fireball')!)).toBe(false);
   });
 });
 
