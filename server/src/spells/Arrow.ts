@@ -10,6 +10,7 @@ type ArrowConfig = {
   damageMin?: number;
   damageMax?: number;
   homing?: number;
+  homingTickReduction?: number;
 };
 
 const GUIDED_REDIRECT_TICKS = 28;
@@ -26,8 +27,9 @@ export function spawnArrow(
   const dy = target.y - from.y;
   const len = Math.sqrt(dx * dx + dy * dy) || 1;
   let homingTicks = 0;
-  if (cfg.homing === 2) homingTicks = HOMING_REDIRECT_TICKS;
-  else if (cfg.homing === 1) homingTicks = GUIDED_REDIRECT_TICKS;
+  const reduction = cfg.homingTickReduction ?? 0;
+  if (cfg.homing === 2) homingTicks = Math.max(3, HOMING_REDIRECT_TICKS - reduction);
+  else if (cfg.homing === 1) homingTicks = Math.max(5, GUIDED_REDIRECT_TICKS - reduction);
   return {
     id: nextId(),
     ownerId,

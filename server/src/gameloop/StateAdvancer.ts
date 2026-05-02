@@ -4,7 +4,6 @@ import {
   FIREWALL_DAMAGE_PER_TICK, FIREWALL_MAX_LENGTH, TELEPORT_MAX_RANGE, METEOR_AOE_RADIUS, FIREBALL_RADIUS, PLAYER_HALF_SIZE,
   DUEL_MODE,
   ARROW_SPEED, EVADE_RANGE, EVADE_INVULN_TICKS,
-  MULTISHOT_SPREAD_3, MULTISHOT_SPREAD_5,
   RAIN_SUSTAINED_TICKS, RAIN_DAMAGE_PER_TICK,
 } from '@arena/shared';
 import type { GameModeConfig, RainOfArrowsState } from '@arena/shared';
@@ -196,16 +195,17 @@ export function advanceState(
         damageMin: aMods.arrow.damageMin,
         damageMax: aMods.arrow.damageMax,
         homing: aMods.arrow.homing,
+        homingTickReduction: aMods.arrow.homing === 2 ? aMods.arrow.homingTickReduction : aMods.arrow.guidedTickReduction,
       });
       projectiles = [...projectiles, arrow];
     } else if (spell === 6) {
       const aMods = amazonMods[id];
       if (!aMods) continue;
       const count = aMods.multishot.arrowCount;
-      const spread = count === 5 ? MULTISHOT_SPREAD_5 : MULTISHOT_SPREAD_3;
+      const spreadPerArrow = Math.PI / (count + 1) * 0.4;
       const baseAngle = Math.atan2(input.aimTarget.y - p.position.y, input.aimTarget.x - p.position.x);
       for (let i = 0; i < count; i++) {
-        const angle = baseAngle + (i - (count - 1) / 2) * (spread * 2 / (count - 1));
+        const angle = baseAngle + (i - (count - 1) / 2) * spreadPerArrow;
         const target = { x: p.position.x + Math.cos(angle) * 500, y: p.position.y + Math.sin(angle) * 500 };
         const arrow = spawnArrow(id, p.position, target, {
           speed: aMods.arrow.speed,
@@ -355,20 +355,23 @@ export function advanceState(
   const survivingRain: RainOfArrowsState[] = [];
   for (const rain of rainOfArrows) {
     if (rainDetonates(rain, tick)) {
+      const ownerAMods = amazonMods[rain.ownerId];
+      const rainDmgMult = ownerAMods?.rain.damageMultiplier ?? 1;
       for (const [pid] of Object.entries(players)) {
         if (rainHitsPlayer(rain, players[pid].position, pid)) {
           const invuln = (players[pid].invulnUntil ?? 0) > tick;
           if (!invuln) {
-            players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - rainDamage(rain.piercing ?? false) * getDamageMultiplier(rain.ownerId, pid, players, resolvedMode)) };
+            players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - rainDamage(rain.piercing ?? false) * rainDmgMult * getDamageMultiplier(rain.ownerId, pid, players, resolvedMode)) };
           }
         }
       }
       if (rain.sustained) {
+        const rainDurMult = ownerAMods?.rain.durationMultiplier ?? 1;
         fireWalls = [...fireWalls, {
           id: `rain_zone_${rain.id}`,
           ownerId: rain.ownerId,
           segments: [],
-          expiresAt: tick + RAIN_SUSTAINED_TICKS,
+          expiresAt: tick + Math.round(RAIN_SUSTAINED_TICKS * rainDurMult),
           shape: 'circle' as const,
           center: { ...rain.target },
           radius: rain.radius,

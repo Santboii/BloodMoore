@@ -1,4 +1,4 @@
-import { ARROW_SPEED, EVADE_RANGE } from '@arena/shared';
+import { ARROW_SPEED, EVADE_RANGE, effectAtRank } from '@arena/shared';
 
 export type ElementType = 'none' | 'burn' | 'freeze' | 'poison';
 
@@ -7,6 +7,8 @@ export type ArrowModifiers = {
   damageMin: number;
   damageMax: number;
   homing: number;
+  guidedTickReduction: number;
+  homingTickReduction: number;
 };
 
 export type MultishotModifiers = {
@@ -17,7 +19,9 @@ export type MultishotModifiers = {
 
 export type RainModifiers = {
   sustained: boolean;
+  durationMultiplier: number;
   piercing: boolean;
+  damageMultiplier: number;
 };
 
 export type EvadeModifiers = {
@@ -36,11 +40,19 @@ export type AmazonSpellModifiers = {
 };
 
 export function buildAmazonModifiers(skills: Map<string, number>): AmazonSpellModifiers {
-  const has = (id: string) => (skills.get(id) ?? 0) > 0;
+  const rank = (id: string) => skills.get(id) ?? 0;
+  const has = (id: string) => rank(id) > 0;
 
   let homing = 0;
   if (has('archer.homing')) homing = 2;
   else if (has('archer.guided')) homing = 1;
+
+  const guidedRank = rank('archer.guided');
+  const homingRank = rank('archer.homing');
+  const barrageRank = rank('archer.barrage');
+  const sustainedRank = rank('archer.sustained_rain');
+  const piercingRank = rank('archer.piercing_rain');
+  const acrobaticsRank = rank('archer_utility.acrobatics');
 
   let element: ElementType = 'none';
   if (has('archer.burn')) element = 'burn';
@@ -53,21 +65,25 @@ export function buildAmazonModifiers(skills: Map<string, number>): AmazonSpellMo
       damageMin: 60,
       damageMax: 90,
       homing,
+      guidedTickReduction: guidedRank > 0 ? Math.floor(effectAtRank(3, guidedRank)) : 0,
+      homingTickReduction: homingRank > 0 ? Math.floor(effectAtRank(2, homingRank)) : 0,
     },
     multishot: {
-      arrowCount: has('archer.barrage') ? 5 : 3,
+      arrowCount: 3 + (barrageRank > 0 ? Math.floor(effectAtRank(1, barrageRank)) : 0),
       damageMin: 40,
       damageMax: 60,
     },
     rain: {
       sustained: has('archer.sustained_rain'),
+      durationMultiplier: sustainedRank > 0 ? 1 + effectAtRank(0.15, sustainedRank) : 1,
       piercing: has('archer.piercing_rain'),
+      damageMultiplier: piercingRank > 0 ? 1 + effectAtRank(0.25, piercingRank) : 1,
     },
     evade: {
       range: EVADE_RANGE,
       combatRoll: has('archer_utility.combat_roll'),
       shadowstep: has('archer_utility.shadowstep'),
-      cooldownMultiplier: has('archer_utility.acrobatics') ? 0.6 : 1,
+      cooldownMultiplier: acrobaticsRank > 0 ? 1 - effectAtRank(0.10, acrobaticsRank) : 1,
     },
     element,
   };

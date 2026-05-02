@@ -31,19 +31,32 @@ describe('buildAmazonModifiers', () => {
     expect(m.arrow.homing).toBe(2);
   });
 
-  it('applies barrage: 5 arrows', () => {
+  it('applies barrage rank 1: 4 arrows', () => {
     const m = buildAmazonModifiers(new Map([['archer.power_shot', 1], ['archer.multishot', 1], ['archer.barrage', 1]]));
-    expect(m.multishot.arrowCount).toBe(5);
+    expect(m.multishot.arrowCount).toBe(4);
   });
 
-  it('applies sustained_rain', () => {
+  it('applies barrage rank 3: scales with diminishing returns', () => {
+    const m = buildAmazonModifiers(new Map([['archer.power_shot', 1], ['archer.multishot', 1], ['archer.barrage', 3]]));
+    expect(m.multishot.arrowCount).toBeGreaterThan(4);
+    expect(m.multishot.arrowCount).toBeLessThanOrEqual(6);
+  });
+
+  it('applies sustained_rain with duration multiplier', () => {
     const m = buildAmazonModifiers(new Map([['archer.rain_of_arrows', 1], ['archer.sustained_rain', 1]]));
     expect(m.rain.sustained).toBe(true);
+    expect(m.rain.durationMultiplier).toBeGreaterThan(1);
   });
 
-  it('applies piercing_rain', () => {
+  it('sustained_rain rank 3 has higher duration multiplier', () => {
+    const m = buildAmazonModifiers(new Map([['archer.rain_of_arrows', 1], ['archer.sustained_rain', 3]]));
+    expect(m.rain.durationMultiplier).toBeGreaterThan(1.15);
+  });
+
+  it('applies piercing_rain with damage multiplier', () => {
     const m = buildAmazonModifiers(new Map([['archer.rain_of_arrows', 1], ['archer.piercing_rain', 1]]));
     expect(m.rain.piercing).toBe(true);
+    expect(m.rain.damageMultiplier).toBeGreaterThan(1);
   });
 
   it('applies burn element', () => {
@@ -71,8 +84,23 @@ describe('buildAmazonModifiers', () => {
     expect(m.evade.shadowstep).toBe(true);
   });
 
-  it('applies acrobatics: 0.6 cooldown multiplier', () => {
+  it('applies acrobatics: reduces cooldown multiplier', () => {
     const m = buildAmazonModifiers(new Map([['archer_utility.evade', 1], ['archer_utility.combat_roll', 1], ['archer_utility.acrobatics', 1]]));
-    expect(m.evade.cooldownMultiplier).toBe(0.6);
+    expect(m.evade.cooldownMultiplier).toBeLessThan(1);
+    expect(m.evade.cooldownMultiplier).toBeGreaterThan(0.5);
+  });
+
+  it('guided rank scales tick reduction', () => {
+    const m1 = buildAmazonModifiers(new Map([['archer.guided', 1]]));
+    const m3 = buildAmazonModifiers(new Map([['archer.guided', 3]]));
+    expect(m1.arrow.guidedTickReduction).toBeGreaterThan(0);
+    expect(m3.arrow.guidedTickReduction).toBeGreaterThan(m1.arrow.guidedTickReduction);
+  });
+
+  it('homing rank scales tick reduction', () => {
+    const m1 = buildAmazonModifiers(new Map([['archer.guided', 1], ['archer.homing', 1]]));
+    const m3 = buildAmazonModifiers(new Map([['archer.guided', 1], ['archer.homing', 3]]));
+    expect(m1.arrow.homingTickReduction).toBeGreaterThan(0);
+    expect(m3.arrow.homingTickReduction).toBeGreaterThan(m1.arrow.homingTickReduction);
   });
 });
