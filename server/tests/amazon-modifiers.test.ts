@@ -59,19 +59,32 @@ describe('buildAmazonModifiers', () => {
     expect(m.rain.damageMultiplier).toBeGreaterThan(1);
   });
 
-  it('applies burn element', () => {
-    const m = buildAmazonModifiers(new Map([['archer.burn', 1]]));
-    expect(m.element).toBe('burn');
+  it('applies burn element with scaling damage', () => {
+    const m1 = buildAmazonModifiers(new Map([['archer.burn', 1]]));
+    const m3 = buildAmazonModifiers(new Map([['archer.burn', 3]]));
+    expect(m1.element).toBe('burn');
+    expect(m1.elemental.burn.damagePerSecond).toBeGreaterThan(10);
+    expect(m3.elemental.burn.damagePerSecond).toBeGreaterThan(m1.elemental.burn.damagePerSecond);
+    expect(m1.elemental.burn.duration).toBe(3);
   });
 
-  it('applies freeze element', () => {
-    const m = buildAmazonModifiers(new Map([['archer.freeze', 1]]));
-    expect(m.element).toBe('freeze');
+  it('applies freeze element with scaling slow', () => {
+    const m1 = buildAmazonModifiers(new Map([['archer.freeze', 1]]));
+    const m3 = buildAmazonModifiers(new Map([['archer.freeze', 3]]));
+    expect(m1.element).toBe('freeze');
+    expect(m1.elemental.freeze.slowPercent).toBeGreaterThan(0.30);
+    expect(m3.elemental.freeze.slowPercent).toBeGreaterThan(m1.elemental.freeze.slowPercent);
+    expect(m1.elemental.freeze.duration).toBe(2);
   });
 
-  it('applies poison element', () => {
-    const m = buildAmazonModifiers(new Map([['archer.poison', 1]]));
-    expect(m.element).toBe('poison');
+  it('applies poison element with scaling damage and mana drain', () => {
+    const m1 = buildAmazonModifiers(new Map([['archer.poison', 1]]));
+    const m3 = buildAmazonModifiers(new Map([['archer.poison', 3]]));
+    expect(m1.element).toBe('poison');
+    expect(m1.elemental.poison.damagePerSecond).toBeGreaterThan(4);
+    expect(m3.elemental.poison.damagePerSecond).toBeGreaterThan(m1.elemental.poison.damagePerSecond);
+    expect(m3.elemental.poison.manaRegenReduction).toBeGreaterThan(m1.elemental.poison.manaRegenReduction);
+    expect(m1.elemental.poison.duration).toBe(5);
   });
 
   it('applies combat_roll', () => {

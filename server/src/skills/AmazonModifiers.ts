@@ -31,12 +31,35 @@ export type EvadeModifiers = {
   cooldownMultiplier: number;
 };
 
+export type BurnModifiers = {
+  damagePerSecond: number;
+  duration: number;
+};
+
+export type FreezeModifiers = {
+  slowPercent: number;
+  duration: number;
+};
+
+export type PoisonModifiers = {
+  damagePerSecond: number;
+  duration: number;
+  manaRegenReduction: number;
+};
+
+export type ElementalModifiers = {
+  burn: BurnModifiers;
+  freeze: FreezeModifiers;
+  poison: PoisonModifiers;
+};
+
 export type AmazonSpellModifiers = {
   arrow: ArrowModifiers;
   multishot: MultishotModifiers;
   rain: RainModifiers;
   evade: EvadeModifiers;
   element: ElementType;
+  elemental: ElementalModifiers;
 };
 
 export function buildAmazonModifiers(skills: Map<string, number>): AmazonSpellModifiers {
@@ -58,6 +81,10 @@ export function buildAmazonModifiers(skills: Map<string, number>): AmazonSpellMo
   if (has('archer.burn')) element = 'burn';
   else if (has('archer.freeze')) element = 'freeze';
   else if (has('archer.poison')) element = 'poison';
+
+  const burnRank = rank('archer.burn');
+  const freezeRank = rank('archer.freeze');
+  const poisonRank = rank('archer.poison');
 
   return {
     arrow: {
@@ -86,5 +113,20 @@ export function buildAmazonModifiers(skills: Map<string, number>): AmazonSpellMo
       cooldownMultiplier: acrobaticsRank > 0 ? 1 - effectAtRank(0.10, acrobaticsRank) : 1,
     },
     element,
+    elemental: {
+      burn: {
+        damagePerSecond: 10 + (burnRank > 0 ? effectAtRank(8, burnRank) : 0),
+        duration: 3,
+      },
+      freeze: {
+        slowPercent: 0.30 + (freezeRank > 0 ? effectAtRank(0.06, freezeRank) : 0),
+        duration: 2,
+      },
+      poison: {
+        damagePerSecond: 4 + (poisonRank > 0 ? effectAtRank(5, poisonRank) : 0),
+        duration: 5,
+        manaRegenReduction: 0.30 + (poisonRank > 0 ? effectAtRank(0.05, poisonRank) : 0),
+      },
+    },
   };
 }
