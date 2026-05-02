@@ -51,8 +51,8 @@ describe('scaling helpers', () => {
   });
 
   it('effectAtRank applies diminishing power curve', () => {
-    expect(effectAtRank(25, 2)).toBeCloseTo(25 * Math.pow(2, 0.7), 5);
-    expect(effectAtRank(25, 5)).toBeCloseTo(25 * Math.pow(5, 0.7), 5);
+    expect(effectAtRank(25, 2)).toBeCloseTo(25 * Math.pow(2, DIMINISHING_POWER), 5);
+    expect(effectAtRank(25, 5)).toBeCloseTo(25 * Math.pow(5, DIMINISHING_POWER), 5);
   });
 
   it('effectAtRank returns 0 for rank 0', () => {
