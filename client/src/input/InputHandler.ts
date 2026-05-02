@@ -8,6 +8,7 @@ const ISO_SIN   =  Math.sin(ISO_ANGLE); // ≈ -0.7071
 export class InputHandler {
   private keys = new Set<string>();
   private activeSpell: SpellId = 1;
+  private spellOffset = 0;
   private mouseScreen = { x: 0, y: 0 };
   private mouseWorld = { x: 1000, y: 1000 }; // center of new arena
   private pendingCast: { spell: SpellId; aimTarget: { x: number; y: number } } | null = null;
@@ -24,10 +25,10 @@ export class InputHandler {
 
   private onKeyDown = (e: KeyboardEvent) => {
     this.keys.add(e.code);
-    if (e.code === 'Digit1') this.activeSpell = 1;
-    if (e.code === 'Digit2') this.activeSpell = 2;
-    if (e.code === 'Digit3') this.activeSpell = 3;
-    if (e.code === 'Digit4') this.activeSpell = 4;
+    if (e.code === 'Digit1') this.activeSpell = (1 + this.spellOffset) as SpellId;
+    if (e.code === 'Digit2') this.activeSpell = (2 + this.spellOffset) as SpellId;
+    if (e.code === 'Digit3') this.activeSpell = (3 + this.spellOffset) as SpellId;
+    if (e.code === 'Digit4') this.activeSpell = (4 + this.spellOffset) as SpellId;
   };
 
   private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.code); };
@@ -72,6 +73,11 @@ export class InputHandler {
 
   refreshMouseWorld(): void {
     this.mouseWorld = this.scene.screenToWorld(this.mouseScreen.x, this.mouseScreen.y);
+  }
+
+  setCharacterClass(cls: string): void {
+    this.spellOffset = cls === 'amazon' ? 4 : 0;
+    this.activeSpell = (1 + this.spellOffset) as SpellId;
   }
 
   getActiveSpell(): SpellId { return this.activeSpell; }
