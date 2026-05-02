@@ -116,14 +116,14 @@ describe('buildSpellModifiers', () => {
     expect(m.teleport.phantomStep).toBe(false);
   });
 
-  it('applies Volatile Ember rank 1: +8% radius', () => {
+  it('applies Volatile Ember rank 1: +40% radius', () => {
     const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.volatile_ember', 1]]));
-    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.08, 1)), 5);
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.4, 1)), 5);
   });
 
   it('applies Volatile Ember rank 5: stacked radius bonus', () => {
     const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.volatile_ember', 5]]));
-    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.08, 5)), 5);
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.4, 5)), 5);
   });
 
   it('applies Hellfire rank 1: +50% radius, +30% damage, -15% speed', () => {
@@ -139,7 +139,7 @@ describe('buildSpellModifiers', () => {
     const m = buildSpellModifiers(new Map([
       ['fire.fireball', 1], ['fire.volatile_ember', 3], ['fire.hellfire', 2],
     ]));
-    const veBonus = 1 + effectAtRank(0.08, 3);
+    const veBonus = 1 + effectAtRank(0.4, 3);
     const hfE = effectAtRank(1.0, 2);
     const hfBonus = 1 + 0.5 * hfE;
     expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * veBonus * hfBonus, 5);

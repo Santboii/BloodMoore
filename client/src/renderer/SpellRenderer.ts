@@ -68,12 +68,13 @@ export class SpellRenderer {
       if (fb.type !== 'fireball') continue;
 
       if (!this.fireballs.has(fb.id)) {
+        const r = fb.radius ?? 10;
         const mesh = new THREE.Mesh(
-          new THREE.SphereGeometry(8, 8, 8),
+          new THREE.SphereGeometry(r * 0.8, 8, 8),
           new THREE.MeshBasicMaterial({ color: 0xff6600 }),
         );
         const glow = new THREE.Mesh(
-          new THREE.SphereGeometry(14, 8, 8),
+          new THREE.SphereGeometry(r * 1.4, 8, 8),
           new THREE.MeshBasicMaterial({ color: 0xff2200, transparent: true, opacity: 0.25 }),
         );
         mesh.add(glow);

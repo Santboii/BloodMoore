@@ -48,7 +48,7 @@ export function buildSpellModifiers(skills: Map<string, number>): SpellModifiers
   let fbDmgMin = 80;
   let fbDmgMax = 120;
 
-  if (veRank > 0) fbRadius *= 1 + effectAtRank(0.08, veRank);
+  if (veRank > 0) fbRadius *= 1 + effectAtRank(0.4, veRank);
   if (hfRank > 0) {
     const e = effectAtRank(1.0, hfRank);
     fbRadius *= 1 + HELLFIRE_RADIUS_RATIO * e;
