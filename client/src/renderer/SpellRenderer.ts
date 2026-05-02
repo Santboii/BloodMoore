@@ -5,7 +5,15 @@ import { TeleportEffect } from './TeleportEffect';
 
 type MeteorEntry = { ring: THREE.Mesh; rock: THREE.Mesh; target: { x: number; y: number }; spawnTime: number };
 type ArrowEntry = { mesh: THREE.Group };
-type RainEntry = { circle: THREE.Mesh; target: { x: number; y: number } };
+type RainEntry = {
+  circle: THREE.Mesh;
+  target: { x: number; y: number };
+  radius: number;
+  arrowGroup: THREE.Group;
+  arrowMaterial: THREE.MeshBasicMaterial;
+  arrowPhases: number[];
+  spawnTime: number;
+};
 
 export type ArrowElement = 'none' | 'burn' | 'freeze' | 'poison';
 
@@ -179,9 +187,15 @@ export class SpellRenderer {
       if (!this.fireWalls.has(fw.id)) {
         const group = new THREE.Group();
         if (fw.shape === 'circle' && fw.center && fw.radius) {
+          const isRainZone = fw.id.startsWith('rain_zone_');
           const disc = new THREE.Mesh(
             new THREE.CircleGeometry(fw.radius, 32),
-            new THREE.MeshBasicMaterial({ color: 0xff2200, transparent: true, opacity: 0.2, side: THREE.DoubleSide }),
+            new THREE.MeshBasicMaterial({
+              color: isRainZone ? ELEMENT_COLORS[this.arrowElement] : 0xff2200,
+              transparent: true,
+              opacity: isRainZone ? 0.15 : 0.2,
+              side: THREE.DoubleSide,
+            }),
           );
           disc.rotation.x = -Math.PI / 2;
           disc.position.set(fw.center.x, 1, fw.center.y);
@@ -204,7 +218,11 @@ export class SpellRenderer {
       }
 
       if (fw.shape === 'circle' && fw.center && fw.radius) {
-        this.particles.emitCrater(fw.center.x, fw.center.y, fw.radius);
+        if (fw.id.startsWith('rain_zone_')) {
+          this.particles.emitRainZone(fw.center.x, fw.center.y, fw.radius);
+        } else {
+          this.particles.emitCrater(fw.center.x, fw.center.y, fw.radius);
+        }
       } else {
         this.particles.emitWall(fw.segments);
       }
@@ -272,26 +290,64 @@ export class SpellRenderer {
     for (const [id, entry] of this.rainOfArrows) {
       if (!activeIds.has(id)) {
         this.scene.remove(entry.circle);
+        this.scene.remove(entry.arrowGroup);
+        this.particles.emitRainImpact(entry.target.x, 0, entry.target.y, entry.radius);
         this.rainOfArrows.delete(id);
       }
     }
 
     for (const rain of state.rainOfArrows) {
       if (!this.rainOfArrows.has(rain.id)) {
+        const color = ELEMENT_COLORS[this.arrowElement];
         const disc = new THREE.Mesh(
           new THREE.CircleGeometry(rain.radius, 48),
-          new THREE.MeshBasicMaterial({ color: ELEMENT_COLORS[this.arrowElement], transparent: true, opacity: 0.12, side: THREE.DoubleSide }),
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.12, side: THREE.DoubleSide }),
         );
         disc.rotation.x = -Math.PI / 2;
         disc.position.set(rain.target.x, 1, rain.target.y);
         this.scene.add(disc);
-        this.rainOfArrows.set(rain.id, { circle: disc, target: { ...rain.target } });
+
+        const arrowGroup = new THREE.Group();
+        const arrowMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 });
+        const arrowPhases: number[] = [];
+        const arrowCount = 16;
+        for (let i = 0; i < arrowCount; i++) {
+          const theta = Math.random() * Math.PI * 2;
+          const r = Math.sqrt(Math.random()) * rain.radius;
+          const shaft = new THREE.Mesh(new THREE.BoxGeometry(2, 14, 2), arrowMaterial);
+          shaft.position.set(Math.cos(theta) * r, 0, Math.sin(theta) * r);
+          shaft.rotation.x = (Math.random() - 0.5) * 0.3;
+          shaft.rotation.z = (Math.random() - 0.5) * 0.3;
+          arrowGroup.add(shaft);
+          arrowPhases.push(Math.random());
+        }
+        arrowGroup.position.set(rain.target.x, 0, rain.target.y);
+        this.scene.add(arrowGroup);
+
+        this.rainOfArrows.set(rain.id, {
+          circle: disc,
+          target: { ...rain.target },
+          radius: rain.radius,
+          arrowGroup,
+          arrowMaterial,
+          arrowPhases,
+          spawnTime: this.elapsedTime,
+        });
       }
 
       const entry = this.rainOfArrows.get(rain.id)!;
       const t = Math.max(0, Math.min(1, 1 - (rain.strikeAt - state.tick) / RAIN_DELAY_TICKS));
-      // Fill opacity increases as strike approaches: 0.12 → 0.35
       (entry.circle.material as THREE.MeshBasicMaterial).opacity = 0.12 + t * 0.23;
+
+      entry.arrowMaterial.opacity = Math.min(1, t * 2);
+      const localTime = this.elapsedTime - entry.spawnTime;
+      const maxHeight = 250;
+      const fallDuration = 0.35;
+      const children = entry.arrowGroup.children;
+      for (let i = 0; i < entry.arrowPhases.length; i++) {
+        const fallProgress = ((localTime / fallDuration) + entry.arrowPhases[i]) % 1;
+        children[i].position.y = maxHeight * (1 - fallProgress);
+      }
     }
   }
 
@@ -303,7 +359,10 @@ export class SpellRenderer {
       this.scene.remove(entry.ring);
       this.scene.remove(entry.rock);
     }
-    for (const entry of this.rainOfArrows.values()) this.scene.remove(entry.circle);
+    for (const entry of this.rainOfArrows.values()) {
+      this.scene.remove(entry.circle);
+      this.scene.remove(entry.arrowGroup);
+    }
     for (const effect of this.teleportEffects) effect.dispose();
     this.fireballs.clear();
     this.arrows.clear();

@@ -204,6 +204,55 @@ export class ParticleSystem {
     }
   }
 
+  emitRainImpact(x: number, y: number, z: number, radius: number): void {
+    if (this.activeCount >= SOFT_CAP) return;
+    const count = 30 + Math.floor(Math.random() * 15);
+    for (let i = 0; i < count; i++) {
+      if (this.activeCount >= POOL_SIZE) return;
+      const theta = Math.random() * Math.PI * 2;
+      const dist = Math.sqrt(Math.random()) * radius;
+      const speed = 15 + Math.random() * 30;
+      const idx = this.activeCount;
+      this.spawn(
+        x + Math.cos(theta) * dist,
+        y + 2,
+        z + Math.sin(theta) * dist,
+        Math.cos(theta) * speed,
+        30 + Math.random() * 50,
+        Math.sin(theta) * speed,
+        0.3 + Math.random() * 0.2,
+        6 + Math.random() * 4,
+      );
+      this.colorR[idx] = 0.7;
+      this.colorG[idx] = 0.6;
+      this.colorB[idx] = 0.45;
+    }
+  }
+
+  emitRainZone(x: number, z: number, radius: number): void {
+    if (this.activeCount >= SOFT_CAP) return;
+    const count = Math.max(2, Math.round(radius / 20));
+    for (let i = 0; i < count; i++) {
+      if (this.activeCount >= POOL_SIZE) return;
+      const theta = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * radius;
+      const idx = this.activeCount;
+      this.spawn(
+        x + Math.cos(theta) * r,
+        1,
+        z + Math.sin(theta) * r,
+        (Math.random() - 0.5) * 8,
+        15 + Math.random() * 15,
+        (Math.random() - 0.5) * 8,
+        0.25 + Math.random() * 0.15,
+        5 + Math.random() * 4,
+      );
+      this.colorR[idx] = 0.7;
+      this.colorG[idx] = 0.6;
+      this.colorB[idx] = 0.45;
+    }
+  }
+
   emitTeleportSparks(x: number, y: number, z: number): void {
     const count = 10 + Math.floor(Math.random() * 6);
     for (let i = 0; i < count; i++) {
