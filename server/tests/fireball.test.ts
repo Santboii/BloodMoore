@@ -74,6 +74,15 @@ describe('fireballDamage', () => {
   });
 });
 
+describe('advanceFireball homing', () => {
+  it('applies variable homing strength from projectile', () => {
+    const fb = spawnFireball('p1', { x: 100, y: 100 }, { x: 200, y: 100 }, { homing: 40 });
+    const enemy = { x: 100, y: 200 };
+    const moved = advanceFireball(fb, enemy);
+    expect(moved.velocity.y).toBeGreaterThan(0);
+  });
+});
+
 describe('spawnFireball with config overrides', () => {
   it('uses overridden speed when provided', () => {
     const fb = spawnFireball('p1', { x: 100, y: 400 }, { x: 700, y: 400 }, { speed: 200 });

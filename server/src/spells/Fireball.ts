@@ -10,7 +10,7 @@ type FireballConfig = {
   radius?: number;
   damageMin?: number;
   damageMax?: number;
-  homing?: boolean;
+  homing?: number;
   split?: number;
 };
 
@@ -41,11 +41,11 @@ export function spawnFireball(
 export function advanceFireball(p: Projectile, enemyPos?: Vec2): Projectile {
   let vx = p.velocity.x;
   let vy = p.velocity.y;
-  if (p.homing && enemyPos) {
+  if (p.homing && p.homing > 0 && enemyPos) {
     const dx = enemyPos.x - p.position.x;
     const dy = enemyPos.y - p.position.y;
     const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const strength = 60;
+    const strength = p.homing;
     vx += (dx / len) * strength * DELTA;
     vy += (dy / len) * strength * DELTA;
     const spd = Math.sqrt(p.velocity.x ** 2 + p.velocity.y ** 2);
