@@ -53,7 +53,7 @@ BEGIN
   SET skill_points_available = skill_points_available - p_cost
   WHERE id = p_character_id;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Updated respec_skills: refunds based on total_spent column
 CREATE OR REPLACE FUNCTION respec_skills(
@@ -73,4 +73,4 @@ BEGIN
   DELETE FROM skill_unlocks
   WHERE character_id = p_character_id;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
