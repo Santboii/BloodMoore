@@ -14,7 +14,7 @@ export class SpellRenderer {
   private meteors = new Map<string, MeteorEntry>();
   private rainOfArrows = new Map<string, RainEntry>();
   private particles: ParticleSystem;
-  private prevFireballPositions = new Map<string, { x: number; y: number; z: number }>();
+  private prevFireballPositions = new Map<string, { x: number; y: number; z: number; radius: number }>();
   private clock = new THREE.Clock();
   private elapsedTime = 0;
   private teleportEffects: TeleportEffect[] = [];
@@ -57,7 +57,7 @@ export class SpellRenderer {
     for (const [id, mesh] of this.fireballs) {
       if (!activeFireballIds.has(id)) {
         const last = this.prevFireballPositions.get(id);
-        if (last) this.particles.emitExplosion(last.x, last.y, last.z);
+        if (last) this.particles.emitExplosion(last.x, last.y, last.z, last.radius);
         this.scene.remove(mesh);
         this.fireballs.delete(id);
         this.prevFireballPositions.delete(id);
@@ -68,13 +68,12 @@ export class SpellRenderer {
       if (fb.type !== 'fireball') continue;
 
       if (!this.fireballs.has(fb.id)) {
-        const r = fb.radius ?? 10;
         const mesh = new THREE.Mesh(
-          new THREE.SphereGeometry(r * 0.8, 8, 8),
+          new THREE.SphereGeometry(8, 8, 8),
           new THREE.MeshBasicMaterial({ color: 0xff6600 }),
         );
         const glow = new THREE.Mesh(
-          new THREE.SphereGeometry(r * 1.4, 8, 8),
+          new THREE.SphereGeometry(14, 8, 8),
           new THREE.MeshBasicMaterial({ color: 0xff2200, transparent: true, opacity: 0.25 }),
         );
         mesh.add(glow);
@@ -97,7 +96,7 @@ export class SpellRenderer {
         if (len > 0) { dirX = dx / len; dirZ = dz / len; }
       }
       this.particles.emitTrail(wx, wy, wz, dirX, dirZ);
-      this.prevFireballPositions.set(fb.id, { x: wx, y: wy, z: wz });
+      this.prevFireballPositions.set(fb.id, { x: wx, y: wy, z: wz, radius: fb.radius ?? 10 });
     }
   }
 

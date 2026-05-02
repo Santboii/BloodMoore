@@ -101,18 +101,20 @@ export class ParticleSystem {
     }
   }
 
-  emitExplosion(x: number, y: number, z: number): void {
-    const count = 40 + Math.floor(Math.random() * 21);
+  emitExplosion(x: number, y: number, z: number, radius = 10): void {
+    const scale = radius / 10;
+    const count = Math.floor((40 + Math.floor(Math.random() * 21)) * scale);
+    const spread = 6 * scale;
     for (let i = 0; i < count; i++) {
       if (this.activeCount >= POOL_SIZE) return;
       const theta = Math.random() * Math.PI * 2;
-      const speed = 60 + Math.random() * 120;
+      const speed = (60 + Math.random() * 120) * scale;
       this.spawn(
-        x + (Math.random() - 0.5) * 6,
-        y + (Math.random() - 0.5) * 6,
-        z + (Math.random() - 0.5) * 6,
+        x + (Math.random() - 0.5) * spread,
+        y + (Math.random() - 0.5) * spread,
+        z + (Math.random() - 0.5) * spread,
         Math.cos(theta) * speed,
-        20 + Math.random() * 80,
+        (20 + Math.random() * 80) * scale,
         Math.sin(theta) * speed,
         0.5 + Math.random() * 0.3,
         Math.random() > 0.5 ? 16 : 10,
