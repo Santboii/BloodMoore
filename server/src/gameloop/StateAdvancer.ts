@@ -46,13 +46,13 @@ export function makeInitialState(
 export function advanceState(
   state: GameState,
   inputs: Record<string, InputFrame>,
-  skillSets: Record<string, Set<NodeId>> = {},
+  skillSets: Record<string, Map<NodeId, number>> = {},
   mode?: GameModeConfig,
 ): GameState {
   const resolvedMode = mode ?? DUEL_MODE;
   const players = deepCopyPlayers(state.players);
   const modifiers = Object.fromEntries(
-    Object.keys(players).map(id => [id, buildSpellModifiers(skillSets[id] ?? new Set())])
+    Object.keys(players).map(id => [id, buildSpellModifiers(skillSets[id] ?? new Map())])
   );
 
   // 1. Move players and apply mana regen
@@ -101,7 +101,7 @@ export function advanceState(
       4: 'utility.teleport',
     };
     const requiredNode = spellNodeMap[spell];
-    if (hasSkillSystem && requiredNode && !(skillSets[id] ?? new Set()).has(requiredNode)) continue;
+    if (hasSkillSystem && requiredNode && !(skillSets[id] ?? new Map()).has(requiredNode)) continue;
 
     const cfg = SPELL_CONFIG[spell];
     const phantomActive = (p.phantomStepUntil ?? 0) > tick;
@@ -123,7 +123,7 @@ export function advanceState(
         radius:    mods.fireball.radius,
         damageMin: mods.fireball.damageMin,
         damageMax: mods.fireball.damageMax,
-        homing:    mods.fireball.homing,
+        homing:    mods.fireball.homingStrength,
         split:     mods.fireball.split,
       });
       projectiles = [...projectiles, fb];

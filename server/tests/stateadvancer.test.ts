@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { advanceState, makeInitialState } from '../src/gameloop/StateAdvancer.ts';
-import { SPELL_CONFIG, MAX_HP, MAX_MANA, MANA_REGEN_PER_TICK, FIREWALL_DAMAGE_PER_TICK } from '@arena/shared';
+import { SPELL_CONFIG, MAX_HP, MAX_MANA, MANA_REGEN_PER_TICK, FIREWALL_DAMAGE_PER_TICK, InputFrame } from '@arena/shared';
 import { spawnFireWall } from '../src/spells/FireWall.ts';
 
 function twoPlayerState() {
@@ -216,9 +216,9 @@ import type { NodeId } from '@arena/shared';
 describe('advanceState — skill modifiers', () => {
   it('fireball with Volatile Ember has larger radius (hits from further away)', () => {
     const state = twoPlayerState();
-    const skills: Record<string, Set<NodeId>> = {
-      p1: new Set(['fire.fireball', 'fire.volatile_ember']),
-      p2: new Set(['fire.fireball']),
+    const skills: Record<string, Map<NodeId, number>> = {
+      p1: new Map([['fire.fireball', 1], ['fire.volatile_ember', 1]]),
+      p2: new Map([['fire.fireball', 1]]),
     };
     // Normal radius is 10, Volatile Ember makes it 13 — place fireball 11 units from p2
     state.projectiles.push({
@@ -239,9 +239,9 @@ describe('advanceState — skill modifiers', () => {
 
   it('casting fireball when fire.fireball not in skills does nothing', () => {
     const state = twoPlayerState();
-    const skills: Record<string, Set<NodeId>> = {
-      p1: new Set(['utility.teleport']),
-      p2: new Set(['fire.fireball']),
+    const skills: Record<string, Map<NodeId, number>> = {
+      p1: new Map([['utility.teleport', 1]]),
+      p2: new Map([['fire.fireball', 1]]),
     };
     const inputs = {
       p1: { move: { x: 0, y: 0 }, castSpell: 1 as const, aimTarget: { x: 1800, y: 1000 } },
@@ -253,9 +253,9 @@ describe('advanceState — skill modifiers', () => {
 
   it('Ethereal Form: player is invuln for 30 ticks after teleporting', () => {
     const state = twoPlayerState();
-    const skills: Record<string, Set<NodeId>> = {
-      p1: new Set(['utility.teleport', 'utility.ethereal_form']),
-      p2: new Set(['fire.fireball']),
+    const skills: Record<string, Map<NodeId, number>> = {
+      p1: new Map([['utility.teleport', 1], ['utility.ethereal_form', 1]]),
+      p2: new Map([['fire.fireball', 1]]),
     };
     state.projectiles.push({
       id: 'fb_test',
@@ -270,5 +270,22 @@ describe('advanceState — skill modifiers', () => {
     };
     const next = advanceState(state, inputs, skills);
     expect(next.players['p1'].hp).toBe(MAX_HP);
+  });
+
+  it('applies rank-based modifiers from Map skillSets', () => {
+    const state = makeInitialState([
+      { id: 'p1', displayName: 'P1', spawnPos: { x: 200, y: 1000 } },
+      { id: 'p2', displayName: 'P2', spawnPos: { x: 1800, y: 1000 } },
+    ]);
+    const skillSets: Record<string, Map<string, number>> = {
+      p1: new Map([['fire.fireball', 1], ['fire.seeking_flame', 3]]),
+    };
+    const inputs: Record<string, InputFrame> = {
+      p1: { move: { x: 0, y: 0 }, castSpell: 1, aimTarget: { x: 1800, y: 1000 } },
+      p2: { move: { x: 0, y: 0 }, castSpell: null, aimTarget: { x: 200, y: 1000 } },
+    };
+    const next = advanceState(state, inputs, skillSets);
+    expect(next.projectiles.length).toBe(1);
+    expect(next.projectiles[0].homing).toBeGreaterThan(0);
   });
 });
