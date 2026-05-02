@@ -120,7 +120,7 @@ export class SpellRenderer {
         // Shaft: thin elongated box — 2px wide, 12px long, 2px tall
         const shaft = new THREE.Mesh(
           new THREE.BoxGeometry(12, 2, 2),
-          new THREE.MeshBasicMaterial({ color: 0x88dd44 }),
+          new THREE.MeshBasicMaterial({ color: 0xffffff }),
         );
         group.add(shaft);
 
@@ -131,7 +131,7 @@ export class SpellRenderer {
         ];
         const trail = new THREE.Line(
           new THREE.BufferGeometry().setFromPoints(trailPoints),
-          new THREE.LineBasicMaterial({ color: 0x88dd44, transparent: true, opacity: 0.5 }),
+          new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }),
         );
         group.add(trail);
 
@@ -265,7 +265,7 @@ export class SpellRenderer {
       if (!this.rainOfArrows.has(rain.id)) {
         const disc = new THREE.Mesh(
           new THREE.CircleGeometry(rain.radius, 48),
-          new THREE.MeshBasicMaterial({ color: 0x88dd44, transparent: true, opacity: 0.12, side: THREE.DoubleSide }),
+          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, side: THREE.DoubleSide }),
         );
         disc.rotation.x = -Math.PI / 2;
         disc.position.set(rain.target.x, 1, rain.target.y);
