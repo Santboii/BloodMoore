@@ -137,7 +137,7 @@ export const SPELL_CONFIG: Record<SpellId, { manaCost: number; cooldownTicks: nu
   1: { manaCost: 25,  cooldownTicks: 30  },
   2: { manaCost: 60,  cooldownTicks: 180 },
   3: { manaCost: 100, cooldownTicks: 300 },
-  4: { manaCost: 40,  cooldownTicks: 0   },
+  4: { manaCost: 40,  cooldownTicks: 120 },
   5: { manaCost: 20,  cooldownTicks: 24  },
   6: { manaCost: 50,  cooldownTicks: 120 },
   7: { manaCost: 80,  cooldownTicks: 240 },

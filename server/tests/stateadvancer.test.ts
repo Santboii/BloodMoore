@@ -200,14 +200,14 @@ describe('advanceState — teleport cast (spell 4)', () => {
     expect(next.players['p1'].mana).toBe(10 + MANA_REGEN_PER_TICK);  // regen only, no deduction
   });
 
-  it('does not set a cooldown after a successful teleport', () => {
+  it('sets a 2-second cooldown after a successful teleport', () => {
     const state = twoPlayerState();
     const inputs = {
       p1: { move: { x: 0, y: 0 }, castSpell: 4 as const, aimTarget: { x: 1000, y: 1000 } },
       p2: { move: { x: 0, y: 0 }, castSpell: null,       aimTarget: { x: 200,  y: 1000 } },
     };
     const next = advanceState(state, inputs);
-    expect(next.players['p1'].cooldowns[4] ?? 0).toBe(0);
+    expect(next.players['p1'].cooldowns[4]).toBe(120);
   });
 });
 
