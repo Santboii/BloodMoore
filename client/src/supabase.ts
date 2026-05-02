@@ -47,6 +47,7 @@ export async function createCharacter(name: string, charClass: string): Promise<
 
   const starterSkills: Record<string, string[]> = {
     mage: ['fire.fireball'],
+    amazon: ['archer.power_shot'],
   };
   for (const nodeId of starterSkills[charClass] ?? []) {
     const { error: skillErr } = await supabase.rpc('unlock_skill_node', {

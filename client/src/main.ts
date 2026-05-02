@@ -53,6 +53,7 @@ let ownedSpells = new Set<SpellId>();
 function spellsFromNodes(nodes: Set<NodeId>): Set<SpellId> {
   const map: [NodeId, SpellId][] = [
     ['fire.fireball', 1], ['fire.fire_wall', 2], ['fire.meteor', 3], ['utility.teleport', 4],
+    ['archer.power_shot', 5], ['archer.multishot', 6], ['archer.rain_of_arrows', 7], ['archer_utility.evade', 8],
   ];
   const result = new Set<SpellId>();
   for (const [nodeId, spellId] of map) {
@@ -80,6 +81,7 @@ const charSelect = new CharacterSelectUI(uiOverlay, {
     const { data } = await supabase.from('skill_unlocks').select('node_id').eq('character_id', character.id);
     const nodeSet = new Set<NodeId>((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
     if (character.class === 'mage') nodeSet.add('fire.fireball');
+    else if (character.class === 'amazon') nodeSet.add('archer.power_shot' as NodeId);
     ownedSpells = spellsFromNodes(nodeSet);
     hud.buildSpellSlots(ownedSpells);
     charSelect.hide();
@@ -440,6 +442,7 @@ function startGame(): void {
 
   spellRenderer = new SpellRenderer(scene.scene, myId);
   inputHandler = new InputHandler(scene, scene.renderer.domElement);
+  if (activeCharacter) inputHandler.setCharacterClass(activeCharacter.class);
 
   hud.buildSpellSlots(ownedSpells);
   hud.show();
