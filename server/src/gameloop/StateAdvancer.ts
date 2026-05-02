@@ -128,6 +128,8 @@ export function advanceState(
     const hasSkillSystem = skillSets[id] !== undefined;
     const spellNodeMap = getSpellNodeMap(skillSets[id] ?? new Map());
     const requiredNode = spellNodeMap[spell];
+    // Block spells not in this class's spell map entirely
+    if (hasSkillSystem && !(spell in spellNodeMap)) continue;
     if (hasSkillSystem && requiredNode && !(skillSets[id] ?? new Map()).has(requiredNode)) continue;
 
     const cfg = SPELL_CONFIG[spell];
@@ -275,19 +277,18 @@ export function advanceState(
           if (!invuln) {
             players[pid] = { ...player, hp: Math.max(0, player.hp - fireballDamage(moved) * getDamageMultiplier(moved.ownerId, pid, players, resolvedMode)) };
           }
-          if ((moved.split ?? 0) > 0) {
-            const angles = [-0.4, 0, 0.4];
-            for (const offset of angles) {
-              const baseAngle = Math.atan2(moved.velocity.y, moved.velocity.x) + offset;
-              const spd = Math.sqrt(moved.velocity.x ** 2 + moved.velocity.y ** 2);
-              newProjectiles.push(spawnFireball(moved.ownerId, moved.position, {
-                x: moved.position.x + Math.cos(baseAngle) * 100,
-                y: moved.position.y + Math.sin(baseAngle) * 100,
-              }, { speed: spd, radius: moved.radius, damageMin: moved.damageMin, damageMax: moved.damageMax }));
-            }
-          }
           hit = true;
-          break;
+        }
+      }
+      if (hit && (moved.split ?? 0) > 0) {
+        const angles = [-0.4, 0, 0.4];
+        for (const offset of angles) {
+          const baseAngle = Math.atan2(moved.velocity.y, moved.velocity.x) + offset;
+          const spd = Math.sqrt(moved.velocity.x ** 2 + moved.velocity.y ** 2);
+          newProjectiles.push(spawnFireball(moved.ownerId, moved.position, {
+            x: moved.position.x + Math.cos(baseAngle) * 100,
+            y: moved.position.y + Math.sin(baseAngle) * 100,
+          }, { speed: spd, radius: moved.radius, damageMin: moved.damageMin, damageMax: moved.damageMax }));
         }
       }
       if (!hit) survivingProjectiles.push(moved);
