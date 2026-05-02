@@ -1,7 +1,7 @@
 import { Scene } from './renderer/Scene';
 import { Arena } from './renderer/Arena';
 import { CharacterMesh } from './renderer/CharacterMesh';
-import { SpellRenderer } from './renderer/SpellRenderer';
+import { SpellRenderer, ArrowElement } from './renderer/SpellRenderer';
 import { StateBuffer } from './network/StateBuffer';
 import { Predictor } from './network/Predictor';
 import { SocketClient } from './network/SocketClient';
@@ -49,6 +49,14 @@ let predictor: Predictor | null = null;
 let accessToken = '';
 let activeCharacter: CharacterRecord | null = null;
 let ownedSpells = new Set<SpellId>();
+let playerElement: ArrowElement = 'none';
+
+function elementFromNodes(nodes: Set<NodeId>): ArrowElement {
+  if (nodes.has('archer.burn' as NodeId)) return 'burn';
+  if (nodes.has('archer.freeze' as NodeId)) return 'freeze';
+  if (nodes.has('archer.poison' as NodeId)) return 'poison';
+  return 'none';
+}
 
 function spellsFromNodes(nodes: Set<NodeId>): Set<SpellId> {
   const map: [NodeId, SpellId][] = [
@@ -83,6 +91,7 @@ const charSelect = new CharacterSelectUI(uiOverlay, {
     if (character.class === 'mage') nodeSet.add('fire.fireball');
     else if (character.class === 'amazon') nodeSet.add('archer.power_shot' as NodeId);
     ownedSpells = spellsFromNodes(nodeSet);
+    playerElement = elementFromNodes(nodeSet);
     hud.buildSpellSlots(ownedSpells);
     charSelect.hide();
     lobby.show();
@@ -268,6 +277,7 @@ const lobby = new LobbyUI(uiOverlay, {
       const nodeSet = new Set<NodeId>((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
       if (activeCharacter.class === 'mage') nodeSet.add('fire.fireball');
       ownedSpells = spellsFromNodes(nodeSet);
+      playerElement = elementFromNodes(nodeSet);
       hud.buildSpellSlots(ownedSpells);
     }
     lobby.show();
@@ -441,6 +451,7 @@ function startGame(): void {
   inputHandler?.dispose();
 
   spellRenderer = new SpellRenderer(scene.scene, myId);
+  spellRenderer.setArrowElement(playerElement);
   inputHandler = new InputHandler(scene, scene.renderer.domElement);
   if (activeCharacter) inputHandler.setCharacterClass(activeCharacter.class);
 

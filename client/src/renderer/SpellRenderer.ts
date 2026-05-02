@@ -7,6 +7,15 @@ type MeteorEntry = { ring: THREE.Mesh; rock: THREE.Mesh; target: { x: number; y:
 type ArrowEntry = { mesh: THREE.Group };
 type RainEntry = { circle: THREE.Mesh; target: { x: number; y: number } };
 
+export type ArrowElement = 'none' | 'burn' | 'freeze' | 'poison';
+
+const ELEMENT_COLORS: Record<ArrowElement, number> = {
+  none: 0xffffff,
+  burn: 0xff6600,
+  freeze: 0x66ccff,
+  poison: 0x44dd44,
+};
+
 export class SpellRenderer {
   private fireballs = new Map<string, THREE.Mesh>();
   private arrows = new Map<string, ArrowEntry>();
@@ -18,9 +27,14 @@ export class SpellRenderer {
   private clock = new THREE.Clock();
   private elapsedTime = 0;
   private teleportEffects: TeleportEffect[] = [];
+  private arrowElement: ArrowElement = 'none';
 
   constructor(private scene: THREE.Scene, private myId: string) {
     this.particles = new ParticleSystem(scene);
+  }
+
+  setArrowElement(element: ArrowElement): void {
+    this.arrowElement = element;
   }
 
   private detectTeleports(state: GameState): void {
@@ -116,22 +130,23 @@ export class SpellRenderer {
 
       if (!this.arrows.has(arrow.id)) {
         const group = new THREE.Group();
+        const color = arrow.ownerId === this.myId
+          ? ELEMENT_COLORS[this.arrowElement]
+          : 0xffffff;
 
-        // Shaft: thin elongated box — 2px wide, 12px long, 2px tall
         const shaft = new THREE.Mesh(
           new THREE.BoxGeometry(12, 2, 2),
-          new THREE.MeshBasicMaterial({ color: 0xffffff }),
+          new THREE.MeshBasicMaterial({ color }),
         );
         group.add(shaft);
 
-        // Trail: short trailing line at 50% opacity
         const trailPoints = [
           new THREE.Vector3(-6, 0, 0),
           new THREE.Vector3(-10, 0, 0),
         ];
         const trail = new THREE.Line(
           new THREE.BufferGeometry().setFromPoints(trailPoints),
-          new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }),
+          new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.5 }),
         );
         group.add(trail);
 
@@ -265,7 +280,7 @@ export class SpellRenderer {
       if (!this.rainOfArrows.has(rain.id)) {
         const disc = new THREE.Mesh(
           new THREE.CircleGeometry(rain.radius, 48),
-          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, side: THREE.DoubleSide }),
+          new THREE.MeshBasicMaterial({ color: ELEMENT_COLORS[this.arrowElement], transparent: true, opacity: 0.12, side: THREE.DoubleSide }),
         );
         disc.rotation.x = -Math.PI / 2;
         disc.position.set(rain.target.x, 1, rain.target.y);
