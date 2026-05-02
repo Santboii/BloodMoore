@@ -96,16 +96,16 @@ describe('scaling helpers', () => {
 });
 
 import { buildSpellModifiers } from '../src/skills/SpellModifiers.ts';
-import { FIREBALL_SPEED, FIREBALL_RADIUS } from '@arena/shared';
+import { FIREBALL_SPEED, FIREBALL_RADIUS, effectAtRank } from '@arena/shared';
 
 describe('buildSpellModifiers', () => {
   it('returns base values when no skills are owned', () => {
-    const m = buildSpellModifiers(new Set());
+    const m = buildSpellModifiers(new Map());
     expect(m.fireball.speed).toBe(FIREBALL_SPEED);
     expect(m.fireball.radius).toBe(FIREBALL_RADIUS);
     expect(m.fireball.damageMin).toBe(80);
     expect(m.fireball.damageMax).toBe(120);
-    expect(m.fireball.homing).toBe(false);
+    expect(m.fireball.homingStrength).toBe(0);
     expect(m.fireball.split).toBe(0);
     expect(m.firewall.durationMultiplier).toBe(1);
     expect(m.firewall.damageMultiplier).toBe(1);
@@ -116,31 +116,85 @@ describe('buildSpellModifiers', () => {
     expect(m.teleport.phantomStep).toBe(false);
   });
 
-  it('applies Volatile Ember: +30% radius', () => {
-    const m = buildSpellModifiers(new Set(['fire.fireball', 'fire.volatile_ember']));
-    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * 1.3, 5);
+  it('applies Volatile Ember rank 1: +8% radius', () => {
+    const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.volatile_ember', 1]]));
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.08, 1)), 5);
   });
 
-  it('applies Hellfire: 3× radius, 2× damage, 0.5× speed', () => {
-    const m = buildSpellModifiers(new Set(['fire.fireball', 'fire.hellfire']));
-    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * 3, 5);
-    expect(m.fireball.damageMin).toBe(160);
-    expect(m.fireball.damageMax).toBe(240);
-    expect(m.fireball.speed).toBeCloseTo(FIREBALL_SPEED * 0.5, 5);
+  it('applies Volatile Ember rank 5: stacked radius bonus', () => {
+    const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.volatile_ember', 5]]));
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.08, 5)), 5);
   });
 
-  it('stacks Volatile Ember + Hellfire: radius is base * 1.3 * 3', () => {
-    const m = buildSpellModifiers(new Set(['fire.fireball', 'fire.volatile_ember', 'fire.hellfire']));
-    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * 1.3 * 3, 5);
+  it('applies Hellfire rank 1: +50% radius, +30% damage, -15% speed', () => {
+    const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.hellfire', 1]]));
+    const e = effectAtRank(1.0, 1);
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + 0.5 * e), 5);
+    expect(m.fireball.damageMin).toBeCloseTo(80 * (1 + 0.3 * e), 5);
+    expect(m.fireball.damageMax).toBeCloseTo(120 * (1 + 0.3 * e), 5);
+    expect(m.fireball.speed).toBeCloseTo(FIREBALL_SPEED * (1 - 0.15 * e), 5);
   });
 
-  it('applies Enduring Flames: +50% firewall duration', () => {
-    const m = buildSpellModifiers(new Set(['fire.fireball', 'fire.volatile_ember', 'fire.fire_wall', 'fire.enduring_flames']));
-    expect(m.firewall.durationMultiplier).toBe(1.5);
+  it('stacks Volatile Ember rank 3 + Hellfire rank 2', () => {
+    const m = buildSpellModifiers(new Map([
+      ['fire.fireball', 1], ['fire.volatile_ember', 3], ['fire.hellfire', 2],
+    ]));
+    const veBonus = 1 + effectAtRank(0.08, 3);
+    const hfE = effectAtRank(1.0, 2);
+    const hfBonus = 1 + 0.5 * hfE;
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * veBonus * hfBonus, 5);
   });
 
-  it('applies Phase Shift: +40% teleport range', () => {
-    const m = buildSpellModifiers(new Set(['utility.teleport', 'utility.phase_shift']));
-    expect(m.teleport.maxRange).toBeCloseTo(600 * 1.4, 5);
+  it('applies Seeking Flame rank 3: homing strength', () => {
+    const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.seeking_flame', 3]]));
+    expect(m.fireball.homingStrength).toBeCloseTo(effectAtRank(25, 3), 5);
+  });
+
+  it('applies Pyroclasm rank 2: split count floored', () => {
+    const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.pyroclasm', 2]]));
+    expect(m.fireball.split).toBe(Math.floor(effectAtRank(1, 2)));
+  });
+
+  it('applies Enduring Flames rank 4: duration multiplier', () => {
+    const m = buildSpellModifiers(new Map([
+      ['fire.fireball', 1], ['fire.volatile_ember', 1], ['fire.fire_wall', 1], ['fire.enduring_flames', 4],
+    ]));
+    expect(m.firewall.durationMultiplier).toBeCloseTo(1 + effectAtRank(0.10, 4), 5);
+  });
+
+  it('applies Searing Heat rank 2: damage multiplier', () => {
+    const m = buildSpellModifiers(new Map([
+      ['fire.fireball', 1], ['fire.volatile_ember', 1], ['fire.fire_wall', 1], ['fire.searing_heat', 2],
+    ]));
+    expect(m.firewall.damageMultiplier).toBeCloseTo(1 + effectAtRank(0.08, 2), 5);
+  });
+
+  it('applies Phase Shift rank 3: teleport range', () => {
+    const m = buildSpellModifiers(new Map([['utility.teleport', 1], ['utility.phase_shift', 3]]));
+    expect(m.teleport.maxRange).toBeCloseTo(600 * (1 + effectAtRank(0.08, 3)), 5);
+  });
+
+  it('binary nodes still work: Blind Strike', () => {
+    const m = buildSpellModifiers(new Map([
+      ['fire.fireball', 1], ['fire.volatile_ember', 1], ['fire.fire_wall', 1],
+      ['fire.enduring_flames', 1], ['fire.meteor', 1], ['fire.blind_strike', 1],
+    ]));
+    expect(m.meteor.hidden).toBe(true);
+  });
+
+  it('binary nodes still work: Molten Impact', () => {
+    const m = buildSpellModifiers(new Map([
+      ['fire.fireball', 1], ['fire.volatile_ember', 1], ['fire.fire_wall', 1],
+      ['fire.enduring_flames', 1], ['fire.meteor', 1], ['fire.molten_impact', 1],
+    ]));
+    expect(m.meteor.moltenImpact).toBe(true);
+  });
+
+  it('binary nodes still work: Ethereal Form and Phantom Step', () => {
+    const m = buildSpellModifiers(new Map([
+      ['utility.teleport', 1], ['utility.ethereal_form', 1], ['utility.phantom_step', 1],
+    ]));
+    expect(m.teleport.etherealForm).toBe(true);
+    expect(m.teleport.phantomStep).toBe(true);
   });
 });
