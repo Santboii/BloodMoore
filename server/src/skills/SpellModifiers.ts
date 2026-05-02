@@ -8,6 +8,7 @@ import {
 export type FireballModifiers = {
   speed: number;
   radius: number;
+  blastRadius: number;
   damageMin: number;
   damageMax: number;
   homingStrength: number;
@@ -44,18 +45,20 @@ export function buildSpellModifiers(skills: Map<string, number>): SpellModifiers
   const hfRank = rank('fire.hellfire');
 
   let fbRadius = FIREBALL_RADIUS;
+  let fbBlastRadius = FIREBALL_RADIUS;
   let fbSpeed  = FIREBALL_SPEED;
   let fbDmgMin = 80;
   let fbDmgMax = 120;
 
-  if (veRank > 0) fbRadius *= 1 + effectAtRank(0.4, veRank);
   if (hfRank > 0) {
     const e = effectAtRank(1.0, hfRank);
     fbRadius *= 1 + HELLFIRE_RADIUS_RATIO * e;
+    fbBlastRadius *= 1 + HELLFIRE_RADIUS_RATIO * e;
     fbSpeed  *= 1 - HELLFIRE_SPEED_RATIO * e;
     fbDmgMin *= 1 + HELLFIRE_DAMAGE_RATIO * e;
     fbDmgMax *= 1 + HELLFIRE_DAMAGE_RATIO * e;
   }
+  if (veRank > 0) fbBlastRadius *= 1 + effectAtRank(0.4, veRank);
 
   const sfRank = rank('fire.seeking_flame');
   const pyRank = rank('fire.pyroclasm');
@@ -64,6 +67,7 @@ export function buildSpellModifiers(skills: Map<string, number>): SpellModifiers
     fireball: {
       speed:          fbSpeed,
       radius:         fbRadius,
+      blastRadius:    fbBlastRadius,
       damageMin:      fbDmgMin,
       damageMax:      fbDmgMax,
       homingStrength: sfRank > 0 ? 12 * Math.pow(sfRank, 1.65) : 0,

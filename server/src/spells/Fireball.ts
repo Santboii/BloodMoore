@@ -8,6 +8,7 @@ const nextId = () => `fb_${++_id}`;
 type FireballConfig = {
   speed?: number;
   radius?: number;
+  blastRadius?: number;
   damageMin?: number;
   damageMax?: number;
   homing?: number;
@@ -31,6 +32,7 @@ export function spawnFireball(
     position: { x: from.x, y: from.y },
     velocity: { x: (dx / len) * speed, y: (dy / len) * speed },
     radius: cfg.radius,
+    blastRadius: cfg.blastRadius,
     damageMin: cfg.damageMin,
     damageMax: cfg.damageMax,
     homing: cfg.homing,

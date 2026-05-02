@@ -28,6 +28,7 @@ export type Projectile = {
   position: Vec2;
   velocity: Vec2;
   radius?: number;
+  blastRadius?: number;
   damageMin?: number;
   damageMax?: number;
   homing?: number;

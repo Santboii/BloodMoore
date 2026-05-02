@@ -148,12 +148,13 @@ export function advanceState(
 
     if (spell === 1) {
       const fb = spawnFireball(id, p.position, input.aimTarget, {
-        speed:     mods.fireball.speed,
-        radius:    mods.fireball.radius,
-        damageMin: mods.fireball.damageMin,
-        damageMax: mods.fireball.damageMax,
-        homing:    mods.fireball.homingStrength,
-        split:     mods.fireball.split,
+        speed:      mods.fireball.speed,
+        radius:     mods.fireball.radius,
+        blastRadius: mods.fireball.blastRadius,
+        damageMin:  mods.fireball.damageMin,
+        damageMax:  mods.fireball.damageMax,
+        homing:     mods.fireball.homingStrength,
+        split:      mods.fireball.split,
       });
       projectiles = [...projectiles, fb];
     } else if (spell === 2) {
@@ -282,7 +283,7 @@ export function advanceState(
       }
 
       if (directHit || expired) {
-        const blastRadius = (moved.radius ?? FIREBALL_RADIUS) * 7;
+        const blastRadius = (moved.blastRadius ?? moved.radius ?? FIREBALL_RADIUS) * 7;
         for (const [pid, player] of Object.entries(players)) {
           if (pid === moved.ownerId) continue;
           if (player.hp <= 0) continue;

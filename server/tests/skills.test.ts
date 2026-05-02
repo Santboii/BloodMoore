@@ -116,33 +116,37 @@ describe('buildSpellModifiers', () => {
     expect(m.teleport.phantomStep).toBe(false);
   });
 
-  it('applies Volatile Ember rank 1: +40% radius', () => {
+  it('applies Volatile Ember rank 1: +40% blast radius (not projectile)', () => {
     const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.volatile_ember', 1]]));
-    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.4, 1)), 5);
+    expect(m.fireball.radius).toBe(FIREBALL_RADIUS);
+    expect(m.fireball.blastRadius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.4, 1)), 5);
   });
 
-  it('applies Volatile Ember rank 5: stacked radius bonus', () => {
+  it('applies Volatile Ember rank 5: stacked blast radius', () => {
     const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.volatile_ember', 5]]));
-    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.4, 5)), 5);
+    expect(m.fireball.radius).toBe(FIREBALL_RADIUS);
+    expect(m.fireball.blastRadius).toBeCloseTo(FIREBALL_RADIUS * (1 + effectAtRank(0.4, 5)), 5);
   });
 
-  it('applies Hellfire rank 1: +50% radius, +30% damage, -15% speed', () => {
+  it('applies Hellfire rank 1: +50% radius AND blast radius, +30% damage, -15% speed', () => {
     const m = buildSpellModifiers(new Map([['fire.fireball', 1], ['fire.hellfire', 1]]));
     const e = effectAtRank(1.0, 1);
     expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * (1 + 0.5 * e), 5);
+    expect(m.fireball.blastRadius).toBeCloseTo(FIREBALL_RADIUS * (1 + 0.5 * e), 5);
     expect(m.fireball.damageMin).toBeCloseTo(80 * (1 + 0.3 * e), 5);
     expect(m.fireball.damageMax).toBeCloseTo(120 * (1 + 0.3 * e), 5);
     expect(m.fireball.speed).toBeCloseTo(FIREBALL_SPEED * (1 - 0.15 * e), 5);
   });
 
-  it('stacks Volatile Ember rank 3 + Hellfire rank 2', () => {
+  it('stacks Volatile Ember + Hellfire: blast radius gets both, projectile only hellfire', () => {
     const m = buildSpellModifiers(new Map([
       ['fire.fireball', 1], ['fire.volatile_ember', 3], ['fire.hellfire', 2],
     ]));
-    const veBonus = 1 + effectAtRank(0.4, 3);
     const hfE = effectAtRank(1.0, 2);
     const hfBonus = 1 + 0.5 * hfE;
-    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * veBonus * hfBonus, 5);
+    const veBonus = 1 + effectAtRank(0.4, 3);
+    expect(m.fireball.radius).toBeCloseTo(FIREBALL_RADIUS * hfBonus, 5);
+    expect(m.fireball.blastRadius).toBeCloseTo(FIREBALL_RADIUS * hfBonus * veBonus, 5);
   });
 
   it('applies Seeking Flame rank 3: accelerating homing strength', () => {
