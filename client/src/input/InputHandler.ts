@@ -29,6 +29,11 @@ export class InputHandler {
     if (e.code === 'Digit2') this.activeSpell = (2 + this.spellOffset) as SpellId;
     if (e.code === 'Digit3') this.activeSpell = (3 + this.spellOffset) as SpellId;
     if (e.code === 'Digit4') this.activeSpell = (4 + this.spellOffset) as SpellId;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      const mobilitySpell = (4 + this.spellOffset) as SpellId;
+      this.pendingCast = { spell: mobilitySpell, aimTarget: this.mouseWorld };
+    }
   };
 
   private onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.code); };
