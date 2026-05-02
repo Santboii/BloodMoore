@@ -1,8 +1,8 @@
 export type Vec2 = { x: number; y: number };
 
-export type SpellId = 1 | 2 | 3 | 4;
+export type SpellId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
-export type ProjectileType = 'fireball';
+export type ProjectileType = 'fireball' | 'arrow';
 
 export type Segment = { x1: number; y1: number; x2: number; y2: number };
 
@@ -53,12 +53,23 @@ export type MeteorState = {
   moltenImpact?: boolean;
 };
 
+export type RainOfArrowsState = {
+  id: string;
+  ownerId: string;
+  target: Vec2;
+  radius: number;
+  strikeAt: number;
+  sustained?: boolean;
+  piercing?: boolean;
+};
+
 export type GameState = {
   tick: number;
   players: Record<string, PlayerState>;
   projectiles: Projectile[];
   fireWalls: FireWallState[];
   meteors: MeteorState[];
+  rainOfArrows: RainOfArrowsState[];
   phase: 'waiting' | 'countdown' | 'dueling' | 'ended';
   winner: string | null;
   gameMode: GameModeType;
@@ -110,11 +121,26 @@ export const FIREWALL_DAMAGE_PER_TICK = 40 / TICK_RATE;
 export const METEOR_DELAY_TICKS = Math.round(1.5 * TICK_RATE); // 90
 export const METEOR_AOE_RADIUS = 60; // world units
 
+export const ARROW_SPEED = 560;
+export const ARROW_RADIUS = 6;
+export const MULTISHOT_SPREAD_3 = Math.PI / 12;
+export const MULTISHOT_SPREAD_5 = Math.PI / 9;
+export const RAIN_DELAY_TICKS = Math.round(1.5 * TICK_RATE);
+export const RAIN_AOE_RADIUS = 70;
+export const RAIN_SUSTAINED_TICKS = 3 * TICK_RATE;
+export const RAIN_DAMAGE_PER_TICK = 30 / TICK_RATE;
+export const EVADE_RANGE = 300;
+export const EVADE_INVULN_TICKS = Math.round(0.3 * TICK_RATE);
+
 export const SPELL_CONFIG: Record<SpellId, { manaCost: number; cooldownTicks: number }> = {
-  1: { manaCost: 25,  cooldownTicks: 30  },  // 0.5s
-  2: { manaCost: 60,  cooldownTicks: 180 },  // 3s
-  3: { manaCost: 100, cooldownTicks: 300 },  // 5s
-  4: { manaCost: 40,  cooldownTicks: 0   },  // teleport — mana-gated, no cooldown timer
+  1: { manaCost: 25,  cooldownTicks: 30  },
+  2: { manaCost: 60,  cooldownTicks: 180 },
+  3: { manaCost: 100, cooldownTicks: 300 },
+  4: { manaCost: 40,  cooldownTicks: 0   },
+  5: { manaCost: 20,  cooldownTicks: 24  },
+  6: { manaCost: 50,  cooldownTicks: 120 },
+  7: { manaCost: 80,  cooldownTicks: 240 },
+  8: { manaCost: 30,  cooldownTicks: 90  },
 };
 
 export const TELEPORT_MAX_RANGE = 600;

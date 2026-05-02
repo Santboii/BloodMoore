@@ -40,7 +40,7 @@ export function makeInitialState(
       teamId: teamLookup[p.id],
     };
   }
-  return { tick: 0, players: playerMap, projectiles: [], fireWalls: [], meteors: [], phase: 'dueling', winner: null, gameMode: mode?.type ?? '1v1', teams };
+  return { tick: 0, players: playerMap, projectiles: [], fireWalls: [], meteors: [], rainOfArrows: [], phase: 'dueling', winner: null, gameMode: mode?.type ?? '1v1', teams };
 }
 
 export function advanceState(
@@ -246,7 +246,7 @@ export function advanceState(
     winner = result.winner;
   }
 
-  return { tick: tick + 1, players, projectiles, fireWalls, meteors: survivingMeteors, phase, winner, gameMode: state.gameMode, teams: state.teams };
+  return { tick: tick + 1, players, projectiles, fireWalls, meteors: survivingMeteors, rainOfArrows: [], phase, winner, gameMode: state.gameMode, teams: state.teams };
 }
 
 function deepCopyPlayers(players: Record<string, PlayerState>): Record<string, PlayerState> {
