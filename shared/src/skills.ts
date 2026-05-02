@@ -4,9 +4,15 @@ export type NodeId =
   | 'fire.enduring_flames' | 'fire.searing_heat' | 'fire.meteor'
   | 'fire.molten_impact' | 'fire.blind_strike'
   | 'utility.teleport' | 'utility.phase_shift'
-  | 'utility.ethereal_form' | 'utility.phantom_step';
+  | 'utility.ethereal_form' | 'utility.phantom_step'
+  | 'archer.power_shot' | 'archer.guided' | 'archer.multishot'
+  | 'archer.homing' | 'archer.barrage' | 'archer.rain_of_arrows'
+  | 'archer.sustained_rain' | 'archer.piercing_rain'
+  | 'archer.burn' | 'archer.freeze' | 'archer.poison'
+  | 'archer_utility.evade' | 'archer_utility.combat_roll'
+  | 'archer_utility.shadowstep' | 'archer_utility.acrobatics';
 
-export type SkillTree = 'fire' | 'lightning' | 'frost' | 'utility';
+export type SkillTree = 'fire' | 'lightning' | 'frost' | 'utility' | 'archer' | 'archer_utility';
 
 export type StackableConfig = {
   softCap: number;
@@ -24,7 +30,7 @@ export type SkillNode = {
   stackable?: StackableConfig;
 };
 
-export type Gate = { requiresAll?: NodeId[]; requiresAny?: NodeId[] };
+export type Gate = { requiresAll?: NodeId[]; requiresAny?: NodeId[]; mutuallyExclusive?: NodeId[] };
 
 export const GATES: Partial<Record<NodeId, Gate>> = {
   'fire.volatile_ember':  { requiresAll: ['fire.fireball'] },
@@ -40,6 +46,21 @@ export const GATES: Partial<Record<NodeId, Gate>> = {
   'utility.phase_shift':   { requiresAll: ['utility.teleport'] },
   'utility.ethereal_form': { requiresAll: ['utility.teleport'] },
   'utility.phantom_step':  { requiresAll: ['utility.teleport'], requiresAny: ['utility.phase_shift', 'utility.ethereal_form'] },
+  // Archer tree
+  'archer.guided':          { requiresAll: ['archer.power_shot'] },
+  'archer.multishot':       { requiresAll: ['archer.power_shot'] },
+  'archer.homing':          { requiresAll: ['archer.guided'] },
+  'archer.barrage':         { requiresAll: ['archer.multishot'] },
+  'archer.rain_of_arrows':  { requiresAll: ['archer.power_shot'], requiresAny: ['archer.homing', 'archer.barrage'] },
+  'archer.sustained_rain':  { requiresAll: ['archer.rain_of_arrows'] },
+  'archer.piercing_rain':   { requiresAll: ['archer.rain_of_arrows'] },
+  'archer.burn':            { requiresAll: ['archer.rain_of_arrows'], requiresAny: ['archer.sustained_rain', 'archer.piercing_rain'], mutuallyExclusive: ['archer.freeze', 'archer.poison'] },
+  'archer.freeze':          { requiresAll: ['archer.rain_of_arrows'], requiresAny: ['archer.sustained_rain', 'archer.piercing_rain'], mutuallyExclusive: ['archer.burn', 'archer.poison'] },
+  'archer.poison':          { requiresAll: ['archer.rain_of_arrows'], requiresAny: ['archer.sustained_rain', 'archer.piercing_rain'], mutuallyExclusive: ['archer.burn', 'archer.freeze'] },
+  // Archer utility tree
+  'archer_utility.combat_roll': { requiresAll: ['archer_utility.evade'] },
+  'archer_utility.shadowstep':  { requiresAll: ['archer_utility.evade'] },
+  'archer_utility.acrobatics':  { requiresAll: ['archer_utility.evade'], requiresAny: ['archer_utility.combat_roll', 'archer_utility.shadowstep'] },
 };
 
 export function canUnlock(id: NodeId, owned: { has(id: NodeId): boolean }): boolean {
@@ -47,6 +68,7 @@ export function canUnlock(id: NodeId, owned: { has(id: NodeId): boolean }): bool
   if (!gate) return true;
   if (gate.requiresAll && !gate.requiresAll.every(r => owned.has(r))) return false;
   if (gate.requiresAny && !gate.requiresAny.some(r => owned.has(r))) return false;
+  if (gate.mutuallyExclusive && gate.mutuallyExclusive.some(r => owned.has(r))) return false;
   return true;
 }
 
@@ -66,6 +88,23 @@ export const SKILL_NODES: SkillNode[] = [
   { id: 'utility.phase_shift',  name: 'Phase Shift',     tree: 'utility', tier: 2, cost: 2, isSpell: false, description: '+8% teleport range per rank.', stackable: { softCap: 5, baseEffect: 0.08 } },
   { id: 'utility.ethereal_form',name: 'Ethereal Form',   tree: 'utility', tier: 2, cost: 2, isSpell: false, description: '0.5s invulnerability after teleporting.' },
   { id: 'utility.phantom_step', name: 'Phantom Step',    tree: 'utility', tier: 3, cost: 3, isSpell: false, description: 'Next cast is instant within 2s of teleporting.' },
+  // Archer tree
+  { id: 'archer.power_shot',      name: 'Power Shot',      tree: 'archer', tier: 1, cost: 1, isSpell: true,  description: 'Fast arrow projectile. 60–90 damage.' },
+  { id: 'archer.guided',          name: 'Guided',          tree: 'archer', tier: 2, cost: 1, isSpell: false, description: 'Power Shot gains slight homing.' },
+  { id: 'archer.multishot',       name: 'Multi-shot',      tree: 'archer', tier: 2, cost: 2, isSpell: true,  description: 'Fire 3 arrows in a spread. 40–60 damage each.' },
+  { id: 'archer.homing',          name: 'Homing',          tree: 'archer', tier: 3, cost: 2, isSpell: false, description: 'Power Shot gains strong tracking.' },
+  { id: 'archer.barrage',         name: 'Barrage',         tree: 'archer', tier: 3, cost: 2, isSpell: false, description: 'Multi-shot fires 5 arrows instead of 3.' },
+  { id: 'archer.rain_of_arrows',  name: 'Rain of Arrows',  tree: 'archer', tier: 4, cost: 2, isSpell: true,  description: 'Mark a zone. Arrows rain after 1.5s. 150–220 AoE damage.' },
+  { id: 'archer.sustained_rain',  name: 'Sustained Rain',  tree: 'archer', tier: 5, cost: 1, isSpell: false, description: '+50% Rain of Arrows duration (ticking damage zone).' },
+  { id: 'archer.piercing_rain',   name: 'Piercing Rain',   tree: 'archer', tier: 5, cost: 2, isSpell: false, description: 'Rain arrows hit twice (2× effective damage).' },
+  { id: 'archer.burn',            name: 'Burn',            tree: 'archer', tier: 6, cost: 3, isSpell: false, description: 'All arrows inflict 30 damage over 3s.' },
+  { id: 'archer.freeze',          name: 'Freeze',          tree: 'archer', tier: 6, cost: 3, isSpell: false, description: 'All arrows inflict 30% slow for 2s.' },
+  { id: 'archer.poison',          name: 'Poison',          tree: 'archer', tier: 6, cost: 3, isSpell: false, description: 'All arrows inflict 20 damage over 5s, reduce mana regen 30%.' },
+  // Archer utility tree
+  { id: 'archer_utility.evade',        name: 'Evade',        tree: 'archer_utility', tier: 1, cost: 1, isSpell: true,  description: 'Short dash with invulnerability frames (~0.3s).' },
+  { id: 'archer_utility.combat_roll',  name: 'Combat Roll',  tree: 'archer_utility', tier: 2, cost: 2, isSpell: false, description: 'Fire an arrow at the nearest enemy during evade.' },
+  { id: 'archer_utility.shadowstep',   name: 'Shadowstep',   tree: 'archer_utility', tier: 2, cost: 2, isSpell: false, description: 'Become invisible for 0.5s after evading.' },
+  { id: 'archer_utility.acrobatics',   name: 'Acrobatics',   tree: 'archer_utility', tier: 3, cost: 3, isSpell: false, description: 'Evade cooldown reduced 40%. Can store 2 charges.' },
 ];
 
 export const HELLFIRE_RADIUS_RATIO = 0.5;
