@@ -288,10 +288,12 @@ export function advanceState(
           if (player.hp <= 0) continue;
           const dx = player.position.x - moved.position.x;
           const dy = player.position.y - moved.position.y;
-          if (dx * dx + dy * dy > (blastRadius + PLAYER_HALF_SIZE) ** 2) continue;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > blastRadius + PLAYER_HALF_SIZE) continue;
           const invuln = (player.invulnUntil ?? 0) > tick;
           if (!invuln) {
-            players[pid] = { ...player, hp: Math.max(0, player.hp - fireballDamage(moved) * getDamageMultiplier(moved.ownerId, pid, players, resolvedMode)) };
+            const falloff = 1 - Math.min(dist / blastRadius, 1);
+            players[pid] = { ...player, hp: Math.max(0, player.hp - fireballDamage(moved) * falloff * getDamageMultiplier(moved.ownerId, pid, players, resolvedMode)) };
           }
         }
         if ((moved.split ?? 0) > 0) {
