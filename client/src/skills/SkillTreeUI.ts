@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { SKILL_NODES, GATES, canUnlock, NodeId, SkillNode, isStackable, rankUpCost } from '@arena/shared';
+import { SKILL_NODES, GATES, canUnlock, NodeId, SkillNode, isStackable, rankUpCost, effectAtRank } from '@arena/shared';
 
 const NODE_ICONS: Record<NodeId, string> = {
   'fire.fireball':        'fa-fire',
@@ -98,6 +98,9 @@ const STYLES = `
 .st-confirm-yes:hover{background:linear-gradient(180deg,#9a1a00 0%,#6a1200 60%,#4a0a00 100%);}
 .st-confirm-no{padding:9px 24px;background:#1a1208;border:1px solid #3a2710;color:#c8a870;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;cursor:pointer;border-radius:2px;transition:all 0.15s;}
 .st-confirm-no:hover{border-color:#c8860a;color:#ddb84a;}
+.st-node-rank{position:absolute;bottom:2px;font-family:'Cinzel',serif;font-size:0.52rem;font-weight:700;color:#ddb84a;text-shadow:0 0 4px rgba(0,0,0,0.8);pointer-events:none;}
+.st-ring{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+.st-ring circle{fill:none;stroke-linecap:round;}
 `;
 
 export class SkillTreeUI {
@@ -204,6 +207,30 @@ export class SkillTreeUI {
     this.attachNodeListeners(pts);
   }
 
+  private renderRing(node: SkillNode, currentRank: number, size: number): string {
+    if (!isStackable(node) || currentRank === 0) return '';
+    const softCap = node.stackable!.softCap;
+    const maxDisplay = Math.max(softCap + 3, currentRank);
+    const r = (size - 4) / 2;
+    const circumference = 2 * Math.PI * r;
+    const segmentArc = circumference / maxDisplay;
+    const gap = 2;
+
+    let segments = '';
+    for (let i = 0; i < currentRank; i++) {
+      const offset = circumference - (i * segmentArc);
+      const dashLen = segmentArc - gap;
+      const color = i < softCap ? '#e86020' : '#ddb84a';
+      segments += `<circle cx="${size / 2}" cy="${size / 2}" r="${r}"
+        stroke="${color}" stroke-width="2.5" stroke-opacity="0.85"
+        stroke-dasharray="${dashLen} ${circumference - dashLen}"
+        stroke-dashoffset="${offset}"
+        transform="rotate(-90 ${size / 2} ${size / 2})"/>`;
+    }
+
+    return `<svg class="st-ring" viewBox="0 0 ${size} ${size}">${segments}</svg>`;
+  }
+
   private renderNode(node: SkillNode, pts: number, pos: NodePos | undefined): string {
     if (!pos) return '';
     const currentRank = this.ranks.get(node.id) ?? 0;
@@ -224,10 +251,18 @@ export class SkillTreeUI {
       costText = `${node.cost} pt${node.cost > 1 ? 's' : ''}`;
     }
 
+    const circleSize = node.isSpell ? 58 : 44;
+    const ring = this.renderRing(node, currentRank, circleSize);
+    const rankBadge = (isStackable(node) && currentRank > 0)
+      ? `<span class="st-node-rank">${currentRank}</span>`
+      : '';
+
     return `<div class="st-node ${stateClass} ${spellClass}" data-id="${node.id}" data-state="${state}"
       style="left:${pos.x}%;top:${pos.y}px;">
-      <div class="st-node-circle ${sizeClass}">
+      <div class="st-node-circle ${sizeClass}" style="position:relative;">
+        ${ring}
         <i class="fa ${icon} fa-fw st-node-icon" style="font-size:${node.isSpell ? '1.25rem' : '1.05rem'}"></i>
+        ${rankBadge}
       </div>
       <div class="st-node-name">${esc(node.name)}</div>
       <div class="st-node-cost">${costText}</div>
@@ -276,12 +311,25 @@ export class SkillTreeUI {
       const node = SKILL_NODES.find(n => n.id === id)!;
 
       el.addEventListener('mouseenter', e => {
-        const isOwned = this.ranks.has(id);
-        const canBuy = !isOwned && canUnlock(id, this.ranks) && pts >= node.cost;
+        const currentRank = this.ranks.get(id) ?? 0;
+        const isOwned = currentRank > 0;
+        const canBuyFirst = !isOwned && canUnlock(id, this.ranks) && pts >= node.cost;
         const gateBlocked = !isOwned && !canUnlock(id, this.ranks);
 
         let statusLine = '';
-        if (isOwned) {
+        let rankLine = '';
+        if (isOwned && isStackable(node)) {
+          const softCap = node.stackable!.softCap;
+          const nextCost = rankUpCost(node, currentRank);
+          const pastCap = currentRank >= softCap;
+          rankLine = `<span style="color:#c8a870;font-size:0.6rem">Rank ${currentRank} / ${softCap}</span><br>`;
+          if (pts >= nextCost) {
+            const costColor = pastCap ? '#ddb84a' : '#c8860a';
+            statusLine = `<span style="color:${costColor};font-size:0.6rem">Next rank: ${nextCost} pt${nextCost > 1 ? 's' : ''}${pastCap ? ' (past cap)' : ''}</span>`;
+          } else {
+            statusLine = '<span style="color:#884020;font-size:0.6rem">Not enough points for next rank</span>';
+          }
+        } else if (isOwned) {
           statusLine = '<span style="color:#90a870;font-size:0.6rem">Owned</span>';
         } else if (gateBlocked) {
           const gate = GATES[id];
@@ -304,17 +352,18 @@ export class SkillTreeUI {
             }
           }
           statusLine = `<span style="color:#884020;font-size:0.6rem">Requires: ${esc(missing.join(', '))}</span>`;
-        } else if (canBuy) {
+        } else if (canBuyFirst) {
           statusLine = '<span style="color:#60a840;font-size:0.6rem">Click to unlock</span>';
         } else {
           statusLine = '<span style="color:#884020;font-size:0.6rem">Not enough points</span>';
         }
 
+        const costDisplay = isOwned ? '' : `<span style="color:#7a6030;font-size:0.6rem">Cost: ${node.cost} pt${node.cost > 1 ? 's' : ''}</span><br>`;
+
         tooltip.innerHTML = `
           <strong style="color:#ddb84a">${esc(node.name)}</strong><br>
           <span style="color:#c8a870">${esc(node.description)}</span><br>
-          <span style="color:#7a6030;font-size:0.6rem">Cost: ${node.cost} pt${node.cost > 1 ? 's' : ''}</span><br>
-          ${statusLine}
+          ${rankLine}${costDisplay}${statusLine}
         `;
         tooltip.style.display = 'block';
         const me = e as MouseEvent;
