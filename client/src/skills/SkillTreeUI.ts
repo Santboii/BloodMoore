@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { SKILL_NODES, GATES, canUnlock, NodeId, SkillNode } from '@arena/shared';
+import { SKILL_NODES, GATES, canUnlock, NodeId, SkillNode, isStackable, rankUpCost } from '@arena/shared';
 
 const NODE_ICONS: Record<NodeId, string> = {
   'fire.fireball':        'fa-fire',
@@ -102,7 +102,7 @@ const STYLES = `
 
 export class SkillTreeUI {
   private el: HTMLElement;
-  private owned = new Set<NodeId>();
+  private ranks = new Map<NodeId, number>();
   private characterId: string | null = null;
   private skillPoints = 0;
   private charName = '';
@@ -141,23 +141,19 @@ export class SkillTreeUI {
 
     const { data } = await supabase
       .from('skill_unlocks')
-      .select('node_id')
+      .select('node_id, rank')
       .eq('character_id', this.characterId);
-    this.owned = new Set((data ?? []).map((r: { node_id: string }) => r.node_id as NodeId));
+    this.ranks = new Map(
+      (data ?? []).map((r: { node_id: string; rank: number }) => [r.node_id as NodeId, r.rank ?? 1])
+    );
 
-    if (!this.owned.has('fire.fireball')) {
-      const { error } = await supabase.rpc('unlock_skill_node', {
+    if (!this.ranks.has('fire.fireball')) {
+      await supabase.rpc('unlock_skill_node', {
         p_character_id: this.characterId,
         p_node_id: 'fire.fireball',
         p_cost: 0,
       });
-      if (error) {
-        await supabase.from('skill_unlocks').insert({
-          character_id: this.characterId,
-          node_id: 'fire.fireball',
-        });
-      }
-      this.owned.add('fire.fireball');
+      this.ranks.set('fire.fireball', 1);
     }
 
     this.render();
@@ -210,14 +206,23 @@ export class SkillTreeUI {
 
   private renderNode(node: SkillNode, pts: number, pos: NodePos | undefined): string {
     if (!pos) return '';
-    const isOwned = this.owned.has(node.id);
-    const canBuy = !isOwned && canUnlock(node.id, this.owned) && pts >= node.cost;
-    const stateClass = isOwned ? 'st-node-owned' : (canBuy ? 'st-node-purchasable' : 'st-node-locked');
+    const currentRank = this.ranks.get(node.id) ?? 0;
+    const isOwned = currentRank > 0;
+    const canBuyFirst = !isOwned && canUnlock(node.id, this.ranks) && pts >= node.cost;
+    const canRankUp = isOwned && isStackable(node) && pts >= rankUpCost(node, currentRank);
+    const stateClass = isOwned ? 'st-node-owned' : (canBuyFirst ? 'st-node-purchasable' : 'st-node-locked');
     const spellClass = node.isSpell ? 'st-node-is-spell' : '';
     const sizeClass = node.isSpell ? 'st-node-spell' : 'st-node-mod';
     const icon = NODE_ICONS[node.id] ?? 'fa-star';
-    const state = isOwned ? 'owned' : (canBuy ? 'purchasable' : 'locked');
-    const costText = isOwned ? 'Owned' : `${node.cost} pt${node.cost > 1 ? 's' : ''}`;
+    const state = isOwned ? 'owned' : (canBuyFirst ? 'purchasable' : 'locked');
+    let costText: string;
+    if (isOwned && isStackable(node)) {
+      costText = `Rank ${currentRank}`;
+    } else if (isOwned) {
+      costText = 'Owned';
+    } else {
+      costText = `${node.cost} pt${node.cost > 1 ? 's' : ''}`;
+    }
 
     return `<div class="st-node ${stateClass} ${spellClass}" data-id="${node.id}" data-state="${state}"
       style="left:${pos.x}%;top:${pos.y}px;">
@@ -240,8 +245,8 @@ export class SkillTreeUI {
       const childPos = positions[node.id];
       if (!childPos) continue;
 
-      const isOwned = this.owned.has(node.id);
-      const canBuy = !isOwned && canUnlock(node.id, this.owned) && pts >= node.cost;
+      const isOwned = this.ranks.has(node.id);
+      const canBuy = !isOwned && canUnlock(node.id, this.ranks) && pts >= node.cost;
       const color = isOwned ? '#e86020' : (canBuy ? '#c8860a' : '#333');
       const opacity = isOwned ? 0.6 : (canBuy ? 0.4 : 0.3);
 
@@ -271,9 +276,9 @@ export class SkillTreeUI {
       const node = SKILL_NODES.find(n => n.id === id)!;
 
       el.addEventListener('mouseenter', e => {
-        const isOwned = this.owned.has(id);
-        const canBuy = !isOwned && canUnlock(id, this.owned) && pts >= node.cost;
-        const gateBlocked = !isOwned && !canUnlock(id, this.owned);
+        const isOwned = this.ranks.has(id);
+        const canBuy = !isOwned && canUnlock(id, this.ranks) && pts >= node.cost;
+        const gateBlocked = !isOwned && !canUnlock(id, this.ranks);
 
         let statusLine = '';
         if (isOwned) {
@@ -283,14 +288,14 @@ export class SkillTreeUI {
           const missing: string[] = [];
           if (gate?.requiresAll) {
             for (const req of gate.requiresAll) {
-              if (!this.owned.has(req)) {
+              if (!this.ranks.has(req)) {
                 const reqNode = SKILL_NODES.find(n => n.id === req);
                 if (reqNode) missing.push(reqNode.name);
               }
             }
           }
           if (gate?.requiresAny) {
-            const hasAny = gate.requiresAny.some(r => this.owned.has(r));
+            const hasAny = gate.requiresAny.some(r => this.ranks.has(r));
             if (!hasAny) {
               const names = gate.requiresAny
                 .map(r => SKILL_NODES.find(n => n.id === r)?.name)
@@ -326,8 +331,15 @@ export class SkillTreeUI {
       el.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
 
       el.addEventListener('click', () => {
-        const canBuy = !this.owned.has(id) && canUnlock(id, this.owned) && pts >= node.cost;
-        if (canBuy) this.handleUnlock(id, node.cost);
+        const currentRank = this.ranks.get(id) ?? 0;
+        const isOwned = currentRank > 0;
+        if (!isOwned) {
+          const canBuyFirst = canUnlock(id, this.ranks) && pts >= node.cost;
+          if (canBuyFirst) this.handleUnlock(id, node.cost);
+        } else if (isStackable(node)) {
+          const cost = rankUpCost(node, currentRank);
+          if (pts >= cost) this.handleRankUp(id, node, currentRank, cost);
+        }
       });
     });
   }
@@ -341,6 +353,26 @@ export class SkillTreeUI {
     });
     if (error) { console.error('Unlock failed:', error.message); return; }
     await this.reload();
+  }
+
+  private handleRankUp(id: NodeId, node: SkillNode, currentRank: number, cost: number): void {
+    const softCap = node.stackable!.softCap;
+    const pastCap = currentRank >= softCap;
+    const warning = pastCap ? ' (past soft cap)' : '';
+    this.showConfirm(
+      'Rank Up',
+      `${esc(node.name)}: Rank ${currentRank} → ${currentRank + 1}${warning}\nCost: ${cost} pt${cost > 1 ? 's' : ''}`,
+      async () => {
+        if (!this.characterId) return;
+        const { error } = await supabase.rpc('unlock_skill_node', {
+          p_character_id: this.characterId,
+          p_node_id: id,
+          p_cost: cost,
+        });
+        if (error) { console.error('Rank up failed:', error.message); return; }
+        await this.reload();
+      },
+    );
   }
 
   private handleRespec(): void {
