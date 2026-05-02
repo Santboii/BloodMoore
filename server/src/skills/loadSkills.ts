@@ -15,7 +15,7 @@ export async function loadSkillsForCharacter(
 
   const { data: charData, error: charErr } = await supabase
     .from('characters')
-    .select('id')
+    .select('id, class')
     .eq('id', characterId)
     .eq('user_id', user.id)
     .single();
@@ -32,7 +32,8 @@ export async function loadSkillsForCharacter(
   const skills = new Map<NodeId, number>(
     (data ?? []).map((row: { node_id: string; rank: number }) => [row.node_id as NodeId, row.rank ?? 1])
   );
-  if (!skills.has('fire.fireball')) skills.set('fire.fireball', 1);
+  const defaultSkill: NodeId = charData.class === 'amazon' ? 'archer.power_shot' : 'fire.fireball';
+  if (!skills.has(defaultSkill)) skills.set(defaultSkill, 1);
   return { ok: true, userId: user.id, skills };
 }
 
