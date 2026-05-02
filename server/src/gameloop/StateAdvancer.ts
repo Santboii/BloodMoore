@@ -282,7 +282,7 @@ export function advanceState(
       }
 
       if (directHit || expired) {
-        const blastRadius = (moved.radius ?? FIREBALL_RADIUS) * 3;
+        const blastRadius = (moved.radius ?? FIREBALL_RADIUS) * 7;
         for (const [pid, player] of Object.entries(players)) {
           if (pid === moved.ownerId) continue;
           if (player.hp <= 0) continue;
