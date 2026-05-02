@@ -96,7 +96,7 @@ export class SpellRenderer {
         const len = Math.sqrt(dx * dx + dz * dz);
         if (len > 0) { dirX = dx / len; dirZ = dz / len; }
       }
-      this.particles.emitTrail(wx, wy, wz, dirX, dirZ);
+      this.particles.emitTrail(wx, wy, wz, dirX, dirZ, fb.radius ?? 10);
       this.prevFireballPositions.set(fb.id, { x: wx, y: wy, z: wz, radius: fb.blastRadius ?? fb.radius ?? 10 });
     }
   }

@@ -83,27 +83,29 @@ export class ParticleSystem {
     scene.add(this.points);
   }
 
-  emitTrail(x: number, y: number, z: number, dirX: number, dirZ: number): void {
+  emitTrail(x: number, y: number, z: number, dirX: number, dirZ: number, radius = 10): void {
     if (this.activeCount >= SOFT_CAP) return;
-    const count = 3 + Math.floor(Math.random() * 3);
+    const scale = radius / 10;
+    const count = Math.min(12, Math.floor((3 + Math.floor(Math.random() * 3)) * scale));
+    const spread = 4 * scale;
     for (let i = 0; i < count; i++) {
       if (this.activeCount >= POOL_SIZE) return;
       this.spawn(
-        x + (Math.random() - 0.5) * 4,
-        y + (Math.random() - 0.5) * 4,
-        z + (Math.random() - 0.5) * 4,
-        -dirX * (40 + Math.random() * 30) + (Math.random() - 0.5) * 30,
-        10 + Math.random() * 20,
-        -dirZ * (40 + Math.random() * 30) + (Math.random() - 0.5) * 30,
+        x + (Math.random() - 0.5) * spread,
+        y + (Math.random() - 0.5) * spread,
+        z + (Math.random() - 0.5) * spread,
+        -dirX * (40 + Math.random() * 30) * scale + (Math.random() - 0.5) * 30,
+        (10 + Math.random() * 20) * scale,
+        -dirZ * (40 + Math.random() * 30) * scale + (Math.random() - 0.5) * 30,
         0.35 + Math.random() * 0.15,
-        12 + Math.random() * 4,
+        (12 + Math.random() * 4) * scale,
       );
     }
   }
 
   emitExplosion(x: number, y: number, z: number, radius = 10): void {
     const scale = radius / 10;
-    const count = Math.floor((40 + Math.floor(Math.random() * 21)) * scale);
+    const count = Math.min(200, Math.floor((40 + Math.floor(Math.random() * 21)) * scale));
     const spread = 6 * scale;
     for (let i = 0; i < count; i++) {
       if (this.activeCount >= POOL_SIZE) return;
@@ -117,7 +119,7 @@ export class ParticleSystem {
         (20 + Math.random() * 80) * scale,
         Math.sin(theta) * speed,
         0.5 + Math.random() * 0.3,
-        Math.random() > 0.5 ? 16 : 10,
+        (Math.random() > 0.5 ? 16 : 10) * Math.min(scale, 3),
       );
     }
   }
