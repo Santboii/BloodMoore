@@ -1,7 +1,7 @@
 import {
   GameState, PlayerState, InputFrame, Vec2, SpellId, NodeId,
   SPELL_CONFIG, MAX_HP, MAX_MANA, MANA_REGEN_PER_TICK,
-  FIREWALL_DAMAGE_PER_TICK, FIREWALL_MAX_LENGTH, TELEPORT_MAX_RANGE, METEOR_AOE_RADIUS,
+  FIREWALL_DAMAGE_PER_TICK, FIREWALL_MAX_LENGTH, TELEPORT_MAX_RANGE, METEOR_AOE_RADIUS, FIREBALL_RADIUS, PLAYER_HALF_SIZE,
   DUEL_MODE,
   ARROW_SPEED, EVADE_RANGE, EVADE_INVULN_TICKS,
   MULTISHOT_SPREAD_3, MULTISHOT_SPREAD_5,
@@ -269,29 +269,45 @@ export function advanceState(
       if (!hit) survivingProjectiles.push(moved);
     } else {
       const moved = advanceFireball(proj, enemyEntry?.[1].position);
-      if (isFireballExpired(moved)) continue;
-      let hit = false;
-      for (const [pid, player] of Object.entries(players)) {
-        if (fireballHitsPlayer(moved, player.position, pid)) {
+      const expired = isFireballExpired(moved);
+      let directHit = false;
+
+      if (!expired) {
+        for (const [pid, player] of Object.entries(players)) {
+          if (fireballHitsPlayer(moved, player.position, pid)) {
+            directHit = true;
+            break;
+          }
+        }
+      }
+
+      if (directHit || expired) {
+        const blastRadius = (moved.radius ?? FIREBALL_RADIUS) * 3;
+        for (const [pid, player] of Object.entries(players)) {
+          if (pid === moved.ownerId) continue;
+          if (player.hp <= 0) continue;
+          const dx = player.position.x - moved.position.x;
+          const dy = player.position.y - moved.position.y;
+          if (dx * dx + dy * dy > (blastRadius + PLAYER_HALF_SIZE) ** 2) continue;
           const invuln = (player.invulnUntil ?? 0) > tick;
           if (!invuln) {
             players[pid] = { ...player, hp: Math.max(0, player.hp - fireballDamage(moved) * getDamageMultiplier(moved.ownerId, pid, players, resolvedMode)) };
           }
-          hit = true;
         }
-      }
-      if (hit && (moved.split ?? 0) > 0) {
-        const angles = [-0.4, 0, 0.4];
-        for (const offset of angles) {
-          const baseAngle = Math.atan2(moved.velocity.y, moved.velocity.x) + offset;
-          const spd = Math.sqrt(moved.velocity.x ** 2 + moved.velocity.y ** 2);
-          newProjectiles.push(spawnFireball(moved.ownerId, moved.position, {
-            x: moved.position.x + Math.cos(baseAngle) * 100,
-            y: moved.position.y + Math.sin(baseAngle) * 100,
-          }, { speed: spd, radius: moved.radius, damageMin: moved.damageMin, damageMax: moved.damageMax }));
+        if ((moved.split ?? 0) > 0) {
+          const angles = [-0.4, 0, 0.4];
+          for (const offset of angles) {
+            const baseAngle = Math.atan2(moved.velocity.y, moved.velocity.x) + offset;
+            const spd = Math.sqrt(moved.velocity.x ** 2 + moved.velocity.y ** 2);
+            newProjectiles.push(spawnFireball(moved.ownerId, moved.position, {
+              x: moved.position.x + Math.cos(baseAngle) * 100,
+              y: moved.position.y + Math.sin(baseAngle) * 100,
+            }, { speed: spd, radius: moved.radius, damageMin: moved.damageMin, damageMax: moved.damageMax }));
+          }
         }
+      } else {
+        survivingProjectiles.push(moved);
       }
-      if (!hit) survivingProjectiles.push(moved);
     }
   }
   projectiles = [...survivingProjectiles, ...newProjectiles];
