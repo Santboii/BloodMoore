@@ -6,6 +6,11 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const CLASS_ICONS: Record<string, string> = {
+  mage: `<svg viewBox="0 0 32 32" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="8" r="5" stroke="#a478e8" stroke-width="1.5" fill="rgba(106,58,204,0.25)"/><circle cx="16" cy="8" r="2" fill="#c8a0ff" opacity="0.8"/><line x1="16" y1="13" x2="16" y2="30" stroke="#a478e8" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="12" x2="16" y2="15" stroke="#a478e8" stroke-width="1.2" stroke-linecap="round"/><line x1="20" y1="12" x2="16" y2="15" stroke="#a478e8" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+  amazon: `<svg viewBox="0 0 32 32" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 4 C8 4 6 16 8 28" stroke="#c8a870" stroke-width="1.8" stroke-linecap="round" fill="none"/><line x1="8" y1="4" x2="8" y2="28" stroke="#c8a870" stroke-width="1" opacity="0.6"/><line x1="8" y1="16" x2="28" y2="16" stroke="#e8d8b0" stroke-width="1.5" stroke-linecap="round"/><polygon points="28,16 24,14 24,18" fill="#c8a870"/></svg>`,
+};
+
 export type CharacterSelectCallbacks = {
   onSelectCharacter: (character: CharacterRecord) => void;
   onLogout: () => void;
@@ -25,7 +30,8 @@ const STYLES = `
 .cs-slot-empty{align-items:center;justify-content:center;border-style:dashed;border-top-style:dashed;}
 .cs-slot-empty:hover{background:rgba(20,14,4,0.95);}
 .cs-char-name{font-family:'Cinzel',serif;font-size:18px;color:#d4a840;margin-bottom:4px;}
-.cs-char-class{font-family:'Cinzel',serif;font-size:10px;color:#7a5a20;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+.cs-char-class{font-family:'Cinzel',serif;font-size:10px;color:#7a5a20;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.cs-char-class svg{flex-shrink:0;}
 .cs-char-level{font-size:13px;color:#8a7040;margin-bottom:8px;}
 .cs-xp-bar{width:100%;height:6px;background:#1a1208;border:1px solid #3a2710;border-radius:1px;overflow:hidden;margin-bottom:8px;}
 .cs-xp-fill{height:100%;background:linear-gradient(90deg,#c8860a,#e8a020);transition:width 0.3s;}
@@ -42,7 +48,8 @@ const STYLES = `
 .cs-input::placeholder{color:#3a2a08;}
 .cs-input:focus{border-color:#c8860a;box-shadow:0 0 10px rgba(200,130,10,0.25);}
 .cs-class-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:20px;}
-.cs-class-option{padding:12px;background:rgba(4,4,12,0.9);border:1px solid rgba(40,28,6,0.8);color:#5a4a20;font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:1px;text-align:center;transition:all 0.15s;}
+.cs-class-option{padding:12px;background:rgba(4,4,12,0.9);border:1px solid rgba(40,28,6,0.8);color:#5a4a20;font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:1px;text-align:center;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.cs-class-option svg{flex-shrink:0;}
 .cs-class-option.active{background:rgba(22,14,0,0.95);border-color:#c8860a;color:#ffcc66;box-shadow:0 0 10px rgba(200,130,10,0.2);}
 .cs-class-option.disabled{opacity:0.4;cursor:not-allowed;position:relative;}
 .cs-class-option.disabled::after{content:'Coming Soon';position:absolute;top:50%;right:12px;transform:translateY(-50%);font-size:9px;color:#5a4010;}
@@ -103,7 +110,7 @@ export class CharacterSelectUI {
       return `
         <div class="cs-slot" data-index="${i}">
           <div class="cs-char-name">${esc(char.name)}</div>
-          <div class="cs-char-class">${esc(char.class)}</div>
+          <div class="cs-char-class">${CLASS_ICONS[char.class] ?? ''} ${esc(char.class)}</div>
           <div class="cs-char-level">Level ${char.level}</div>
           <div class="cs-xp-bar"><div class="cs-xp-fill" style="width:${xpPercent}%"></div></div>
           <div class="cs-xp-text">${char.xp} / ${xpNeeded} XP</div>
@@ -161,7 +168,7 @@ export class CharacterSelectUI {
     const classOptions = CHARACTER_CLASSES.map(c => {
       const activeClass = c.id === 'mage' ? 'active' : '';
       const disabledClass = !c.enabled ? 'disabled' : '';
-      return `<div class="cs-class-option ${activeClass} ${disabledClass}" data-class="${c.id}">${esc(c.label)}</div>`;
+      return `<div class="cs-class-option ${activeClass} ${disabledClass}" data-class="${c.id}">${CLASS_ICONS[c.id] ?? ''} ${esc(c.label)}</div>`;
     }).join('');
 
     this.ui.innerHTML = `
