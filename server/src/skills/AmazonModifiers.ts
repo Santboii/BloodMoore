@@ -97,7 +97,7 @@ export function buildAmazonModifiers(skills: Map<string, number>): AmazonSpellMo
       homingTickReduction: homingRank > 0 ? Math.floor(effectAtRank(2, homingRank)) : 0,
     },
     multishot: {
-      arrowCount: 3 + (barrageRank > 0 ? Math.floor(effectAtRank(1, barrageRank)) : 0),
+      arrowCount: 3 + (barrageRank > 0 ? Math.floor(effectAtRank(2, barrageRank)) : 0),
       damageMin: 40,
       damageMax: 60,
     },

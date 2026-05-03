@@ -32,15 +32,15 @@ describe('buildAmazonModifiers', () => {
     expect(m.arrow.homingTickReduction).toBeGreaterThan(0);
   });
 
-  it('applies barrage rank 1: 4 arrows', () => {
+  it('applies barrage rank 1: 5 arrows', () => {
     const m = buildAmazonModifiers(new Map([['archer.power_shot', 1], ['archer.multishot', 1], ['archer.barrage', 1]]));
-    expect(m.multishot.arrowCount).toBe(4);
+    expect(m.multishot.arrowCount).toBe(5);
   });
 
   it('applies barrage rank 3: scales with diminishing returns', () => {
     const m = buildAmazonModifiers(new Map([['archer.power_shot', 1], ['archer.multishot', 1], ['archer.barrage', 3]]));
-    expect(m.multishot.arrowCount).toBeGreaterThan(4);
-    expect(m.multishot.arrowCount).toBeLessThanOrEqual(6);
+    expect(m.multishot.arrowCount).toBeGreaterThan(5);
+    expect(m.multishot.arrowCount).toBeLessThanOrEqual(8);
   });
 
   it('applies sustained_rain with duration multiplier', () => {
