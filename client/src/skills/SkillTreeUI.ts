@@ -10,6 +10,7 @@ const NODE_ICONS: Record<NodeId, string> = {
   'fire.fire_wall':       'fa-fire-flame-simple',
   'fire.enduring_flames': 'fa-hourglass-half',
   'fire.searing_heat':    'fa-temperature-high',
+  'fire.inferno_expanse': 'fa-expand',
   'fire.meteor':          'fa-meteor',
   'fire.molten_impact':   'fa-burst',
   'fire.blind_strike':    'fa-eye-slash',

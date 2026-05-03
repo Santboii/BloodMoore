@@ -269,7 +269,8 @@ export class LobbyUI {
     const prefilledCode = new URLSearchParams(window.location.search).get('room') ?? '';
     const hasProfile = username !== undefined || points !== undefined;
     const mageStaffSvg = `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="8" r="5" stroke="#a478e8" stroke-width="1.5" fill="rgba(106,58,204,0.25)"/><circle cx="16" cy="8" r="2" fill="#c8a0ff" opacity="0.8"/><line x1="16" y1="13" x2="16" y2="30" stroke="#a478e8" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="12" x2="16" y2="15" stroke="#a478e8" stroke-width="1.2" stroke-linecap="round"/><line x1="20" y1="12" x2="16" y2="15" stroke="#a478e8" stroke-width="1.2" stroke-linecap="round"/></svg>`;
-    const classIcon: Record<string, string> = { mage: mageStaffSvg };
+    const amazonBowSvg = `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 4 C8 4 6 16 8 28" stroke="#c8a870" stroke-width="1.8" stroke-linecap="round" fill="none"/><line x1="8" y1="4" x2="8" y2="28" stroke="#c8a870" stroke-width="1" opacity="0.6"/><line x1="8" y1="16" x2="28" y2="16" stroke="#e8d8b0" stroke-width="1.5" stroke-linecap="round"/><polygon points="28,16 24,14 24,18" fill="#c8a870"/></svg>`;
+    const classIcon: Record<string, string> = { mage: mageStaffSvg, amazon: amazonBowSvg };
     const icon = classIcon[charClass ?? ''] ?? '⚔';
     const profileBarHtml = hasProfile
       ? `<div class="bm-char-card">
