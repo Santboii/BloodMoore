@@ -14,6 +14,7 @@ const NODE_ICONS: Record<NodeId, string> = {
   'fire.meteor':          'fa-meteor',
   'fire.molten_impact':   'fa-burst',
   'fire.blind_strike':    'fa-eye-slash',
+  'fire.cataclysm':       'fa-up-right-and-down-left-from-center',
   'utility.teleport':     'fa-wand-magic',
   'utility.phase_shift':  'fa-maximize',
   'utility.ethereal_form':'fa-ghost',
@@ -26,6 +27,7 @@ const NODE_ICONS: Record<NodeId, string> = {
   'archer.rain_of_arrows':      'fa-cloud-rain',
   'archer.sustained_rain':      'fa-hourglass-half',
   'archer.piercing_rain':       'fa-bolt',
+  'archer.wide_rain':           'fa-up-right-and-down-left-from-center',
   'archer.burn':                'fa-fire',
   'archer.freeze':              'fa-snowflake',
   'archer.poison':              'fa-skull-crossbones',
@@ -48,11 +50,13 @@ const FIRE_POSITIONS: Partial<Record<NodeId, NodePos>> = {
   'fire.hellfire':        { x: 30, y: 180 },
   'fire.pyroclasm':       { x: 70, y: 180 },
   'fire.fire_wall':       { x: 50, y: 270 },
-  'fire.enduring_flames': { x: 30, y: 360 },
-  'fire.searing_heat':    { x: 70, y: 360 },
+  'fire.enduring_flames': { x: 20, y: 360 },
+  'fire.searing_heat':    { x: 50, y: 360 },
+  'fire.inferno_expanse': { x: 80, y: 360 },
   'fire.meteor':          { x: 50, y: 450 },
-  'fire.molten_impact':   { x: 30, y: 540 },
-  'fire.blind_strike':    { x: 70, y: 540 },
+  'fire.molten_impact':   { x: 20, y: 540 },
+  'fire.blind_strike':    { x: 50, y: 540 },
+  'fire.cataclysm':       { x: 80, y: 540 },
 };
 
 const UTIL_POSITIONS: Partial<Record<NodeId, NodePos>> = {
@@ -69,8 +73,9 @@ const ARCHER_POSITIONS: Partial<Record<NodeId, NodePos>> = {
   'archer.homing':          { x: 30, y: 180 },
   'archer.barrage':         { x: 70, y: 180 },
   'archer.rain_of_arrows':  { x: 50, y: 270 },
-  'archer.sustained_rain':  { x: 30, y: 360 },
-  'archer.piercing_rain':   { x: 70, y: 360 },
+  'archer.sustained_rain':  { x: 20, y: 360 },
+  'archer.piercing_rain':   { x: 50, y: 360 },
+  'archer.wide_rain':       { x: 80, y: 360 },
   'archer.burn':            { x: 25, y: 450 },
   'archer.freeze':          { x: 50, y: 450 },
   'archer.poison':          { x: 75, y: 450 },
@@ -125,7 +130,7 @@ const STYLES = `
 .st-util-label{font-size:0.58rem;letter-spacing:0.22em;color:#5a4420;text-transform:uppercase;text-align:center;margin-bottom:12px;}
 .st-util-container{position:relative;width:100%;max-width:600px;height:250px;}
 .st-util-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
-.st-tooltip{display:none;position:fixed;background:#1a1208;border:1px solid #3a2710;padding:10px 14px;border-radius:2px;max-width:220px;font-size:0.68rem;line-height:1.5;color:#c8a870;z-index:300;pointer-events:none;}
+.st-tooltip{display:none;position:fixed;background:#1a1208;border:1px solid #3a2710;padding:14px 18px;border-radius:2px;max-width:300px;font-size:0.88rem;line-height:1.6;color:#c8a870;z-index:300;pointer-events:none;}
 .st-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:400;}
 .st-confirm-panel{background:linear-gradient(160deg,rgba(16,12,6,0.98),rgba(8,6,2,0.99));border:1px solid #5a3010;border-top:2px solid rgba(200,134,10,0.6);border-radius:2px;padding:28px 32px;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.8);}
 .st-confirm-title{font-family:'Cinzel',serif;font-size:1rem;color:#ddb84a;letter-spacing:0.1em;margin-bottom:8px;}

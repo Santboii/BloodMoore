@@ -1,9 +1,9 @@
 import { supabase } from '../supabase.ts';
-import type { NodeId } from '@arena/shared';
+import type { NodeId, CharacterClass } from '@arena/shared';
 import { XP_PER_MATCH_BASE, XP_PER_MATCH_WIN_BONUS } from '@arena/shared';
 
 export type SkillLoadResult =
-  | { ok: true; userId: string; skills: Map<NodeId, number> }
+  | { ok: true; userId: string; skills: Map<NodeId, number>; charClass: CharacterClass }
   | { ok: false; error: string };
 
 export async function loadSkillsForCharacter(
@@ -32,9 +32,10 @@ export async function loadSkillsForCharacter(
   const skills = new Map<NodeId, number>(
     (data ?? []).map((row: { node_id: string; rank: number }) => [row.node_id as NodeId, row.rank ?? 1])
   );
-  const defaultSkill: NodeId = charData.class === 'amazon' ? 'archer.power_shot' : 'fire.fireball';
+  const charClass = charData.class as CharacterClass;
+  const defaultSkill: NodeId = charClass === 'amazon' ? 'archer.power_shot' : 'fire.fireball';
   if (!skills.has(defaultSkill)) skills.set(defaultSkill, 1);
-  return { ok: true, userId: user.id, skills };
+  return { ok: true, userId: user.id, skills, charClass };
 }
 
 export type MatchCreditResult = {

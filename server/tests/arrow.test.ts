@@ -30,13 +30,13 @@ describe('advanceArrow', () => {
     const enemy = { x: 100, y: 200 };
     const moved = advanceArrow(arrow, enemy);
     expect(moved.velocity.y).toBe(0);
-    expect(moved.homing).toBe(27);
+    expect(moved.homing).toBe(29);
   });
 
   it('guided arrow (homing=1) snaps toward enemy after countdown', () => {
     let arrow = spawnArrow('p1', { x: 100, y: 100 }, { x: 200, y: 100 }, { homing: 1 });
     const enemy = { x: 100, y: 300 };
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < 30; i++) {
       arrow = advanceArrow(arrow, enemy);
     }
     expect(arrow.homing).toBe(-1);
@@ -46,10 +46,28 @@ describe('advanceArrow', () => {
     expect(Math.abs(angle - toEnemy)).toBeLessThan(0.1);
   });
 
-  it('homing arrow (homing=2) redirects sooner than guided', () => {
-    let arrow = spawnArrow('p1', { x: 100, y: 100 }, { x: 200, y: 100 }, { homing: 2 });
+  it('guided arrow with 2 redirects snaps twice', () => {
+    let arrow = spawnArrow('p1', { x: 100, y: 100 }, { x: 500, y: 100 }, { homing: 1, guidedRedirects: 2 });
     const enemy = { x: 100, y: 300 };
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 30; i++) {
+      arrow = advanceArrow(arrow, enemy);
+    }
+    expect(arrow.homing).toBe(30);
+    expect(arrow.homingRedirects).toBe(0);
+    expect(arrow.velocity.y).toBeGreaterThan(0);
+
+    for (let i = 0; i < 30; i++) {
+      arrow = advanceArrow(arrow, enemy);
+    }
+    expect(arrow.homing).toBe(-1);
+    expect(arrow.homingRedirects).toBe(0);
+  });
+
+  it('homingTickReduction reduces redirect interval', () => {
+    let arrow = spawnArrow('p1', { x: 100, y: 100 }, { x: 500, y: 100 }, { homing: 1, homingTickReduction: 10 });
+    expect(arrow.homing).toBe(20);
+    const enemy = { x: 100, y: 300 };
+    for (let i = 0; i < 20; i++) {
       arrow = advanceArrow(arrow, enemy);
     }
     expect(arrow.homing).toBe(-1);

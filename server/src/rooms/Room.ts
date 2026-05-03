@@ -1,5 +1,5 @@
 import { GameState, InputFrame, SPAWN_POSITIONS, NodeId, DUEL_MODE } from '@arena/shared';
-import type { GameModeConfig } from '@arena/shared';
+import type { GameModeConfig, CharacterClass } from '@arena/shared';
 import { makeInitialState, advanceState, PlayerInit } from '../gameloop/StateAdvancer.ts';
 
 export type RoomPlayer = { socketId: string; displayName: string; ready: boolean; colorIndex: number };
@@ -16,6 +16,7 @@ export class Room {
   players: Map<string, RoomPlayer> = new Map(); // socketId -> RoomPlayer
   teamAssignments: Map<string, string> = new Map(); // socketId -> teamId
   skillSets: Map<string, Map<NodeId, number>> = new Map();
+  charClasses: Map<string, CharacterClass> = new Map();
   userIds: Map<string, string> = new Map();
   characterIds: Map<string, string> = new Map();
   state: GameState | null = null;
@@ -49,6 +50,7 @@ export class Room {
     this.players.delete(socketId);
     this.teamAssignments.delete(socketId);
     this.skillSets.delete(socketId);
+    this.charClasses.delete(socketId);
     this.userIds.delete(socketId);
     this.characterIds.delete(socketId);
   }
@@ -63,6 +65,7 @@ export class Room {
     const inits: PlayerInit[] = entries.map(([id, p], i) => ({
       id,
       displayName: p.displayName,
+      charClass: this.charClasses.get(id) ?? 'mage',
       spawnPos: this.mode.spawnPositions[i],
     }));
     let teams: Record<string, string[]> | undefined;
@@ -162,6 +165,13 @@ export class Room {
     if (skills) {
       this.skillSets.delete(oldSocketId);
       this.skillSets.set(newSocketId, skills);
+    }
+
+    // Remap charClasses
+    const cls = this.charClasses.get(oldSocketId);
+    if (cls) {
+      this.charClasses.delete(oldSocketId);
+      this.charClasses.set(newSocketId, cls);
     }
 
     // Remap teamAssignments

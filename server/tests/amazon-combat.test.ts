@@ -12,8 +12,8 @@ describe('Amazon combat integration', () => {
 
   it('Power Shot spawns an arrow projectile', () => {
     const state = makeInitialState([
-      { id: 'p1', displayName: 'Amazon', spawnPos: { x: 200, y: 1000 } },
-      { id: 'p2', displayName: 'Mage', spawnPos: { x: 1800, y: 1000 } },
+      { id: 'p1', displayName: 'Amazon', charClass: 'amazon', spawnPos: { x: 200, y: 1000 } },
+      { id: 'p2', displayName: 'Mage', charClass: 'mage', spawnPos: { x: 1800, y: 1000 } },
     ]);
     const inputs: Record<string, InputFrame> = {
       p1: { move: { x: 0, y: 0 }, castSpell: 5, aimTarget: { x: 1800, y: 1000 } },
@@ -27,8 +27,8 @@ describe('Amazon combat integration', () => {
 
   it('Multi-shot spawns 3 arrow projectiles', () => {
     const state = makeInitialState([
-      { id: 'p1', displayName: 'Amazon', spawnPos: { x: 200, y: 1000 } },
-      { id: 'p2', displayName: 'Mage', spawnPos: { x: 1800, y: 1000 } },
+      { id: 'p1', displayName: 'Amazon', charClass: 'amazon', spawnPos: { x: 200, y: 1000 } },
+      { id: 'p2', displayName: 'Mage', charClass: 'mage', spawnPos: { x: 1800, y: 1000 } },
     ]);
     const inputs: Record<string, InputFrame> = {
       p1: { move: { x: 0, y: 0 }, castSpell: 6, aimTarget: { x: 1800, y: 1000 } },
@@ -46,8 +46,8 @@ describe('Amazon combat integration', () => {
       ['archer.rain_of_arrows' as NodeId, 1],
     ]);
     const state = makeInitialState([
-      { id: 'p1', displayName: 'Amazon', spawnPos: { x: 200, y: 1000 } },
-      { id: 'p2', displayName: 'Mage', spawnPos: { x: 1800, y: 1000 } },
+      { id: 'p1', displayName: 'Amazon', charClass: 'amazon', spawnPos: { x: 200, y: 1000 } },
+      { id: 'p2', displayName: 'Mage', charClass: 'mage', spawnPos: { x: 1800, y: 1000 } },
     ]);
     const inputs: Record<string, InputFrame> = {
       p1: { move: { x: 0, y: 0 }, castSpell: 7, aimTarget: { x: 1000, y: 1000 } },
@@ -64,8 +64,8 @@ describe('Amazon combat integration', () => {
       ['archer_utility.evade' as NodeId, 1],
     ]);
     const state = makeInitialState([
-      { id: 'p1', displayName: 'Amazon', spawnPos: { x: 500, y: 1000 } },
-      { id: 'p2', displayName: 'Mage', spawnPos: { x: 1800, y: 1000 } },
+      { id: 'p1', displayName: 'Amazon', charClass: 'amazon', spawnPos: { x: 500, y: 1000 } },
+      { id: 'p2', displayName: 'Mage', charClass: 'mage', spawnPos: { x: 1800, y: 1000 } },
     ]);
     const inputs: Record<string, InputFrame> = {
       p1: { move: { x: 0, y: 0 }, castSpell: 8, aimTarget: { x: 800, y: 1000 } },
@@ -78,8 +78,8 @@ describe('Amazon combat integration', () => {
 
   it('Amazon cannot cast Fireball (spell 1)', () => {
     const state = makeInitialState([
-      { id: 'p1', displayName: 'Amazon', spawnPos: { x: 200, y: 1000 } },
-      { id: 'p2', displayName: 'Mage', spawnPos: { x: 1800, y: 1000 } },
+      { id: 'p1', displayName: 'Amazon', charClass: 'amazon', spawnPos: { x: 200, y: 1000 } },
+      { id: 'p2', displayName: 'Mage', charClass: 'mage', spawnPos: { x: 1800, y: 1000 } },
     ]);
     const inputs: Record<string, InputFrame> = {
       p1: { move: { x: 0, y: 0 }, castSpell: 1, aimTarget: { x: 1800, y: 1000 } },

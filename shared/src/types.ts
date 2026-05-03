@@ -6,9 +6,12 @@ export type ProjectileType = 'fireball' | 'arrow';
 
 export type Segment = { x1: number; y1: number; x2: number; y2: number };
 
+export type CharacterClass = 'mage' | 'amazon';
+
 export type PlayerState = {
   id: string;
   displayName: string;
+  charClass: CharacterClass;
   position: Vec2;
   hp: number;
   mana: number;
@@ -18,6 +21,9 @@ export type PlayerState = {
   invulnUntil?: number;
   phantomStepUntil?: number;
   teleported?: Vec2;
+  evadeOrigin?: Vec2;
+  evadeTarget?: Vec2;
+  evadeEndTick?: number;
   teamId?: string;
 };
 
@@ -32,6 +38,8 @@ export type Projectile = {
   damageMin?: number;
   damageMax?: number;
   homing?: number;
+  homingRedirects?: number;
+  homingInterval?: number;
   split?: number;
 };
 
@@ -50,6 +58,7 @@ export type MeteorState = {
   ownerId: string;
   target: Vec2;
   strikeAt: number;
+  aoeRadius: number;
   hidden?: boolean;
   moltenImpact?: boolean;
 };
@@ -126,12 +135,13 @@ export const ARROW_SPEED = 560;
 export const ARROW_RADIUS = 6;
 export const MULTISHOT_SPREAD_3 = Math.PI / 12;
 export const MULTISHOT_SPREAD_5 = Math.PI / 9;
-export const RAIN_DELAY_TICKS = Math.round(1.5 * TICK_RATE);
+export const RAIN_DELAY_TICKS = Math.round(0.75 * TICK_RATE);
 export const RAIN_AOE_RADIUS = 70;
 export const RAIN_SUSTAINED_TICKS = 3 * TICK_RATE;
 export const RAIN_DAMAGE_PER_TICK = 30 / TICK_RATE;
 export const EVADE_RANGE = 300;
-export const EVADE_INVULN_TICKS = Math.round(0.3 * TICK_RATE);
+export const EVADE_DURATION_TICKS = Math.round(0.15 * TICK_RATE);
+export const EVADE_INVULN_TICKS = EVADE_DURATION_TICKS;
 
 export const SPELL_CONFIG: Record<SpellId, { manaCost: number; cooldownTicks: number }> = {
   1: { manaCost: 25,  cooldownTicks: 30  },
@@ -139,7 +149,7 @@ export const SPELL_CONFIG: Record<SpellId, { manaCost: number; cooldownTicks: nu
   3: { manaCost: 100, cooldownTicks: 300 },
   4: { manaCost: 40,  cooldownTicks: 120 },
   5: { manaCost: 20,  cooldownTicks: 24  },
-  6: { manaCost: 50,  cooldownTicks: 120 },
+  6: { manaCost: 50,  cooldownTicks: 24  },
   7: { manaCost: 80,  cooldownTicks: 240 },
   8: { manaCost: 30,  cooldownTicks: 90  },
 };

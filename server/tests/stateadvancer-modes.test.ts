@@ -6,10 +6,10 @@ import type { GameModeConfig } from '@arena/shared';
 function fourPlayerState(mode: GameModeConfig, teams?: Record<string, string[]>) {
   return makeInitialState(
     [
-      { id: 'p1', displayName: 'A', spawnPos: { x: 200, y: 1000 } },
-      { id: 'p2', displayName: 'B', spawnPos: { x: 1800, y: 1000 } },
-      { id: 'p3', displayName: 'C', spawnPos: { x: 1000, y: 200 } },
-      { id: 'p4', displayName: 'D', spawnPos: { x: 1000, y: 1800 } },
+      { id: 'p1', displayName: 'A', charClass: 'mage', spawnPos: { x: 200, y: 1000 } },
+      { id: 'p2', displayName: 'B', charClass: 'mage', spawnPos: { x: 1800, y: 1000 } },
+      { id: 'p3', displayName: 'C', charClass: 'mage', spawnPos: { x: 1000, y: 200 } },
+      { id: 'p4', displayName: 'D', charClass: 'mage', spawnPos: { x: 1000, y: 1800 } },
     ],
     mode,
     teams,

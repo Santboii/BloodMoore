@@ -11,10 +11,10 @@ type ArrowConfig = {
   damageMax?: number;
   homing?: number;
   homingTickReduction?: number;
+  guidedRedirects?: number;
 };
 
-const GUIDED_REDIRECT_TICKS = 28;
-const HOMING_REDIRECT_TICKS = 8;
+const GUIDED_REDIRECT_TICKS = 30;
 
 export function spawnArrow(
   ownerId: string,
@@ -27,9 +27,12 @@ export function spawnArrow(
   const dy = target.y - from.y;
   const len = Math.sqrt(dx * dx + dy * dy) || 1;
   let homingTicks = 0;
-  const reduction = cfg.homingTickReduction ?? 0;
-  if (cfg.homing === 2) homingTicks = Math.max(3, HOMING_REDIRECT_TICKS - reduction);
-  else if (cfg.homing === 1) homingTicks = Math.max(5, GUIDED_REDIRECT_TICKS - reduction);
+  let homingRedirects = 0;
+  if (cfg.homing === 1) {
+    const reduction = cfg.homingTickReduction ?? 0;
+    homingTicks = Math.max(10, GUIDED_REDIRECT_TICKS - reduction);
+    homingRedirects = Math.max(0, (cfg.guidedRedirects ?? 1) - 1);
+  }
   return {
     id: nextId(),
     ownerId,
@@ -40,6 +43,8 @@ export function spawnArrow(
     damageMin: cfg.damageMin ?? 60,
     damageMax: cfg.damageMax ?? 90,
     homing: homingTicks,
+    homingRedirects,
+    homingInterval: homingTicks,
   };
 }
 
@@ -47,24 +52,30 @@ export function advanceArrow(p: Projectile, enemyPos?: Vec2): Projectile {
   let vx = p.velocity.x;
   let vy = p.velocity.y;
   let homing = p.homing ?? 0;
+  let redirects = p.homingRedirects ?? 0;
 
   if (homing > 0) {
     homing--;
     if (homing === 0 && enemyPos) {
-      // Sharp single redirect toward enemy (D2 Guided Arrow style)
       const dx = enemyPos.x - p.position.x;
       const dy = enemyPos.y - p.position.y;
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
       const spd = Math.sqrt(vx * vx + vy * vy);
       vx = (dx / len) * spd;
       vy = (dy / len) * spd;
-      homing = -1;
+      if (redirects > 0) {
+        homing = p.homingInterval ?? GUIDED_REDIRECT_TICKS;
+        redirects--;
+      } else {
+        homing = -1;
+      }
     }
   }
 
   return {
     ...p,
     homing,
+    homingRedirects: redirects,
     velocity: { x: vx, y: vy },
     position: {
       x: p.position.x + vx * DELTA,

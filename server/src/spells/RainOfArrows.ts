@@ -6,6 +6,7 @@ const nextId = () => `rain_${++_id}`;
 type RainConfig = {
   sustained?: boolean;
   piercing?: boolean;
+  radiusMultiplier?: number;
 };
 
 export function spawnRainOfArrows(
@@ -18,7 +19,7 @@ export function spawnRainOfArrows(
     id: nextId(),
     ownerId,
     target: { ...target },
-    radius: RAIN_AOE_RADIUS,
+    radius: RAIN_AOE_RADIUS * (cfg.radiusMultiplier ?? 1),
     strikeAt: currentTick + RAIN_DELAY_TICKS,
     sustained: cfg.sustained,
     piercing: cfg.piercing,

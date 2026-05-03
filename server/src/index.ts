@@ -66,6 +66,7 @@ io.on('connection', socket => {
       const skillResult = await loadSkillsForCharacter(accessToken, characterId);
       if (skillResult.ok) {
         room.skillSets.set(socket.id, skillResult.skills);
+        room.charClasses.set(socket.id, skillResult.charClass);
         room.userIds.set(socket.id, skillResult.userId);
         room.characterIds.set(socket.id, characterId);
       }

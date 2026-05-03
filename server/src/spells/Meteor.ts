@@ -7,13 +7,14 @@ export function spawnMeteor(
   ownerId: string,
   target: Vec2,
   tick: number,
-  opts: { hidden?: boolean; moltenImpact?: boolean } = {},
+  opts: { hidden?: boolean; moltenImpact?: boolean; radiusMultiplier?: number } = {},
 ): MeteorState {
   return {
     id: nextId(),
     ownerId,
     target: { ...target },
     strikeAt: tick + METEOR_DELAY_TICKS,
+    aoeRadius: METEOR_AOE_RADIUS * (opts.radiusMultiplier ?? 1),
     hidden: opts.hidden,
     moltenImpact: opts.moltenImpact,
   };
@@ -27,7 +28,7 @@ export function meteorHitsPlayer(m: MeteorState, playerPos: Vec2, playerId: stri
   if (m.ownerId === playerId) return false;
   const dx = playerPos.x - m.target.x;
   const dy = playerPos.y - m.target.y;
-  return dx * dx + dy * dy <= METEOR_AOE_RADIUS ** 2;
+  return dx * dx + dy * dy <= m.aoeRadius ** 2;
 }
 
 export function meteorDamage(): number {

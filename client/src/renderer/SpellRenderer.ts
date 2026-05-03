@@ -1,19 +1,23 @@
 import * as THREE from 'three';
-import { GameState, METEOR_DELAY_TICKS, RAIN_DELAY_TICKS } from '@arena/shared';
+import { GameState, METEOR_DELAY_TICKS, METEOR_AOE_RADIUS, RAIN_DELAY_TICKS } from '@arena/shared';
 import { ParticleSystem } from './ParticleSystem';
 import { TeleportEffect } from './TeleportEffect';
 
 type MeteorEntry = { ring: THREE.Mesh; rock: THREE.Mesh; target: { x: number; y: number }; spawnTime: number };
 type ArrowEntry = { mesh: THREE.Group };
-type RainEntry = {
-  circle: THREE.Mesh;
-  target: { x: number; y: number };
-  radius: number;
+type RainArrowVisual = {
   arrowGroup: THREE.Group;
   arrowMaterial: THREE.MeshBasicMaterial;
   arrowPhases: number[];
   spawnTime: number;
 };
+
+type RainEntry = {
+  circle: THREE.Mesh;
+  target: { x: number; y: number };
+  radius: number;
+  spawnTime: number;
+} & RainArrowVisual;
 
 export type ArrowElement = 'none' | 'burn' | 'freeze' | 'poison';
 
@@ -30,6 +34,7 @@ export class SpellRenderer {
   private fireWalls = new Map<string, THREE.Group>();
   private meteors = new Map<string, MeteorEntry>();
   private rainOfArrows = new Map<string, RainEntry>();
+  private rainZoneArrows = new Map<string, RainArrowVisual>();
   private particles: ParticleSystem;
   private prevFireballPositions = new Map<string, { x: number; y: number; z: number; radius: number }>();
   private clock = new THREE.Clock();
@@ -43,6 +48,37 @@ export class SpellRenderer {
 
   setArrowElement(element: ArrowElement): void {
     this.arrowElement = element;
+  }
+
+  private createFallingArrows(cx: number, cz: number, radius: number, count = 16): RainArrowVisual {
+    const color = ELEMENT_COLORS[this.arrowElement];
+    const arrowGroup = new THREE.Group();
+    const arrowMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 });
+    const arrowPhases: number[] = [];
+    for (let i = 0; i < count; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * radius;
+      const shaft = new THREE.Mesh(new THREE.BoxGeometry(2, 14, 2), arrowMaterial);
+      shaft.position.set(Math.cos(theta) * r, 0, Math.sin(theta) * r);
+      shaft.rotation.x = (Math.random() - 0.5) * 0.3;
+      shaft.rotation.z = (Math.random() - 0.5) * 0.3;
+      arrowGroup.add(shaft);
+      arrowPhases.push(Math.random());
+    }
+    arrowGroup.position.set(cx, 0, cz);
+    this.scene.add(arrowGroup);
+    return { arrowGroup, arrowMaterial, arrowPhases, spawnTime: this.elapsedTime };
+  }
+
+  private updateFallingArrows(visual: RainArrowVisual): void {
+    const localTime = this.elapsedTime - visual.spawnTime;
+    const maxHeight = 250;
+    const fallDuration = 0.35;
+    const children = visual.arrowGroup.children;
+    for (let i = 0; i < visual.arrowPhases.length; i++) {
+      const fallProgress = ((localTime / fallDuration) + visual.arrowPhases[i]) % 1;
+      children[i].position.y = maxHeight * (1 - fallProgress);
+    }
   }
 
   private detectTeleports(state: GameState): void {
@@ -180,14 +216,23 @@ export class SpellRenderer {
     const activeIds = new Set(state.fireWalls.map(f => f.id));
 
     for (const [id, group] of this.fireWalls) {
-      if (!activeIds.has(id)) { this.scene.remove(group); this.fireWalls.delete(id); }
+      if (!activeIds.has(id)) {
+        this.scene.remove(group);
+        this.fireWalls.delete(id);
+        const rainVisual = this.rainZoneArrows.get(id);
+        if (rainVisual) {
+          this.scene.remove(rainVisual.arrowGroup);
+          this.rainZoneArrows.delete(id);
+        }
+      }
     }
 
     for (const fw of state.fireWalls) {
+      const isRainZone = fw.id.startsWith('rain_zone_');
+
       if (!this.fireWalls.has(fw.id)) {
         const group = new THREE.Group();
         if (fw.shape === 'circle' && fw.center && fw.radius) {
-          const isRainZone = fw.id.startsWith('rain_zone_');
           const disc = new THREE.Mesh(
             new THREE.CircleGeometry(fw.radius, 32),
             new THREE.MeshBasicMaterial({
@@ -200,6 +245,9 @@ export class SpellRenderer {
           disc.rotation.x = -Math.PI / 2;
           disc.position.set(fw.center.x, 1, fw.center.y);
           group.add(disc);
+          if (isRainZone) {
+            this.rainZoneArrows.set(fw.id, this.createFallingArrows(fw.center.x, fw.center.y, fw.radius, 12));
+          }
         } else {
           for (const seg of fw.segments) {
             const points = [
@@ -218,8 +266,9 @@ export class SpellRenderer {
       }
 
       if (fw.shape === 'circle' && fw.center && fw.radius) {
-        if (fw.id.startsWith('rain_zone_')) {
-          this.particles.emitRainZone(fw.center.x, fw.center.y, fw.radius);
+        if (isRainZone) {
+          const visual = this.rainZoneArrows.get(fw.id);
+          if (visual) this.updateFallingArrows(visual);
         } else {
           this.particles.emitCrater(fw.center.x, fw.center.y, fw.radius);
         }
@@ -243,15 +292,16 @@ export class SpellRenderer {
 
     for (const meteor of state.meteors) {
       if (!this.meteors.has(meteor.id)) {
+        const s = meteor.aoeRadius / METEOR_AOE_RADIUS;
         const ring = new THREE.Mesh(
-          new THREE.RingGeometry(50, 58, 32),
+          new THREE.RingGeometry(50 * s, 58 * s, 32),
           new THREE.MeshBasicMaterial({ color: 0xff2200, transparent: true, opacity: 0.6, side: THREE.DoubleSide }),
         );
         ring.rotation.x = -Math.PI / 2;
         ring.position.set(meteor.target.x, 2, meteor.target.y);
 
         const rock = new THREE.Mesh(
-          new THREE.SphereGeometry(25, 6, 6),
+          new THREE.SphereGeometry(25 * s, 6, 6),
           new THREE.MeshBasicMaterial({ color: 0xff4400 }),
         );
 
@@ -307,47 +357,22 @@ export class SpellRenderer {
         disc.position.set(rain.target.x, 1, rain.target.y);
         this.scene.add(disc);
 
-        const arrowGroup = new THREE.Group();
-        const arrowMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 });
-        const arrowPhases: number[] = [];
-        const arrowCount = 16;
-        for (let i = 0; i < arrowCount; i++) {
-          const theta = Math.random() * Math.PI * 2;
-          const r = Math.sqrt(Math.random()) * rain.radius;
-          const shaft = new THREE.Mesh(new THREE.BoxGeometry(2, 14, 2), arrowMaterial);
-          shaft.position.set(Math.cos(theta) * r, 0, Math.sin(theta) * r);
-          shaft.rotation.x = (Math.random() - 0.5) * 0.3;
-          shaft.rotation.z = (Math.random() - 0.5) * 0.3;
-          arrowGroup.add(shaft);
-          arrowPhases.push(Math.random());
-        }
-        arrowGroup.position.set(rain.target.x, 0, rain.target.y);
-        this.scene.add(arrowGroup);
+        const arrows = this.createFallingArrows(rain.target.x, rain.target.y, rain.radius);
+        arrows.arrowMaterial.opacity = 0;
 
         this.rainOfArrows.set(rain.id, {
           circle: disc,
           target: { ...rain.target },
           radius: rain.radius,
-          arrowGroup,
-          arrowMaterial,
-          arrowPhases,
-          spawnTime: this.elapsedTime,
+          ...arrows,
         });
       }
 
       const entry = this.rainOfArrows.get(rain.id)!;
       const t = Math.max(0, Math.min(1, 1 - (rain.strikeAt - state.tick) / RAIN_DELAY_TICKS));
       (entry.circle.material as THREE.MeshBasicMaterial).opacity = 0.12 + t * 0.23;
-
       entry.arrowMaterial.opacity = Math.min(1, t * 2);
-      const localTime = this.elapsedTime - entry.spawnTime;
-      const maxHeight = 250;
-      const fallDuration = 0.35;
-      const children = entry.arrowGroup.children;
-      for (let i = 0; i < entry.arrowPhases.length; i++) {
-        const fallProgress = ((localTime / fallDuration) + entry.arrowPhases[i]) % 1;
-        children[i].position.y = maxHeight * (1 - fallProgress);
-      }
+      this.updateFallingArrows(entry);
     }
   }
 
@@ -355,6 +380,8 @@ export class SpellRenderer {
     for (const mesh of this.fireballs.values()) this.scene.remove(mesh);
     for (const entry of this.arrows.values()) this.scene.remove(entry.mesh);
     for (const group of this.fireWalls.values()) this.scene.remove(group);
+    for (const visual of this.rainZoneArrows.values()) this.scene.remove(visual.arrowGroup);
+    this.rainZoneArrows.clear();
     for (const entry of this.meteors.values()) {
       this.scene.remove(entry.ring);
       this.scene.remove(entry.rock);

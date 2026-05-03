@@ -4,7 +4,7 @@ import { GameState, PlayerState } from '@arena/shared';
 
 function makeState(tick: number, px: number, py: number, id = 'p1'): GameState {
   const player: PlayerState = {
-    id, displayName: 'Test', position: { x: px, y: py },
+    id, displayName: 'Test', charClass: 'mage', position: { x: px, y: py },
     hp: 750, mana: 500, facing: 0, castingSpell: null, cooldowns: {},
   };
   return {

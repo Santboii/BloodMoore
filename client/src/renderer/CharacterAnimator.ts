@@ -62,9 +62,10 @@ export class CharacterAnimator {
 
   private transitionTo(state: AnimState): void {
     if (state === this.current) return;
+    const to = this.actions.get(state);
+    if (!to) return;
     const FADE = 0.2;
     this.actions.forEach(a => a.fadeOut(FADE));
-    const to = this.actions.get(state)!;
     to.reset().fadeIn(FADE).play();
     this.current = state;
   }

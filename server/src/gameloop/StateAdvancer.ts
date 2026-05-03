@@ -3,9 +3,10 @@ import {
   SPELL_CONFIG, MAX_HP, MAX_MANA, MANA_REGEN_PER_TICK,
   FIREWALL_DAMAGE_PER_TICK, FIREWALL_MAX_LENGTH, TELEPORT_MAX_RANGE, METEOR_AOE_RADIUS, FIREBALL_RADIUS, PLAYER_HALF_SIZE,
   DUEL_MODE,
-  ARROW_SPEED, EVADE_RANGE, EVADE_INVULN_TICKS,
+  ARROW_SPEED, EVADE_RANGE, EVADE_INVULN_TICKS, EVADE_DURATION_TICKS,
   RAIN_SUSTAINED_TICKS, RAIN_DAMAGE_PER_TICK,
 } from '@arena/shared';
+import type { CharacterClass } from '@arena/shared';
 import type { GameModeConfig, RainOfArrowsState } from '@arena/shared';
 import { movePlayer, clampToArena, resolvePlayerPillarCollisions } from '../physics/Movement.ts';
 import { spawnFireball, advanceFireball, isFireballExpired, fireballHitsPlayer, fireballDamage } from '../spells/Fireball.ts';
@@ -13,10 +14,10 @@ import { spawnFireWall, spawnFireCrater, fireWallDamagesPlayer } from '../spells
 import { spawnMeteor, meteorDetonates, meteorHitsPlayer, meteorDamage } from '../spells/Meteor.ts';
 import { buildSpellModifiers } from '../skills/SpellModifiers.ts';
 import { spawnArrow, advanceArrow, isArrowExpired, arrowHitsPlayer, arrowDamage } from '../spells/Arrow.ts';
-import { spawnRainOfArrows, rainDetonates, rainHitsPlayer, rainDamage } from '../spells/RainOfArrows.ts';
+import { spawnRainOfArrows, rainDetonates } from '../spells/RainOfArrows.ts';
 import { buildAmazonModifiers } from '../skills/AmazonModifiers.ts';
 
-export type PlayerInit = { id: string; displayName: string; spawnPos: Vec2 };
+export type PlayerInit = { id: string; displayName: string; charClass: CharacterClass; spawnPos: Vec2 };
 
 function getSpellNodeMap(skills: Map<NodeId, number>): Partial<Record<SpellId, NodeId>> {
   const isAmazon = skills.has('archer.power_shot' as NodeId);
@@ -54,6 +55,7 @@ export function makeInitialState(
     playerMap[p.id] = {
       id: p.id,
       displayName: p.displayName,
+      charClass: p.charClass,
       position: { ...p.spawnPos },
       hp: MAX_HP,
       mana: MAX_MANA,
@@ -85,6 +87,29 @@ export function advanceState(
     })
   );
 
+  const tick = state.tick;
+
+  // 0. Advance evade dashes
+  const dashing = new Set<string>();
+  for (const [id, p] of Object.entries(players)) {
+    if (p.evadeTarget && p.evadeOrigin && p.evadeEndTick != null) {
+      const startTick = p.evadeEndTick - EVADE_DURATION_TICKS;
+      const elapsed = tick - startTick + 1;
+      const t = Math.min(elapsed / EVADE_DURATION_TICKS, 1);
+      const nx = p.evadeOrigin.x + (p.evadeTarget.x - p.evadeOrigin.x) * t;
+      const ny = p.evadeOrigin.y + (p.evadeTarget.y - p.evadeOrigin.y) * t;
+      const done = tick + 1 >= p.evadeEndTick;
+      players[id] = {
+        ...p,
+        position: resolvePlayerPillarCollisions(clampToArena({ x: nx, y: ny })),
+        evadeOrigin: done ? undefined : p.evadeOrigin,
+        evadeTarget: done ? undefined : p.evadeTarget,
+        evadeEndTick: done ? undefined : p.evadeEndTick,
+      };
+      dashing.add(id);
+    }
+  }
+
   // 1. Move players and apply mana regen
   for (const [id, input] of Object.entries(inputs)) {
     const p = players[id];
@@ -101,7 +126,7 @@ export function advanceState(
     const phantomActive = (p.phantomStepUntil ?? 0) > state.tick;
     players[id] = {
       ...p,
-      position: movePlayer(p.position, input.move),
+      position: dashing.has(id) ? p.position : movePlayer(p.position, input.move),
       mana: newMana,
       facing: newFacing,
       cooldowns: newCooldowns,
@@ -115,11 +140,11 @@ export function advanceState(
   let fireWalls = [...state.fireWalls];
   let meteors = [...state.meteors];
   let rainOfArrows: RainOfArrowsState[] = [...state.rainOfArrows];
-  const tick = state.tick;
 
   for (const [id, input] of Object.entries(inputs)) {
     const p = players[id];
     if (!p || !input.castSpell) continue;
+    if (dashing.has(id)) continue;
     const spell = input.castSpell;
     const mods = modifiers[id];
 
@@ -162,14 +187,15 @@ export function advanceState(
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
       const perpX = -dy / len;
       const perpY = dx / len;
-      const half = FIREWALL_MAX_LENGTH / 2;
+      const half = FIREWALL_MAX_LENGTH * mods.firewall.lengthMultiplier / 2;
       const from = { x: input.aimTarget.x - perpX * half, y: input.aimTarget.y - perpY * half };
       const to = { x: input.aimTarget.x + perpX * half, y: input.aimTarget.y + perpY * half };
-      fireWalls = [...fireWalls, spawnFireWall(id, from, to, tick, mods.firewall.durationMultiplier)];
+      fireWalls = [...fireWalls, spawnFireWall(id, from, to, tick, mods.firewall.durationMultiplier, mods.firewall.lengthMultiplier)];
     } else if (spell === 3) {
       meteors = [...meteors, spawnMeteor(id, input.aimTarget, tick, {
         hidden: mods.meteor.hidden,
         moltenImpact: mods.meteor.moltenImpact,
+        radiusMultiplier: mods.meteor.radiusMultiplier,
       })];
     } else if (spell === 4) {
       const tMods = mods.teleport;
@@ -195,7 +221,8 @@ export function advanceState(
         damageMin: aMods.arrow.damageMin,
         damageMax: aMods.arrow.damageMax,
         homing: aMods.arrow.homing,
-        homingTickReduction: aMods.arrow.homing === 2 ? aMods.arrow.homingTickReduction : aMods.arrow.guidedTickReduction,
+        homingTickReduction: aMods.arrow.homingTickReduction,
+        guidedRedirects: aMods.arrow.guidedRedirects,
       });
       projectiles = [...projectiles, arrow];
     } else if (spell === 6) {
@@ -221,6 +248,7 @@ export function advanceState(
       rainOfArrows = [...rainOfArrows, spawnRainOfArrows(id, input.aimTarget, tick, {
         sustained: aMods.rain.sustained,
         piercing: aMods.rain.piercing,
+        radiusMultiplier: aMods.rain.radiusMultiplier,
       })];
     } else if (spell === 8) {
       const aMods = amazonMods[id];
@@ -232,10 +260,18 @@ export function advanceState(
       const clampedTarget = dist > range
         ? { x: p.position.x + (dx / dist) * range, y: p.position.y + (dy / dist) * range }
         : input.aimTarget;
-      const newPos = resolvePlayerPillarCollisions(clampToArena(clampedTarget));
+      const origin = { ...p.position };
+      const t0 = 1 / EVADE_DURATION_TICKS;
+      const firstPos = resolvePlayerPillarCollisions(clampToArena({
+        x: origin.x + (clampedTarget.x - origin.x) * t0,
+        y: origin.y + (clampedTarget.y - origin.y) * t0,
+      }));
       players[id] = {
         ...players[id],
-        position: newPos,
+        position: firstPos,
+        evadeOrigin: origin,
+        evadeTarget: clampedTarget,
+        evadeEndTick: tick + EVADE_DURATION_TICKS,
         invulnUntil: tick + EVADE_INVULN_TICKS,
       };
     }
@@ -315,16 +351,19 @@ export function advanceState(
   }
   projectiles = [...survivingProjectiles, ...newProjectiles];
 
-  // 4. Fire wall damage
+  // 4. Fire wall / rain zone damage
   fireWalls = fireWalls.filter(fw => tick < fw.expiresAt);
   for (const fw of fireWalls) {
-    const ownerMods = modifiers[fw.ownerId];
-    const dmgMultiplier = ownerMods?.firewall.damageMultiplier ?? 1;
+    const isRainZone = fw.id.startsWith('rain_zone_');
+    const widthMult = isRainZone ? 1 : (modifiers[fw.ownerId]?.firewall.widthMultiplier ?? 1);
     for (const [pid] of Object.entries(players)) {
-      if (fireWallDamagesPlayer(fw, players[pid].position, pid)) {
+      if (fireWallDamagesPlayer(fw, players[pid].position, pid, widthMult)) {
         const invuln = (players[pid].invulnUntil ?? 0) > tick;
         if (!invuln) {
-          players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - FIREWALL_DAMAGE_PER_TICK * dmgMultiplier * getDamageMultiplier(fw.ownerId, pid, players, resolvedMode)) };
+          const dmg = isRainZone
+            ? RAIN_DAMAGE_PER_TICK * (amazonMods[fw.ownerId]?.rain.damageMultiplier ?? 1)
+            : FIREWALL_DAMAGE_PER_TICK * (modifiers[fw.ownerId]?.firewall.damageMultiplier ?? 1);
+          players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - dmg * getDamageMultiplier(fw.ownerId, pid, players, resolvedMode)) };
         }
       }
     }
@@ -343,7 +382,7 @@ export function advanceState(
         }
       }
       if (m.moltenImpact) {
-        const crater = spawnFireCrater(m.ownerId, { ...m.target }, METEOR_AOE_RADIUS, tick, 180);
+        const crater = spawnFireCrater(m.ownerId, { ...m.target }, m.aoeRadius, tick, 180);
         fireWalls = [...fireWalls, crater];
       }
     } else {
@@ -351,32 +390,21 @@ export function advanceState(
     }
   }
 
-  // 5b. Rain of Arrows detonations
+  // 5b. Rain of Arrows detonations — creates a damage zone (no burst)
   const survivingRain: RainOfArrowsState[] = [];
   for (const rain of rainOfArrows) {
     if (rainDetonates(rain, tick)) {
       const ownerAMods = amazonMods[rain.ownerId];
-      const rainDmgMult = ownerAMods?.rain.damageMultiplier ?? 1;
-      for (const [pid] of Object.entries(players)) {
-        if (rainHitsPlayer(rain, players[pid].position, pid)) {
-          const invuln = (players[pid].invulnUntil ?? 0) > tick;
-          if (!invuln) {
-            players[pid] = { ...players[pid], hp: Math.max(0, players[pid].hp - rainDamage(rain.piercing ?? false) * rainDmgMult * getDamageMultiplier(rain.ownerId, pid, players, resolvedMode)) };
-          }
-        }
-      }
-      if (rain.sustained) {
-        const rainDurMult = ownerAMods?.rain.durationMultiplier ?? 1;
-        fireWalls = [...fireWalls, {
-          id: `rain_zone_${rain.id}`,
-          ownerId: rain.ownerId,
-          segments: [],
-          expiresAt: tick + Math.round(RAIN_SUSTAINED_TICKS * rainDurMult),
-          shape: 'circle' as const,
-          center: { ...rain.target },
-          radius: rain.radius,
-        }];
-      }
+      const rainDurMult = ownerAMods?.rain.durationMultiplier ?? 1;
+      fireWalls = [...fireWalls, {
+        id: `rain_zone_${rain.id}`,
+        ownerId: rain.ownerId,
+        segments: [],
+        expiresAt: tick + Math.round(RAIN_SUSTAINED_TICKS * rainDurMult),
+        shape: 'circle' as const,
+        center: { ...rain.target },
+        radius: rain.radius,
+      }];
     } else {
       survivingRain.push(rain);
     }
@@ -398,7 +426,14 @@ export function advanceState(
 function deepCopyPlayers(players: Record<string, PlayerState>): Record<string, PlayerState> {
   const copy: Record<string, PlayerState> = {};
   for (const [id, p] of Object.entries(players)) {
-    copy[id] = { ...p, position: { ...p.position }, cooldowns: { ...p.cooldowns }, teleported: undefined };
+    copy[id] = {
+      ...p,
+      position: { ...p.position },
+      cooldowns: { ...p.cooldowns },
+      teleported: undefined,
+      evadeOrigin: p.evadeOrigin ? { ...p.evadeOrigin } : undefined,
+      evadeTarget: p.evadeTarget ? { ...p.evadeTarget } : undefined,
+    };
   }
   return copy;
 }

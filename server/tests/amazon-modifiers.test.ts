@@ -26,9 +26,10 @@ describe('buildAmazonModifiers', () => {
     expect(m.arrow.homing).toBe(1);
   });
 
-  it('applies homing: homing=2', () => {
+  it('homing does not change homing mode — stays guided', () => {
     const m = buildAmazonModifiers(new Map([['archer.power_shot', 1], ['archer.guided', 1], ['archer.homing', 1]]));
-    expect(m.arrow.homing).toBe(2);
+    expect(m.arrow.homing).toBe(1);
+    expect(m.arrow.homingTickReduction).toBeGreaterThan(0);
   });
 
   it('applies barrage rank 1: 4 arrows', () => {
@@ -103,11 +104,11 @@ describe('buildAmazonModifiers', () => {
     expect(m.evade.cooldownMultiplier).toBeGreaterThan(0.5);
   });
 
-  it('guided rank scales tick reduction', () => {
+  it('guided rank scales redirects', () => {
     const m1 = buildAmazonModifiers(new Map([['archer.guided', 1]]));
     const m3 = buildAmazonModifiers(new Map([['archer.guided', 3]]));
-    expect(m1.arrow.guidedTickReduction).toBeGreaterThan(0);
-    expect(m3.arrow.guidedTickReduction).toBeGreaterThan(m1.arrow.guidedTickReduction);
+    expect(m1.arrow.guidedRedirects).toBe(1);
+    expect(m3.arrow.guidedRedirects).toBe(3);
   });
 
   it('homing rank scales tick reduction', () => {

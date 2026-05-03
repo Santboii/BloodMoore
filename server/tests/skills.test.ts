@@ -37,10 +37,10 @@ describe('canUnlock', () => {
     expect(canUnlock('fire.meteor', owned)).toBe(true);
   });
 
-  it('returns all 11 fire nodes + 4 utility nodes in SKILL_NODES', () => {
+  it('returns all 13 fire nodes + 4 utility nodes in SKILL_NODES', () => {
     const fire = SKILL_NODES.filter(n => n.tree === 'fire');
     const util = SKILL_NODES.filter(n => n.tree === 'utility');
-    expect(fire).toHaveLength(11);
+    expect(fire).toHaveLength(13);
     expect(util).toHaveLength(4);
   });
 });

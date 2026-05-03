@@ -14,10 +14,10 @@ import { canUnlock, SKILL_NODES, GATES } from '@arena/shared';
 import type { NodeId } from '@arena/shared';
 
 describe('Archer skill tree nodes', () => {
-  it('has 11 archer nodes and 4 archer_utility nodes', () => {
+  it('has 12 archer nodes and 4 archer_utility nodes', () => {
     const archer = SKILL_NODES.filter(n => n.tree === 'archer');
     const archerUtil = SKILL_NODES.filter(n => n.tree === 'archer_utility');
-    expect(archer).toHaveLength(11);
+    expect(archer).toHaveLength(12);
     expect(archerUtil).toHaveLength(4);
   });
 

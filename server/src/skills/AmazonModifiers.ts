@@ -7,7 +7,7 @@ export type ArrowModifiers = {
   damageMin: number;
   damageMax: number;
   homing: number;
-  guidedTickReduction: number;
+  guidedRedirects: number;
   homingTickReduction: number;
 };
 
@@ -22,6 +22,7 @@ export type RainModifiers = {
   durationMultiplier: number;
   piercing: boolean;
   damageMultiplier: number;
+  radiusMultiplier: number;
 };
 
 export type EvadeModifiers = {
@@ -67,14 +68,14 @@ export function buildAmazonModifiers(skills: Map<string, number>): AmazonSpellMo
   const has = (id: string) => rank(id) > 0;
 
   let homing = 0;
-  if (has('archer.homing')) homing = 2;
-  else if (has('archer.guided')) homing = 1;
+  if (has('archer.guided')) homing = 1;
 
   const guidedRank = rank('archer.guided');
   const homingRank = rank('archer.homing');
   const barrageRank = rank('archer.barrage');
   const sustainedRank = rank('archer.sustained_rain');
   const piercingRank = rank('archer.piercing_rain');
+  const wideRank = rank('archer.wide_rain');
   const acrobaticsRank = rank('archer_utility.acrobatics');
 
   let element: ElementType = 'none';
@@ -92,7 +93,7 @@ export function buildAmazonModifiers(skills: Map<string, number>): AmazonSpellMo
       damageMin: 60,
       damageMax: 90,
       homing,
-      guidedTickReduction: guidedRank > 0 ? Math.floor(effectAtRank(3, guidedRank)) : 0,
+      guidedRedirects: guidedRank,
       homingTickReduction: homingRank > 0 ? Math.floor(effectAtRank(2, homingRank)) : 0,
     },
     multishot: {
@@ -105,6 +106,7 @@ export function buildAmazonModifiers(skills: Map<string, number>): AmazonSpellMo
       durationMultiplier: sustainedRank > 0 ? 1 + effectAtRank(0.15, sustainedRank) : 1,
       piercing: has('archer.piercing_rain'),
       damageMultiplier: piercingRank > 0 ? 1 + effectAtRank(0.25, piercingRank) : 1,
+      radiusMultiplier: wideRank > 0 ? 1 + effectAtRank(0.15, wideRank) : 1,
     },
     evade: {
       range: EVADE_RANGE,

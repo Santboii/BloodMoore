@@ -1,4 +1,4 @@
-export type CharacterClass = 'mage' | 'amazon';
+import type { CharacterClass } from './types.js';
 
 export type CharacterRecord = {
   id: string;

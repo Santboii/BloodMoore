@@ -13,20 +13,21 @@ export function spawnFireWall(
   to: Vec2,
   currentTick: number,
   durationMultiplier = 1,
+  lengthMultiplier = 1,
 ): FireWallState {
   return {
     id: nextId(),
     ownerId,
-    segments: buildWallSegments(from, to),
+    segments: buildWallSegments(from, to, FIREWALL_MAX_LENGTH * lengthMultiplier),
     expiresAt: currentTick + Math.round(FIREWALL_DURATION_TICKS * durationMultiplier),
   };
 }
 
-export function buildWallSegments(from: Vec2, to: Vec2): Segment[] {
+export function buildWallSegments(from: Vec2, to: Vec2, maxLength = FIREWALL_MAX_LENGTH): Segment[] {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const len = Math.sqrt(dx * dx + dy * dy) || 1;
-  const clampedLen = Math.min(len, FIREWALL_MAX_LENGTH);
+  const clampedLen = Math.min(len, maxLength);
   const end: Vec2 = { x: from.x + (dx / len) * clampedLen, y: from.y + (dy / len) * clampedLen };
 
   const blocked: [number, number][] = [];
@@ -111,14 +112,14 @@ export function spawnFireCrater(
   };
 }
 
-export function fireWallDamagesPlayer(fw: FireWallState, playerPos: Vec2, playerId: string): boolean {
+export function fireWallDamagesPlayer(fw: FireWallState, playerPos: Vec2, playerId: string, widthMultiplier = 1): boolean {
   if (fw.ownerId === playerId) return false;
   if (fw.shape === 'circle' && fw.center && fw.radius) {
     const dx = playerPos.x - fw.center.x;
     const dy = playerPos.y - fw.center.y;
     return Math.sqrt(dx * dx + dy * dy) < fw.radius + PLAYER_HALF_SIZE;
   }
-  const threshold = PLAYER_HALF_SIZE + 8;
+  const threshold = PLAYER_HALF_SIZE + 8 * widthMultiplier;
   return fw.segments.some(seg => pointToSegmentDist(playerPos, seg) < threshold);
 }
 

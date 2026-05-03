@@ -5,8 +5,8 @@ import { spawnFireWall } from '../src/spells/FireWall.ts';
 
 function twoPlayerState() {
   return makeInitialState([
-    { id: 'p1', displayName: 'Alice', spawnPos: { x: 200, y: 1000 } },
-    { id: 'p2', displayName: 'Bob', spawnPos: { x: 1800, y: 1000 } },
+    { id: 'p1', displayName: 'Alice', charClass: 'mage', spawnPos: { x: 200, y: 1000 } },
+    { id: 'p2', displayName: 'Bob', charClass: 'mage', spawnPos: { x: 1800, y: 1000 } },
   ]);
 }
 
@@ -274,8 +274,8 @@ describe('advanceState — skill modifiers', () => {
 
   it('applies rank-based modifiers from Map skillSets', () => {
     const state = makeInitialState([
-      { id: 'p1', displayName: 'P1', spawnPos: { x: 200, y: 1000 } },
-      { id: 'p2', displayName: 'P2', spawnPos: { x: 1800, y: 1000 } },
+      { id: 'p1', displayName: 'P1', charClass: 'mage', spawnPos: { x: 200, y: 1000 } },
+      { id: 'p2', displayName: 'P2', charClass: 'mage', spawnPos: { x: 1800, y: 1000 } },
     ]);
     const skillSets: Record<string, Map<string, number>> = {
       p1: new Map([['fire.fireball', 1], ['fire.seeking_flame', 3]]),

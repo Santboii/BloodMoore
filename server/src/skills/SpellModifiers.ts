@@ -18,11 +18,14 @@ export type FireballModifiers = {
 export type FirewallModifiers = {
   durationMultiplier: number;
   damageMultiplier: number;
+  lengthMultiplier: number;
+  widthMultiplier: number;
 };
 
 export type MeteorModifiers = {
   hidden: boolean;
   moltenImpact: boolean;
+  radiusMultiplier: number;
 };
 
 export type TeleportModifiers = {
@@ -74,12 +77,15 @@ export function buildSpellModifiers(skills: Map<string, number>): SpellModifiers
       split:          pyRank > 0 ? Math.floor(effectAtRank(1, pyRank)) : 0,
     },
     firewall: {
-      durationMultiplier: rank('fire.enduring_flames') > 0 ? 1 + effectAtRank(0.10, rank('fire.enduring_flames')) : 1,
-      damageMultiplier:   rank('fire.searing_heat') > 0    ? 1 + effectAtRank(0.08, rank('fire.searing_heat'))    : 1,
+      durationMultiplier: rank('fire.enduring_flames') > 0  ? 1 + effectAtRank(0.10, rank('fire.enduring_flames'))  : 1,
+      damageMultiplier:   rank('fire.searing_heat') > 0     ? 1 + effectAtRank(0.08, rank('fire.searing_heat'))     : 1,
+      lengthMultiplier:   rank('fire.inferno_expanse') > 0  ? 1 + effectAtRank(0.25, rank('fire.inferno_expanse'))  : 1,
+      widthMultiplier:    rank('fire.inferno_expanse') > 0  ? 1 + effectAtRank(0.25, rank('fire.inferno_expanse'))  : 1,
     },
     meteor: {
-      hidden:       rank('fire.blind_strike') > 0,
-      moltenImpact: rank('fire.molten_impact') > 0,
+      hidden:           rank('fire.blind_strike') > 0,
+      moltenImpact:     rank('fire.molten_impact') > 0,
+      radiusMultiplier: rank('fire.cataclysm') > 0 ? 1 + effectAtRank(0.15, rank('fire.cataclysm')) : 1,
     },
     teleport: {
       maxRange:     TELEPORT_MAX_RANGE * (rank('utility.phase_shift') > 0 ? 1 + effectAtRank(0.08, rank('utility.phase_shift')) : 1),
