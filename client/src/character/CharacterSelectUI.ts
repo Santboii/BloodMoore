@@ -8,7 +8,7 @@ function esc(s: string): string {
 
 const CLASS_ICONS: Record<string, string> = {
   mage: `<svg viewBox="0 0 32 32" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="16" y1="6" x2="16" y2="30" stroke="#8b6cc4" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="5" r="3.5" fill="#6b3fa0" stroke="#a478e8" stroke-width="1.2"/><circle cx="16" cy="5" r="1.5" fill="#d4b0ff"/><line x1="14" y1="5" x2="12" y2="3" stroke="#a478e8" stroke-width="1" stroke-linecap="round"/><line x1="18" y1="5" x2="20" y2="3" stroke="#a478e8" stroke-width="1" stroke-linecap="round"/><line x1="16" y1="3" x2="16" y2="1" stroke="#a478e8" stroke-width="1" stroke-linecap="round"/></svg>`,
-  amazon: `<svg viewBox="0 0 32 32" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 4 C28 8 28 24 22 28" stroke="#8b5e2b" stroke-width="2.2" stroke-linecap="round" fill="none"/><line x1="22" y1="4" x2="22" y2="28" stroke="#c8a870" stroke-width="0.9"/><line x1="22" y1="16" x2="6" y2="16" stroke="#d4b896" stroke-width="1.6" stroke-linecap="round"/><polygon points="5,16 9,14 9,18" fill="#8b5e2b"/></svg>`,
+  amazon: `<svg viewBox="0 0 32 32" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 3 C30 10 30 22 24 29" stroke="#8b5e2b" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M24 3 Q12 16 24 29" stroke="#c8a870" stroke-width="0.9" fill="none"/><line x1="12" y1="16" x2="4" y2="16" stroke="#d4b896" stroke-width="1.6" stroke-linecap="round"/><polygon points="3,16 7,14.2 7,17.8" fill="#8b5e2b"/></svg>`,
 };
 
 export type CharacterSelectCallbacks = {
